@@ -1,7 +1,13 @@
+import os
+import sys
+
 import crocoddyl
 import pinocchio
 import numpy as np
 import example_robot_data
+
+WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
+WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 
 crocoddyl.switchToNumpyMatrix()
 
@@ -16,18 +22,21 @@ targets = np.array([[.4, 0., .4, 0., 0., 0., 1.],
                     [.4, .4, .4, 0., 0., 0., 1.],
                     [.4, .4, .1, 0., 0., 0., 1.]])
 
-display = crocoddyl.GepettoDisplay(robot)
-#display.robot.viewer.gui.addSphere('world/point', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
-display.robot.viewer.gui.addSphere('world/target1', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
-display.robot.viewer.gui.addSphere('world/target2', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
-display.robot.viewer.gui.addSphere('world/point2', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
-display.robot.viewer.gui.addSphere('world/point3', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
-#display.robot.viewer.gui.applyConfiguration('world/point', target.tolist() + [0., 0., 0., 1.])  # xyz+quaternion
-display.robot.viewer.gui.applyConfigurations(['world/target1', 'world/target2', 'world/point2', 'world/point3'], targets.tolist())  # xyz+quaternion
-display.robot.viewer.gui.refresh()
+if WITHDISPLAY:
+    display = crocoddyl.GepettoDisplay(robot)
+    #display.robot.viewer.gui.addSphere('world/point', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
+    display.robot.viewer.gui.addSphere('world/target1', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
+    display.robot.viewer.gui.addSphere('world/target2', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
+    display.robot.viewer.gui.addSphere('world/point2', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
+    display.robot.viewer.gui.addSphere('world/point3', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
+    #display.robot.viewer.gui.applyConfiguration('world/point', target.tolist() + [0., 0., 0., 1.])  # xyz+quaternion
+    display.robot.viewer.gui.applyConfigurations(['world/target1', 'world/target2', 'world/point2', 'world/point3'], targets.tolist())  # xyz+quaternion
+    display.robot.viewer.gui.refresh()
 
 # Create the cost functions
 state = crocoddyl.StateMultibody(robot.model)
+print('q0 = ',state.nq)
+print('v0 = ',state.nv)
 xRegCost = crocoddyl.CostModelState(state)
 uRegCost = crocoddyl.CostModelControl(state)
 
@@ -103,9 +112,8 @@ terminalModels[3] = crocoddyl.IntegratedActionModelEuler(
 
 # Create the problem
 #q0 = np.matrix([2., 1.5, -2., 0., 0., 0., 0.]).T
-q0 = np.matrix([3., 3., 3., 0., 0., 0., 0.]).T
-x0 = np.concatenate([q0, pinocchio.utils.zero(state.nv)])
-
+q0 = np.matrix([3, 0., 0., 0., 0., 0., 0.]).T
+x0 = np.concatenate([q0, pinocchio.utils.zero(state.nv)]) #x0 = [q0,v0] with v0 = zeros
 seq0 = [runningModels[0]]*T + [terminalModels[0]]
 seq1 = [runningModels[1]]*T + [terminalModels[1]]
 seq2 = [runningModels[2]]*T + [terminalModels[2]]
@@ -115,14 +123,24 @@ seq3 = [runningModels[3]]*T
 #problem = crocoddyl.ShootingProblem(x0, seq0+seq1+[runningModels[2]]*T, terminalModels[2])
 problem = crocoddyl.ShootingProblem(x0,seq0+seq1+seq2+seq3,terminalModels[3])
 
+# Solve the problem
 ddp = crocoddyl.SolverDDP(problem)
+if WITHPLOT:
+    ddp.setCallbacks([crocoddyl.CallbackLogger()]) #Activate logger
 ddp.solve()
 
-# Visualizing the solution in gepetto-viewer
-display.displayFromSolver(ddp)
+# Plotting the solution and the DDP convergence
+if WITHPLOT:
+    log = ddp.getCallbacks()[0]
+    crocoddyl.plotOCSolution(log.xs, log.us, figIndex=1, show=False)
+    crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2) 
 
-robot_data = robot_model.createData()
-xT = ddp.xs[-1]
-pinocchio.forwardKinematics(robot_model, robot_data, xT[:state.nq])
-pinocchio.updateFramePlacements(robot_model, robot_data)
-print('Finally reached = ', robot_data.oMf[robot_model.getFrameId("gripper_left_joint")].translation.T)
+# Visualizing the solution in gepetto-viewer
+if WITHDISPLAY:
+    display.displayFromSolver(ddp)
+
+# robot_data = robot_model.createData()
+# xT = ddp.xs[-1]
+# pinocchio.forwardKinematics(robot_model, robot_data, xT[:state.nq])
+# pinocchio.updateFramePlacements(robot_model, robot_data)
+# print('Finally reached = ', robot_data.oMf[robot_model.getFrameId("gripper_left_joint")].translation.T)
