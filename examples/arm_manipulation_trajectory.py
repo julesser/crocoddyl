@@ -16,27 +16,23 @@ robot = example_robot_data.loadTalosArm()
 robot_model = robot.model
 
 DT = 1e-3
-T = 100
+T =100
 targets = np.array([[.4, 0., .4, 0., 0., 0., 1.],
                     [.4, 0., .1, 0., 0., 0., 1.],
-                    [.4, .4, .4, 0., 0., 0., 1.],
-                    [.4, .4, .1, 0., 0., 0., 1.]])
+                    [.4, .4, .1, 0., 0., 0., 1.],
+                    [.4, .4, .4, 0., 0., 0., 1.]])
 
 if WITHDISPLAY:
     display = crocoddyl.GepettoDisplay(robot)
-    #display.robot.viewer.gui.addSphere('world/point', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
-    display.robot.viewer.gui.addSphere('world/target1', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
+    display.robot.viewer.gui.addSphere('world/target1', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001 # xyz+quaternion
     display.robot.viewer.gui.addSphere('world/target2', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
     display.robot.viewer.gui.addSphere('world/point2', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
     display.robot.viewer.gui.addSphere('world/point3', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
-    #display.robot.viewer.gui.applyConfiguration('world/point', target.tolist() + [0., 0., 0., 1.])  # xyz+quaternion
-    display.robot.viewer.gui.applyConfigurations(['world/target1', 'world/target2', 'world/point2', 'world/point3'], targets.tolist())  # xyz+quaternion
+    display.robot.viewer.gui.applyConfigurations(['world/target1', 'world/target2', 'world/point2', 'world/point3'], targets.tolist())
     display.robot.viewer.gui.refresh()
 
 # Create the cost functions
 state = crocoddyl.StateMultibody(robot.model)
-print('q0 = ',state.nq)
-print('v0 = ',state.nv)
 xRegCost = crocoddyl.CostModelState(state)
 uRegCost = crocoddyl.CostModelControl(state)
 
@@ -68,22 +64,22 @@ terminalCostModels[3] = crocoddyl.CostModelSum(state)
 # Then let's add the running and terminal cost functions
 runningCostModels[0].addCost("gripperPose", goalTrackingCost[0], 1e1)
 runningCostModels[0].addCost("stateReg", xRegCost, 1e-1)          
-runningCostModels[0].addCost("ctrlReg", uRegCost, 1e-5)   
+runningCostModels[0].addCost("ctrlReg", uRegCost, 1e-3)   
 terminalCostModels[0].addCost("gripperPose", goalTrackingCost[0], 1e5)
 
 runningCostModels[1].addCost("gripperPose", goalTrackingCost[1], 1e1) 
-runningCostModels[1].addCost("stateReg", xRegCost, 1e-2)           
-runningCostModels[1].addCost("ctrlReg", uRegCost, 1e-5)
+runningCostModels[1].addCost("stateReg", xRegCost, 1e-1)           
+runningCostModels[1].addCost("ctrlReg", uRegCost, 1e-3)
 terminalCostModels[1].addCost("gripperPose", goalTrackingCost[1], 1e5)
 
 runningCostModels[2].addCost("gripperPose", goalTrackingCost[2], 1e1) 
 runningCostModels[2].addCost("stateReg", xRegCost, 1e-1)           
-runningCostModels[2].addCost("ctrlReg", uRegCost, 1e-5) 
+runningCostModels[2].addCost("ctrlReg", uRegCost, 1e-3) 
 terminalCostModels[2].addCost("gripperPose", goalTrackingCost[2], 1e5)
 
 runningCostModels[3].addCost("gripperPose", goalTrackingCost[3], 1e1) 
 runningCostModels[3].addCost("stateReg", xRegCost, 1e-1)           
-runningCostModels[3].addCost("ctrlReg", uRegCost, 1e-5)
+runningCostModels[3].addCost("ctrlReg", uRegCost, 1e-3)
 terminalCostModels[3].addCost("gripperPose", goalTrackingCost[3], 1e5)
 
 # Create the actuation model
@@ -129,15 +125,15 @@ if WITHPLOT:
     ddp.setCallbacks([crocoddyl.CallbackLogger()]) #Activate logger
 ddp.solve()
 
-# Plotting the solution and the DDP convergence
-if WITHPLOT:
-    log = ddp.getCallbacks()[0]
-    crocoddyl.plotOCSolution(log.xs, log.us, figIndex=1, show=False)
-    crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2) 
-
 # Visualizing the solution in gepetto-viewer
 if WITHDISPLAY:
     display.displayFromSolver(ddp)
+
+# Plotting the solution and the DDP convergence
+if WITHPLOT:
+    log = ddp.getCallbacks()[0]
+    crocoddyl.plotOCSolution(log.xs, log.us, figIndex=1)
+    #crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2) 
 
 # robot_data = robot_model.createData()
 # xT = ddp.xs[-1]
