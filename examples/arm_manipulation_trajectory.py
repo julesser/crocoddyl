@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 import crocoddyl
 import pinocchio
@@ -123,7 +124,10 @@ problem = crocoddyl.ShootingProblem(x0,seq0+seq1+seq2+seq3,terminalModels[3])
 ddp = crocoddyl.SolverDDP(problem)
 if WITHPLOT:
     ddp.setCallbacks([crocoddyl.CallbackLogger()]) #Activate logger
+start = time.time()
 ddp.solve()
+end = time.time()
+print('Time needed for solving the OC problem: ', end - start)
 
 # Visualizing the solution in gepetto-viewer
 if WITHDISPLAY:
