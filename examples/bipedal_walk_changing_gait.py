@@ -27,15 +27,15 @@ leftFoot = 'left_sole_link'
 gait = SimpleBipedGaitProblem(talos_legs.model, rightFoot, leftFoot) #Init problem; Class defined in python3.6/site-packages/utils/biped.py
 
 # Setting up all tasks
-# Define multiple phases for a full gait: One phase = One defined shooting problem, consisting of multiple DAMs depending on the number of knots
+# Define multiple phases for a full gait: One phase = One defined shooting problem, consisting of multiple DAMs
 GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+     {'walking': {'stepLength': 1.0, 'stepHeight': 0.1,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+     {'walking': {'stepLength': 0.6, 'stepHeight': 0.15,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+     {'walking': {'stepLength': 0.6, 'stepHeight': 0.25,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}]
 cameraTF = [3., 3.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 
