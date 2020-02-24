@@ -88,7 +88,8 @@ if WITHPLOT:
     plotSolution(ddp, bounds=False, figIndex=1, show=False)
 
     for i, phase in enumerate(GAITPHASES):
-        title = phase.keys()[0] + " (phase " + str(i) + ")"
+        # title = phase.keys()[0] + " (phase " + str(i) + ")"
+        title = list(phase.keys())[0] + " (phase " + str(i) + ")" #Fix python3 dict bug (TypeError: 'dict_keys' object does not support indexing) 
         log = ddp[i].getCallbacks()[0]
         crocoddyl.plotConvergence(log.costs,
                                   log.u_regs,

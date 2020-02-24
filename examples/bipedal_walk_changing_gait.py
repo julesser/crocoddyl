@@ -15,6 +15,9 @@ crocoddyl.switchToNumpyMatrix()
 
 # Creating the lower-body part of Talos
 talos_legs = example_robot_data.loadTalosLegs()
+""" lims = talos_legs.model.effortLimit
+lims *= 0.5  # reduced artificially the torque limits defined in URDF
+talos_legs.model.effortLimit = lims """
 
 # Defining the initial state of the robot
 q0 = talos_legs.model.referenceConfigurations['half_sitting'].copy()
@@ -86,7 +89,8 @@ if WITHPLOT:
     plotSolution(ddp, bounds=False, figIndex=1, show=False)
 
     for i, phase in enumerate(GAITPHASES):
-        title = phase.keys()[0] + " (phase " + str(i) + ")"
+        # title = phase.keys()[0] + " (phase " + str(i) + ")"
+        title = list(phase.keys())[0] + " (phase " + str(i) + ")" #Fix python3 dict bug (TypeError: 'dict_keys' object does not support indexing) 
         log = ddp[i].getCallbacks()[0]
         crocoddyl.plotConvergence(log.costs,
                                   log.u_regs,
