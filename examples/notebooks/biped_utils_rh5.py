@@ -15,18 +15,16 @@ class SimpleBipedGaitProblem:
         self.rfId = self.rmodel.getFrameId(rightFoot)
         self.lfId = self.rmodel.getFrameId(leftFoot)
         # Defining default state
-        #q0 = self.rmodel.referenceConfigurations["half_sitting"]
-        # All joints ~=0:
+        # Values for all joints that are not equal to zero:
         # LLHip3: -0.35310724735009646
         # LLKnee: 0.6421743334909511
         # LLAnklePitch: -0.2890673062137692
         # LRHip3: -0.35225952539664185
         # LRKnee: 0.6268791052995795
         # LRAnklePitch: -0.27461976070912897
-        #q0 = np.matrix([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]).T
-        q0 = np.matrix([0,0,0.88,0,0,0,1, 
-                        0,0,-0.35,0.64,0,-0.28,
-                        0,0,-0.35,0.62,0,-0.27]).T
+        q0 = np.matrix([0,0,0.88,0,0,0,1,              #q1-7:   Floating Base
+                        0,0,-0.353,0.642,0,-0.289,     #q8-13:  Left Leg     
+                        0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg
         self.q0 = q0
         self.rmodel.defaultState = np.concatenate([q0, np.zeros((self.rmodel.nv, 1))])
         self.firstStep = True
