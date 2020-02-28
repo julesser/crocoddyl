@@ -6,7 +6,8 @@ import numpy as np
 import crocoddyl
 import example_robot_data
 import pinocchio
-from notebooks.biped_utils_rh5 import SimpleBipedGaitProblem, plotSolution
+# from notebooks.biped_utils_rh5 import SimpleBipedGaitProblem, plotSolution
+from notebooks.biped_utils_rh5 import SimpleBipedGaitProblem_MultipleContactPoints, plotSolution
 from pinocchio.robot_wrapper import RobotWrapper
 
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
@@ -15,9 +16,11 @@ WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 crocoddyl.switchToNumpyMatrix()
 
 # Loading the RH5 Model
-URDF_FILENAME = "RH5_Lower_Body_FixedMeshPaths.urdf"
-URDF_SUBPATH = "/abstract-smurf/urdf/" + URDF_FILENAME
 modelPath = "/home/dfki.uni-bremen.de/jesser/Dev/rh5-models"
+#URDF_FILENAME = "RH5_Lower_Body_FixedMeshPaths.urdf"
+URDF_FILENAME = "RH5_Lower_Body_AddFTs_FixedMeshPaths.urdf"
+URDF_SUBPATH = "/abstract-smurf/urdf/" + URDF_FILENAME
+
 rh5_legs = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
 # Add the free-flyer joint limits (floating base)
 rmodel = rh5_legs.model
@@ -28,25 +31,37 @@ lb = rmodel.lowerPositionLimit
 lb[:7] = -1
 rmodel.lowerPositionLimit = lb
 
-# Artificially reduce the torque limits
+# If desired: Artificially reduce the torque limits
 lims = rmodel.effortLimit
 # lims *= 0.5 
 # lims[11] = 70
 # lims[17] = 70
-print(lims)
+# print(lims)
 rmodel.effortLimit = lims
 
 # Setting up the 3d walking problem
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
-gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)
+rightFootContacts = ['FRC_FrontLeft_Link', 'FRC_FrontRight_Link', 'FRC_RearLeft_Link', 'FRC_RearRight_Link']
+leftFootContacts =  ['FLC_FrontLeft_Link', 'FLC_FrontRight_Link', 'FLC_RearLeft_Link', 'FLC_RearRight_Link']
+#gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)                                                            # USE THIS CLASS IF foot is assumed as one point contact
+gait = SimpleBipedGaitProblem_MultipleContactPoints(rmodel, rightFoot, leftFoot, rightFootContacts, leftFootContacts) # USE THIS CLASS IF foot is assumed as multiple point contacts
 
 # Defining the initial state of the robot
 q0 = gait.q0
 v0 = pinocchio.utils.zero(rmodel.nv)
 x0 = np.concatenate([q0, v0])
 
+#DebuggingArea
+#print(rmodel.frames)
+#print(rmodel.defaultState)
+#print(q0)
+
 # Setting up all tasks
+# Repetitive gait
+GAITPHASES = \
+    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}]
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
@@ -54,7 +69,8 @@ x0 = np.concatenate([q0, v0])
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
      {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}] """
-GAITPHASES = \
+# Changing, advanced gait
+""" GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
      {'walking': {'stepLength': 1.0, 'stepHeight': 0.1,
@@ -62,7 +78,7 @@ GAITPHASES = \
      {'walking': {'stepLength': 0.6, 'stepHeight': 0.20,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
      {'walking': {'stepLength': 0.6, 'stepHeight': 0.30,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}]
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}] """
 cameraTF = [3., 3.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 
 ddp = [None] * len(GAITPHASES)
