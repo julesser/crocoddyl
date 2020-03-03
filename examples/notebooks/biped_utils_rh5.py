@@ -127,7 +127,7 @@ class SimpleBipedGaitProblem_MultipleContactPoints:
             ]
 
         # Action model for the foot switch
-        footSwitchModel = self.createFootSwitchModel(contactFootIds, swingFootTask)
+        footSwitchModel = self.createFootSwitchModel(contactFootIds, swingFootTask, pseudoImpulse=True)
 
         # Updating the current foot position for next step
         comPos0 += np.matrix([stepLength * comPercentage, 0., 0.]).T
@@ -392,7 +392,7 @@ class SimpleBipedGaitProblem:
             ]
 
         # Action model for the foot switch
-        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask)
+        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=True)
 
         # Updating the current foot position for next step
         comPos0 += np.matrix([stepLength * comPercentage, 0., 0.]).T

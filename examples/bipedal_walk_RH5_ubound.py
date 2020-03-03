@@ -6,7 +6,7 @@ import numpy as np
 import crocoddyl
 import example_robot_data
 import pinocchio
-# from notebooks.biped_utils_rh5 import SimpleBipedGaitProblem, plotSolution
+#from notebooks.biped_utils_rh5 import SimpleBipedGaitProblem, plotSolution
 from notebooks.biped_utils_rh5 import SimpleBipedGaitProblem_MultipleContactPoints, plotSolution
 from pinocchio.robot_wrapper import RobotWrapper
 
@@ -17,9 +17,9 @@ crocoddyl.switchToNumpyMatrix()
 
 # Loading the RH5 Model
 modelPath = "/home/dfki.uni-bremen.de/jesser/Dev/rh5-models"
-#URDF_FILENAME = "RH5_Lower_Body_FixedMeshPaths.urdf"
-URDF_FILENAME = "RH5_Lower_Body_AddFTs_FixedMeshPaths.urdf"
-URDF_SUBPATH = "/abstract-smurf/urdf/" + URDF_FILENAME
+#URDF_FILENAME = "RH5Legs_PkgPath_PtContact.urdf"
+URDF_FILENAME = "RH5Legs_PkgPath_4PtContacts.urdf"
+URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
 
 rh5_legs = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
 # Add the free-flyer joint limits (floating base)
