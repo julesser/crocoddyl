@@ -2,12 +2,12 @@ import os
 import sys
 
 import numpy as np
+import csv
 
 import crocoddyl
 import example_robot_data
 import pinocchio
-#from notebooks.biped_utils_rh5 import SimpleBipedGaitProblem, plotSolution
-from notebooks.biped_utils_rh5 import SimpleBipedGaitProblem_MultipleContactPoints, plotSolution
+from notebooks.biped_utils_rh5 import SimpleBipedGaitProblem, plotSolution
 from pinocchio.robot_wrapper import RobotWrapper
 
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
@@ -17,8 +17,8 @@ crocoddyl.switchToNumpyMatrix()
 
 # Loading the RH5 Model
 modelPath = "/home/dfki.uni-bremen.de/jesser/Dev/rh5-models"
-#URDF_FILENAME = "RH5Legs_PkgPath_PtContact.urdf"
-URDF_FILENAME = "RH5Legs_PkgPath_4PtContacts.urdf"
+#URDF_FILENAME = "RH5_PkgPath.urdf"
+URDF_FILENAME = "RH5Legs_PkgPath_PtContact.urdf"
 URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
 
 rh5_legs = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
@@ -42,33 +42,25 @@ rmodel.effortLimit = lims
 # Setting up the 3d walking problem
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
-rightFootContacts = ['FRC_FrontLeft_Link', 'FRC_FrontRight_Link', 'FRC_RearLeft_Link', 'FRC_RearRight_Link']
-leftFootContacts =  ['FLC_FrontLeft_Link', 'FLC_FrontRight_Link', 'FLC_RearLeft_Link', 'FLC_RearRight_Link']
-#gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)                                                            # USE THIS CLASS IF foot is assumed as one point contact
-gait = SimpleBipedGaitProblem_MultipleContactPoints(rmodel, rightFoot, leftFoot, rightFootContacts, leftFootContacts) # USE THIS CLASS IF foot is assumed as multiple point contacts
+gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)     
 
 # Defining the initial state of the robot
 q0 = gait.q0
 v0 = pinocchio.utils.zero(rmodel.nv)
 x0 = np.concatenate([q0, v0])
 
-#DebuggingArea
-#print(rmodel.frames)
-#print(rmodel.defaultState)
-#print(q0)
-
 # Setting up all tasks
 # Repetitive gait
-GAITPHASES = \
-    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}]
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}] """
+GAITPHASES = \
+    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}]
 # Changing, advanced gait
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
@@ -140,3 +132,8 @@ if WITHPLOT:
                                   figTitle=title,
                                   figIndex=i + 3,
                                   show=True if i == len(GAITPHASES) - 1 else False)
+        #Save solution to csv file
+        # filename = "uVals_Phase" + str(i) + ".csv"
+        # with open(filename, "w", newline="") as f:
+        #     writer = csv.writer(f)
+        #     writer.writerows(log.us)
