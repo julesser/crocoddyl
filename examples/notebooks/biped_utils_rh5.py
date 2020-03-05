@@ -170,7 +170,7 @@ class SimpleBipedGaitProblem:
         model = crocoddyl.IntegratedActionModelEuler(dmodel, timeStep)
         return model
 
-    def createFootSwitchModel(self, supportFootIds, swingFootTask, pseudoImpulse=True):
+    def createFootSwitchModel(self, supportFootIds, swingFootTask, pseudoImpulse=False):
         """ Action model for a foot switch phase.
 
         :param supportFootIds: Ids of the constrained feet
@@ -269,7 +269,7 @@ class SimpleBipedGaitProblem:
 
 def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
-    xs, us = [], []
+    xs, us, fs = [], [], []
     if bounds:
         us_lb, us_ub = [], []
         xs_lb, xs_ub = [], []
@@ -278,21 +278,24 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
         for s in solver:
             xs.extend(s.xs[:-1])
             us.extend(s.us)
+            fs.extend(s.fs)
             if bounds:
                 for m in s.models():
                     us_lb += [m.u_lb]
                     us_ub += [m.u_ub]
                     xs_lb += [m.state.lb]
                     xs_ub += [m.state.ub]
+            print('s.fs: ', s.fs)
     else:
         rmodel = solver.models()[0].state.pinocchio
-        xs, us = solver.xs, solver.us
+        xs, us, fs = solver.xs, solver.us, solver.fs
         if bounds:
             for m in solver.models():
                 us_lb += [m.u_lb]
                 us_ub += [m.u_ub]
                 xs_lb += [m.state.lb]
                 xs_ub += [m.state.ub]
+        
 
     # Getting the state and control trajectories
     nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
@@ -313,6 +316,23 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
         if bounds:
             U_LB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_lb]
             U_UB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_ub]
+
+    # Getting the contact wrenches
+    nf = fs[0].shape[0] # = 36
+    F = [0.] * nf
+    for i in range(nf):
+        F[i] = [np.asscalar(f[i]) for f in fs]
+    # print('fs: ', fs)
+    # print('len(fs): ', len(fs)) # 165
+    # print('fs[0]: ', fs[0])
+    # print('F: ',F)
+    # print('len(F): ',len(F)) # = 36
+    # print('F[0]: ',F[0])
+    # print('len(F[0]): ',len(F[0])) # = 165
+
+    
+
+
 
     # Plotting the joint positions, velocities and torques
     plt.figure(figIndex)
@@ -370,6 +390,7 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
     plt.xlabel('knots')
     plt.legend()
 
+    # Plotting the Center of Mass
     plt.figure(figIndex + 1)
     rdata = rmodel.createData()
     Cx = []
@@ -380,9 +401,31 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
         Cx.append(np.asscalar(c[0]))
         Cy.append(np.asscalar(c[1]))
     plt.plot(Cx, Cy)
-    plt.title('CoM position')
+    plt.title('CoM POSITION')
     plt.xlabel('x [m]')
     plt.ylabel('y [m]')
     plt.grid(True)
+    if show:
+        plt.show()
+
+    # Plotting the contact forces
+    forceDimName = ['x','y','z'] 
+    plt.figure(figIndex + 2)
+
+    plt.suptitle(figTitle)
+    plt.subplot(2,1,1)
+    [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
+    plt.title('Contact Forces [LF]')
+    plt.xlabel('Knots')
+    plt.ylabel('Force [Nm]')
+    plt.legend()
+
+    plt.suptitle(figTitle)
+    plt.subplot(2,1,2)
+    plt.plot()
+    plt.title('Contact Forces [RF]')
+    plt.xlabel('Knots')
+    plt.ylabel('Force [Nm]')
+    plt.legend()
     if show:
         plt.show()

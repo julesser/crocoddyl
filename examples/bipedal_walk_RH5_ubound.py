@@ -130,10 +130,45 @@ if WITHPLOT:
                                   log.stops,
                                   log.steps,
                                   figTitle=title,
-                                  figIndex=i + 3,
+                                  figIndex=i + 4,
                                   show=True if i == len(GAITPHASES) - 1 else False)
         #Save solution to csv file
         # filename = "uVals_Phase" + str(i) + ".csv"
         # with open(filename, "w", newline="") as f:
         #     writer = csv.writer(f)
         #     writer.writerows(log.us)
+
+
+        # print(log.fs) SUCCESSFULL
+
+        # Getting the contact wrenches
+        fs = log.fs
+        for f in fs[i]:
+            
+        nf = fs[0].shape[0] # = 36
+        F = [0.] * nf
+        for i in range(nf):
+            F[i] = [np.asscalar(f[i]) for f in fs]
+
+
+        # Plotting the contact forces
+        forceDimName = ['x','y','z'] 
+        plt.figure(figIndex + 2)
+
+        plt.suptitle(figTitle)
+        plt.subplot(2,1,1)
+        [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
+        plt.title('Contact Forces [LF]')
+        plt.xlabel('Knots')
+        plt.ylabel('Force [Nm]')
+        plt.legend()
+
+        plt.suptitle(figTitle)
+        plt.subplot(2,1,2)
+        plt.plot()
+        plt.title('Contact Forces [RF]')
+        plt.xlabel('Knots')
+        plt.ylabel('Force [Nm]')
+        plt.legend()
+        if show:
+            plt.show()
