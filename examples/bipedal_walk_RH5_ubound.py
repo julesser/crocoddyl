@@ -3,6 +3,7 @@ import sys
 
 import numpy as np
 import csv
+import itertools
 
 import crocoddyl
 import example_robot_data
@@ -12,6 +13,7 @@ from pinocchio.robot_wrapper import RobotWrapper
 
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
 WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
+WITHLOG = 'log' in sys.argv
 
 crocoddyl.switchToNumpyMatrix()
 
@@ -51,16 +53,16 @@ x0 = np.concatenate([q0, v0])
 
 # Setting up all tasks
 # Repetitive gait
-""" GAITPHASES = \
-    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}] """
 GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}]
+""" GAITPHASES = \
+    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}] """
 # Changing, advanced gait
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
@@ -93,7 +95,7 @@ for i, phase in enumerate(GAITPHASES):
     elif WITHDISPLAY:
         display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
         ddp[i].setCallbacks([crocoddyl.CallbackVerbose(), crocoddyl.CallbackDisplay(display)])
-    elif WITHPLOT:
+    elif WITHPLOT or WITHLOG:
         ddp[i].setCallbacks([
             crocoddyl.CallbackLogger(),
             crocoddyl.CallbackVerbose(),
@@ -108,6 +110,99 @@ for i, phase in enumerate(GAITPHASES):
 
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
+
+
+nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
+rangeRelJoints = list(range(7,nq)) + list(range(nq + 6, nq + 18)) # Ignore floating base (fixed joints)
+X = [0.] * nx
+print(nx)
+print(nq)
+print(nu)
+
+
+# Export solution to .csv file
+if WITHLOG:
+    # headerQLR = ['q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch']
+    # headerQLL = ['q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch']
+    # headerVLR = ['v_LRHip1', 'v_LRHip2', 'v_LRHip3', 'v_LRKnee', 'v_LRAnkleRoll', 'v_LRAnklePitch']
+    # headerVLL = ['v_LLHip1', 'v_LLHip2', 'v_LLHip3', 'v_LLKnee', 'v_LLAnkleRoll', 'v_LLAnklePitch']
+    # headerULR = ['u_LRHip1', 'u_LRHip2', 'u_LRHip3', 'u_LRKnee', 'u_LRAnkleRoll', 'u_LRAnklePitch']
+    # headerULL = ['u_LLHip1', 'u_LLHip2', 'u_LLHip3', 'u_LLKnee', 'u_LLAnkleRoll', 'u_LLAnklePitch']
+    filename = 'logSolution.csv'
+    firstWrite = True
+    for i, phase in enumerate(GAITPHASES):
+        log = ddp[i].getCallbacks()[0]
+        XRel = []
+        sol = []
+        print(len(log.xs))
+        print(len(log.us))
+
+        if firstWrite: # Write ('w') headers
+            firstWrite = False
+            #Get relevant joints states (x_LF, x_RF, v_LF, v_RF)
+            for j in range(nx):
+                X[j] = [np.asscalar(x[j]) for x in log.xs[:]] # Don't consider last element (doubled)
+            for k in rangeRelJoints:
+                XRel.append(X[k])
+            XRel = list(map(list, zip(*XRel))) #transpose
+
+            with open(filename, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
+                                 'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
+                                'v_LRHip1', 'v_LRHip2', 'v_LRHip3', 'v_LRKnee', 'v_LRAnkleRoll', 'v_LRAnklePitch',
+                                'v_LLHip1', 'v_LLHip2', 'v_LLHip3', 'v_LLKnee', 'v_LLAnkleRoll', 'v_LLAnklePitch',
+                                'u_LRHip1', 'u_LRHip2', 'u_LRHip3', 'u_LRKnee', 'u_LRAnkleRoll', 'u_LRAnklePitch',
+                                'u_LLHip1', 'u_LLHip2', 'u_LLHip3', 'u_LLKnee', 'u_LLAnkleRoll', 'u_LLAnklePitch']) 
+                writer.writerows(sol)
+        else: # Append ('a') log of other phases (prevent overwriting)
+            #Get relevant joints states (x_LF, x_RF, v_LF, v_RF)
+            for j in range(nx):
+                X[j] = [np.asscalar(x[j]) for x in log.xs[:]] # Don't consider first AND last element (doubled)
+            for k in rangeRelJoints:
+                sol.append(X[k])
+            sol = list(map(list, zip(*sol))) #transpose
+            with open(filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(sol)
+
+    """ filename = 'logUs.csv'
+    firstWrite = True
+    for i, phase in enumerate(GAITPHASES):
+        log = ddp[i].getCallbacks()[0]
+        sol = log.us
+        # filename = "uVals_Phase" + str(i) + ".csv"
+        if firstWrite: # Write ('w') headers
+            firstWrite = False
+            with open(filename, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['u_LRHip1', 'u_LRHip2', 'u_LRHip3', 'u_LRKnee', 'u_LRAnkleRoll', 'u_LRAnklePitch',
+                                 'u_LLHip1', 'u_LLHip2', 'u_LLHip3', 'u_LLKnee', 'u_LLAnkleRoll', 'u_LLAnklePitch']) 
+                writer.writerows(sol)
+        else: # Append ('a') log of other phases (prevent overwriting)
+            with open(filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(sol) """
+
+    filename = 'logFs.csv'
+    firstWrite = True
+    for i, phase in enumerate(GAITPHASES):
+        # display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
+        # fs = display.getForceTrajectoryFromSolver(ddp[i])
+        log = ddp[i].getCallbacks()[0]
+        sol = log.fs
+        # filename = "uVals_Phase" + str(i) + ".csv"
+        if firstWrite: # Write ('w') headers
+            firstWrite = False
+            with open(filename, 'w', newline='') as f:
+                writer = csv.writer(f)
+                # writer.writerow(['u_LRHip1', 'u_LRHip2', 'u_LRHip3', 'u_LRKnee', 'u_LRAnkleRoll', 'u_LRAnklePitch',
+                #                  'u_LLHip1', 'u_LLHip2', 'u_LLHip3', 'u_LLKnee', 'u_LLAnkleRoll', 'u_LLAnklePitch']) 
+                writer.writerows(sol)
+        else: # Append ('a') log of other phases (prevent overwriting)
+            with open(filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                #writer.writerows(sol)
 
 # Display the entire motion
 if WITHDISPLAY:
@@ -132,43 +227,39 @@ if WITHPLOT:
                                   figTitle=title,
                                   figIndex=i + 4,
                                   show=True if i == len(GAITPHASES) - 1 else False)
-        #Save solution to csv file
-        # filename = "uVals_Phase" + str(i) + ".csv"
-        # with open(filename, "w", newline="") as f:
-        #     writer = csv.writer(f)
-        #     writer.writerows(log.us)
+        
 
 
         # print(log.fs) SUCCESSFULL
 
         # Getting the contact wrenches
-        fs = log.fs
-        for f in fs[i]:
+        # fs = log.fs
+        # for f in fs[i]:
             
-        nf = fs[0].shape[0] # = 36
-        F = [0.] * nf
-        for i in range(nf):
-            F[i] = [np.asscalar(f[i]) for f in fs]
+        # nf = fs[0].shape[0] # = 36
+        # F = [0.] * nf
+        # for i in range(nf):
+        #     F[i] = [np.asscalar(f[i]) for f in fs]
 
 
         # Plotting the contact forces
-        forceDimName = ['x','y','z'] 
-        plt.figure(figIndex + 2)
+        # forceDimName = ['x','y','z'] 
+        # plt.figure(figIndex + 2)
 
-        plt.suptitle(figTitle)
-        plt.subplot(2,1,1)
-        [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
-        plt.title('Contact Forces [LF]')
-        plt.xlabel('Knots')
-        plt.ylabel('Force [Nm]')
-        plt.legend()
+        # plt.suptitle(figTitle)
+        # plt.subplot(2,1,1)
+        # [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
+        # plt.title('Contact Forces [LF]')
+        # plt.xlabel('Knots')
+        # plt.ylabel('Force [Nm]')
+        # plt.legend()
 
-        plt.suptitle(figTitle)
-        plt.subplot(2,1,2)
-        plt.plot()
-        plt.title('Contact Forces [RF]')
-        plt.xlabel('Knots')
-        plt.ylabel('Force [Nm]')
-        plt.legend()
-        if show:
-            plt.show()
+        # plt.suptitle(figTitle)
+        # plt.subplot(2,1,2)
+        # plt.plot()
+        # plt.title('Contact Forces [RF]')
+        # plt.xlabel('Knots')
+        # plt.ylabel('Force [Nm]')
+        # plt.legend()
+        # if show:
+        #     plt.show()

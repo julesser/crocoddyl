@@ -160,7 +160,7 @@ class SimpleBipedGaitProblem:
                                             crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
                                             self.rmodel.defaultState, self.actuation.nu)
         ctrlReg = crocoddyl.CostModelControl(self.state, self.actuation.nu)
-        costModel.addCost("stateReg", stateReg, 1e2)
+        costModel.addCost("stateReg", stateReg, 1e1)
         costModel.addCost("ctrlReg", ctrlReg, 1e-1)
 
         # Creating the action model for the KKT dynamics with simpletic Euler
@@ -269,7 +269,7 @@ class SimpleBipedGaitProblem:
 
 def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
-    xs, us, fs = [], [], []
+    xs, us = [], []
     if bounds:
         us_lb, us_ub = [], []
         xs_lb, xs_ub = [], []
@@ -278,24 +278,21 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
         for s in solver:
             xs.extend(s.xs[:-1])
             us.extend(s.us)
-            fs.extend(s.fs)
             if bounds:
                 for m in s.models():
                     us_lb += [m.u_lb]
                     us_ub += [m.u_ub]
                     xs_lb += [m.state.lb]
                     xs_ub += [m.state.ub]
-            print('s.fs: ', s.fs)
     else:
         rmodel = solver.models()[0].state.pinocchio
-        xs, us, fs = solver.xs, solver.us, solver.fs
+        xs, us = solver.xs, solver.us
         if bounds:
             for m in solver.models():
                 us_lb += [m.u_lb]
                 us_ub += [m.u_ub]
                 xs_lb += [m.state.lb]
                 xs_ub += [m.state.ub]
-        
 
     # Getting the state and control trajectories
     nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
@@ -318,10 +315,6 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
             U_UB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_ub]
 
     # Getting the contact wrenches
-    nf = fs[0].shape[0] # = 36
-    F = [0.] * nf
-    for i in range(nf):
-        F[i] = [np.asscalar(f[i]) for f in fs]
     # print('fs: ', fs)
     # print('len(fs): ', len(fs)) # 165
     # print('fs[0]: ', fs[0])
@@ -329,10 +322,6 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
     # print('len(F): ',len(F)) # = 36
     # print('F[0]: ',F[0])
     # print('len(F[0]): ',len(F[0])) # = 165
-
-    
-
-
 
     # Plotting the joint positions, velocities and torques
     plt.figure(figIndex)
@@ -363,7 +352,6 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
         [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(0, 6))]
     plt.ylabel('LF')
     plt.legend()
-
     # right foot
     plt.subplot(2, 3, 4)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(13, 19))]
@@ -390,42 +378,85 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
     plt.xlabel('knots')
     plt.legend()
 
-    # Plotting the Center of Mass
-    plt.figure(figIndex + 1)
+
+    # Get 3 dim CoM
     rdata = rmodel.createData()
     Cx = []
     Cy = []
+    Cz = []
     for x in xs:
         q = x[:rmodel.nq]
         c = pinocchio.centerOfMass(rmodel, rdata, q)
         Cx.append(np.asscalar(c[0]))
         Cy.append(np.asscalar(c[1]))
-    plt.plot(Cx, Cy)
-    plt.title('CoM POSITION')
-    plt.xlabel('x [m]')
+        Cz.append(np.asscalar(c[2]))
+    knots = list(range(0,len(Cz)))
+
+    # Plotting the Center of Mass (x,y,z over knots)
+    plt.figure(figIndex + 1)
+    plt.suptitle('CoM')
+    plt.subplot(1, 3, 1)
+    plt.plot(knots, Cx)
+    plt.xlabel('knots')
+    plt.ylabel('x [m]')
+    plt.grid(True)
+    plt.subplot(1, 3, 2)
+    plt.plot(knots, Cy)
+    plt.xlabel('knots')
     plt.ylabel('y [m]')
+    plt.grid(True)
+    plt.subplot(1, 3, 3)
+    plt.plot(knots, Cz)
+    plt.xlabel('knots')
+    plt.ylabel('z [m]')
     plt.grid(True)
     if show:
         plt.show()
 
+    # Plotting the Center of Mass (y,z over x)
+    # plt.figure(figIndex + 1)
+    # plt.suptitle('CoM')
+    # plt.subplot(1, 2, 1)
+    # plt.plot(Cx, Cy)
+    # plt.xlabel('x [m]')
+    # plt.ylabel('y [m]')
+    # plt.grid(True)
+    # plt.subplot(1, 2, 2)
+    # plt.plot(Cx, Cz)
+    # plt.xlabel('x [m]')
+    # plt.ylabel('z [m]')
+    # plt.grid(True)
+    # if show:
+    #     plt.show()
+
+    # Plotting the Center of Mass (y over x)
+    # plt.figure(figIndex + 1)
+    # plt.plot(Cx, Cy)
+    # plt.title('CoM POSITION')
+    # plt.xlabel('x [m]')
+    # plt.ylabel('y [m]')
+    # plt.grid(True)
+    # if show:
+    #     plt.show()
+
     # Plotting the contact forces
-    forceDimName = ['x','y','z'] 
-    plt.figure(figIndex + 2)
+    # forceDimName = ['x','y','z'] 
+    # plt.figure(figIndex + 2)
 
-    plt.suptitle(figTitle)
-    plt.subplot(2,1,1)
-    [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
-    plt.title('Contact Forces [LF]')
-    plt.xlabel('Knots')
-    plt.ylabel('Force [Nm]')
-    plt.legend()
+    # plt.suptitle(figTitle)
+    # plt.subplot(2,1,1)
+    # [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
+    # plt.title('Contact Forces [LF]')
+    # plt.xlabel('Knots')
+    # plt.ylabel('Force [Nm]')
+    # plt.legend()
 
-    plt.suptitle(figTitle)
-    plt.subplot(2,1,2)
-    plt.plot()
-    plt.title('Contact Forces [RF]')
-    plt.xlabel('Knots')
-    plt.ylabel('Force [Nm]')
-    plt.legend()
-    if show:
-        plt.show()
+    # plt.suptitle(figTitle)
+    # plt.subplot(2,1,2)
+    # plt.plot()
+    # plt.title('Contact Forces [RF]')
+    # plt.xlabel('Knots')
+    # plt.ylabel('Force [Nm]')
+    # plt.legend()
+    # if show:
+    #     plt.show()
