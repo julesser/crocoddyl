@@ -267,7 +267,7 @@ class SimpleBipedGaitProblem:
 
 
 
-def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
+def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
     xs, us = [], []
     if bounds:
@@ -296,8 +296,10 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
 
     # Getting the state and control trajectories
     nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
+ 
     X = [0.] * nx
     U = [0.] * nu
+    F = [0.] * 12
     if bounds:
         U_LB = [0.] * nu
         U_UB = [0.] * nu
@@ -313,15 +315,6 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
         if bounds:
             U_LB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_lb]
             U_UB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_ub]
-
-    # Getting the contact wrenches
-    # print('fs: ', fs)
-    # print('len(fs): ', len(fs)) # 165
-    # print('fs[0]: ', fs[0])
-    # print('F: ',F)
-    # print('len(F): ',len(F)) # = 36
-    # print('F[0]: ',F[0])
-    # print('len(F[0]): ',len(F[0])) # = 165
 
     # Plotting the joint positions, velocities and torques
     plt.figure(figIndex)
@@ -440,23 +433,23 @@ def plotSolution(solver, bounds=True, figIndex=1, figTitle="", show=True):
     #     plt.show()
 
     # Plotting the contact forces
-    # forceDimName = ['x','y','z'] 
-    # plt.figure(figIndex + 2)
+    forceDimName = ['x','y','z'] 
+    plt.figure(figIndex + 2)
 
-    # plt.suptitle(figTitle)
-    # plt.subplot(2,1,1)
-    # [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
-    # plt.title('Contact Forces [LF]')
-    # plt.xlabel('Knots')
-    # plt.ylabel('Force [Nm]')
-    # plt.legend()
+    plt.suptitle(figTitle)
+    plt.subplot(2,1,1)
+    [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
+    plt.title('Contact Forces [LF]')
+    plt.xlabel('Knots')
+    plt.ylabel('Force [Nm]')
+    plt.legend()
 
-    # plt.suptitle(figTitle)
-    # plt.subplot(2,1,2)
-    # plt.plot()
-    # plt.title('Contact Forces [RF]')
-    # plt.xlabel('Knots')
-    # plt.ylabel('Force [Nm]')
-    # plt.legend()
-    # if show:
-    #     plt.show()
+    plt.suptitle(figTitle)
+    plt.subplot(2,1,2)
+    plt.plot()
+    plt.title('Contact Forces [RF]')
+    plt.xlabel('Knots')
+    plt.ylabel('Force [Nm]')
+    plt.legend()
+    if show:
+        plt.show()
