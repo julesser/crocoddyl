@@ -138,7 +138,7 @@ fs = fsRel
 # Export solution to .csv file
 if WITHLOG:
     nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
-    filename = 'logXs.csv'
+    filename = 'logSolutions/RH52Steps/logXs.csv'
     firstWrite = True
     rangeRelJoints = list(range(7,nq)) + list(range(nq + 6, nq + 18)) # Ignore floating base (fixed joints)
     X = [0.] * nx
@@ -167,7 +167,7 @@ if WITHLOG:
                 writer = csv.writer(f)
                 writer.writerows(sol)
 
-    filename = 'logUs.csv'
+    filename = 'logSolutions/RH52Steps/logUs.csv'
     firstWrite = True
     U = [0.] * nu
     for i, phase in enumerate(GAITPHASES):
@@ -188,7 +188,7 @@ if WITHLOG:
                 writer = csv.writer(f)
                 writer.writerows(sol)
 
-    filename = 'logFs.csv'
+    filename = 'logSolutions/RH52Steps/logFs.csv'
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['LR_fx', 'LR_fy', 'LR_fz', 'LR_taux', 'LR_tauy', 'LR_tauz',
