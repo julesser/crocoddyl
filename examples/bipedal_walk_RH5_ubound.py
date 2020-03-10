@@ -53,16 +53,16 @@ x0 = np.concatenate([q0, v0])
 
 # Setting up all tasks
 # Repetitive gait
-GAITPHASES = \
-    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}]
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}] """
+GAITPHASES = \
+    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
+                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}]
 # Changing, advanced gait
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
@@ -111,28 +111,29 @@ for i, phase in enumerate(GAITPHASES):
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
 
+
 # Get contact wrenches f=[f,tau]
+display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
+fsRel = np.zeros((len(GAITPHASES)*(len(ddp[i].models())-1),12)) # e.g. for 3 gaitphases = [3*nKnots,12]
 for i, phase in enumerate(GAITPHASES):
-    display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
+    print(i)
     fs = display.getForceTrajectoryFromSolver(ddp[i])
     fs = fs[:-1] # Last element doubled
-
-    sol = np.zeros((len(fs),12))
-    for i, x in enumerate(fs): # iter over all knots
-        for f in fs[i]: # iter over all contacts (LF, RF)
-            sol_f = []
+    #fsRel = np.zeros((len(fs),12))
+    for j, x in enumerate(fs): # iter over all knots
+        for f in fs[j]: # iter over all contacts (LF, RF)
             key = f["key"]
             wrench = f["f"]
             if key == "7": # right foot
-                for j in range(3):
-                    sol[i,j] = wrench.linear[j]
-                    sol[i,j+3] = wrench.angular[j]
-            if key == "13": # left foot
-                for j in range(3):
-                    sol[i,j+6] = wrench.linear[j]
-                    sol[i,j+9] = wrench.angular[j]
-            #print('Foot: ' + str(key), wrench)
-    fs = sol
+                for k in range(3):
+                    fsRel[i*len(fs)+j,k] = wrench.linear[k]
+                    fsRel[i*len(fs)+j,k+3] = wrench.angular[k]
+            elif key == "13": # left foot
+                for k in range(3):
+                    fsRel[i*len(fs)+j,k+6] = wrench.linear[k]
+                    fsRel[i*len(fs)+j,k+9] = wrench.angular[k]
+            print('Foot: ' + str(key), wrench) 
+fs = fsRel
 
 # Export solution to .csv file
 if WITHLOG:
@@ -188,19 +189,11 @@ if WITHLOG:
                 writer.writerows(sol)
 
     filename = 'logFs.csv'
-    firstWrite = True
-    for i, phase in enumerate(GAITPHASES):
-        if firstWrite: # Write ('w') headers
-            firstWrite = False
-            with open(filename, 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(['LR_fx', 'LR_fy', 'LR_fz', 'LR_taux', 'LR_tauy', 'LR_tauz',
-                                 'LL_fx', 'LL_fy', 'LL_fz', 'LL_taux', 'LL_tauy', 'LL_tauz',]) 
-                writer.writerows(sol)
-        else: # Append ('a') log of other phases (prevent overwriting)
-            with open(filename, 'a', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerows(sol)
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['LR_fx', 'LR_fy', 'LR_fz', 'LR_taux', 'LR_tauy', 'LR_tauz',
+                         'LL_fx', 'LL_fy', 'LL_fz', 'LL_taux', 'LL_tauy', 'LL_tauz', ])
+        writer.writerows(fs)
 
 # Display the entire motion
 if WITHDISPLAY:
@@ -225,27 +218,3 @@ if WITHPLOT:
                                   figTitle=title,
                                   figIndex=i + 4,
                                   show=True if i == len(GAITPHASES) - 1 else False)
-        
-
-
-        # Plotting the contact forces
-        # forceDimName = ['x','y','z'] 
-        # plt.figure(figIndex + 2)
-
-        # plt.suptitle(figTitle)
-        # plt.subplot(2,1,1)
-        # [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
-        # plt.title('Contact Forces [LF]')
-        # plt.xlabel('Knots')
-        # plt.ylabel('Force [Nm]')
-        # plt.legend()
-
-        # plt.suptitle(figTitle)
-        # plt.subplot(2,1,2)
-        # plt.plot()
-        # plt.title('Contact Forces [RF]')
-        # plt.xlabel('Knots')
-        # plt.ylabel('Force [Nm]')
-        # plt.legend()
-        # if show:
-        #     plt.show()

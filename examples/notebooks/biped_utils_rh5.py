@@ -295,8 +295,7 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
                 xs_ub += [m.state.ub]
 
     # Getting the state and control trajectories
-    nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
- 
+    nx, nq, nu, nf = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0]
     X = [0.] * nx
     U = [0.] * nu
     F = [0.] * 12
@@ -305,6 +304,8 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
         U_UB = [0.] * nu
         X_LB = [0.] * nx
         X_UB = [0.] * nx
+    for i in range(nf):
+        F[i] = [np.asscalar(f[i]) for f in fs]
     for i in range(nx):
         X[i] = [np.asscalar(x[i]) for x in xs]
         if bounds:
@@ -432,24 +433,44 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
     # if show:
     #     plt.show()
 
-    # Plotting the contact forces
-    forceDimName = ['x','y','z'] 
+
+    # Plotting the contact wrenches
+    contactForceNames = ['fx','fy','fz'] 
+    contactMomentNames = ['taux','tauy','tauz']
     plt.figure(figIndex + 2)
 
     plt.suptitle(figTitle)
-    plt.subplot(2,1,1)
-    [plt.plot(F[k], label=forceDimName[i]) for i, k in enumerate(range(0, len(forceDimName)))]
-    plt.title('Contact Forces [LF]')
+    plt.subplot(2,2,1)
+    [plt.plot(F[k], label=contactForceNames[i]) for i, k in enumerate(range(0, 3))]
+    plt.title('Contact Forces [RF]')
     plt.xlabel('Knots')
-    plt.ylabel('Force [Nm]')
+    plt.ylabel('Force [N]')
     plt.legend()
 
     plt.suptitle(figTitle)
-    plt.subplot(2,1,2)
+    plt.subplot(2,2,2)
+    [plt.plot(F[k], label=contactMomentNames[i]) for i, k in enumerate(range(3, 6))]
     plt.plot()
-    plt.title('Contact Forces [RF]')
+    plt.title('Contact Moments [RF]')
     plt.xlabel('Knots')
-    plt.ylabel('Force [Nm]')
+    plt.ylabel('Moment [Nm]')
+    plt.legend()
+
+    plt.suptitle(figTitle)
+    plt.subplot(2,2,3)
+    [plt.plot(F[k], label=contactForceNames[i]) for i, k in enumerate(range(6, 9))]
+    plt.title('Contact Forces [LF]')
+    plt.xlabel('Knots')
+    plt.ylabel('Force [N]')
+    plt.legend()
+
+    plt.suptitle(figTitle)
+    plt.subplot(2,2,4)
+    [plt.plot(F[k], label=contactMomentNames[i]) for i, k in enumerate(range(9, nf))]
+    plt.plot()
+    plt.title('Contact Moments [LF]')
+    plt.xlabel('Knots')
+    plt.ylabel('Moment [Nm]')
     plt.legend()
     if show:
         plt.show()
