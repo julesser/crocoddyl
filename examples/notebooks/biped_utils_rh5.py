@@ -16,12 +16,12 @@ class SimpleBipedGaitProblem:
         # Defining default state
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init RH5 Full Body
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init Zero Configuration
-        """ q0 = np.matrix([0,0,0.90,0,0,0,1,              #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
+        q0 = np.matrix([0,0,0.90,0,0,0,1,              #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
-                        0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg """
-        q0 = np.matrix([0,0,0.88,0,0,0,1,              #q1-7:   Floating Base (quaternions) # Init like in smurf file
+                        0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg
+        """ q0 = np.matrix([0,0,0.88,0,0,0,1,              #q1-7:   Floating Base (quaternions) # Init like in smurf file
                         0,0,-0.353,0.642,0,-0.289,     #q8-13:  Left Leg     
-                        0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg
+                        0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg """
         self.q0 = q0
         self.rmodel.defaultState = np.concatenate([q0, np.zeros((self.rmodel.nv, 1))])
         self.firstStep = True
@@ -161,6 +161,7 @@ class SimpleBipedGaitProblem:
                                             self.rmodel.defaultState, self.actuation.nu)
         ctrlReg = crocoddyl.CostModelControl(self.state, self.actuation.nu)
         costModel.addCost("stateReg", stateReg, 1e1)
+        # costModel.addCost("stateReg", stateReg, 1e2)
         costModel.addCost("ctrlReg", ctrlReg, 1e-1)
 
         # Creating the action model for the KKT dynamics with simpletic Euler
@@ -408,36 +409,26 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
         plt.show()
 
     # Plotting the Center of Mass (y,z over x)
-    # plt.figure(figIndex + 1)
-    # plt.suptitle('CoM')
-    # plt.subplot(1, 2, 1)
-    # plt.plot(Cx, Cy)
-    # plt.xlabel('x [m]')
-    # plt.ylabel('y [m]')
-    # plt.grid(True)
-    # plt.subplot(1, 2, 2)
-    # plt.plot(Cx, Cz)
-    # plt.xlabel('x [m]')
-    # plt.ylabel('z [m]')
-    # plt.grid(True)
-    # if show:
-    #     plt.show()
-
-    # Plotting the Center of Mass (y over x)
-    # plt.figure(figIndex + 1)
-    # plt.plot(Cx, Cy)
-    # plt.title('CoM POSITION')
-    # plt.xlabel('x [m]')
-    # plt.ylabel('y [m]')
-    # plt.grid(True)
-    # if show:
-    #     plt.show()
+    plt.figure(figIndex + 2)
+    plt.suptitle('CoM')
+    plt.subplot(1, 2, 1)
+    plt.plot(Cx, Cy)
+    plt.xlabel('x [m]')
+    plt.ylabel('y [m]')
+    plt.grid(True)
+    plt.subplot(1, 2, 2)
+    plt.plot(Cx, Cz)
+    plt.xlabel('x [m]')
+    plt.ylabel('z [m]')
+    plt.grid(True)
+    if show:
+        plt.show()
 
 
     # Plotting the contact wrenches
     contactForceNames = ['fx','fy','fz'] 
     contactMomentNames = ['taux','tauy','tauz']
-    plt.figure(figIndex + 2)
+    plt.figure(figIndex + 3)
 
     plt.suptitle(figTitle)
     plt.subplot(2,2,1)

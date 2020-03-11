@@ -215,5 +215,5 @@ if WITHPLOT:
                                   log.stops,
                                   log.steps,
                                   figTitle=title,
-                                  figIndex=i + 4,
+                                  figIndex=i + 5,
                                   show=True if i == len(GAITPHASES) - 1 else False)
