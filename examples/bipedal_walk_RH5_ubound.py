@@ -116,7 +116,6 @@ for i, phase in enumerate(GAITPHASES):
 display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
 fsRel = np.zeros((len(GAITPHASES)*(len(ddp[i].models())-1),12)) # e.g. for 3 gaitphases = [3*nKnots,12]
 for i, phase in enumerate(GAITPHASES):
-    print(i)
     fs = display.getForceTrajectoryFromSolver(ddp[i])
     fs = fs[:-1] # Last element doubled
     #fsRel = np.zeros((len(fs),12))
@@ -138,7 +137,7 @@ fs = fsRel
 # Export solution to .csv file
 if WITHLOG:
     nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
-    filename = 'logSolutions/RH52Steps/logXs.csv'
+    filename = 'logSolutions/RH5Legs/logXs.csv'
     firstWrite = True
     rangeRelJoints = list(range(7,nq)) + list(range(nq + 6, nq + 18)) # Ignore floating base (fixed joints)
     X = [0.] * nx
@@ -167,7 +166,7 @@ if WITHLOG:
                 writer = csv.writer(f)
                 writer.writerows(sol)
 
-    filename = 'logSolutions/RH52Steps/logUs.csv'
+    filename = 'logSolutions/RH5Legs/logUs.csv'
     firstWrite = True
     U = [0.] * nu
     for i, phase in enumerate(GAITPHASES):
@@ -188,7 +187,7 @@ if WITHLOG:
                 writer = csv.writer(f)
                 writer.writerows(sol)
 
-    filename = 'logSolutions/RH52Steps/logFs.csv'
+    filename = 'logSolutions/RH5Legs/logFs.csv'
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['LR_fx', 'LR_fy', 'LR_fz', 'LR_taux', 'LR_tauy', 'LR_tauz',
