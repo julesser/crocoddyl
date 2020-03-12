@@ -131,7 +131,7 @@ for i, phase in enumerate(GAITPHASES):
                 for k in range(3):
                     fsRel[i*len(fs)+j,k+6] = wrench.linear[k]
                     fsRel[i*len(fs)+j,k+9] = wrench.angular[k]
-            print('Foot: ' + str(key), wrench) 
+            # print('Foot: ' + str(key), wrench) 
 fs = fsRel
 
 # Export solution to .csv file
@@ -139,7 +139,8 @@ if WITHLOG:
     nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
     filename = 'logSolutions/RH5Legs/logXs.csv'
     firstWrite = True
-    rangeRelJoints = list(range(7,nq)) + list(range(nq + 6, nq + 18)) # Ignore floating base (fixed joints)
+    # rangeRelJoints = list(range(7,nq)) + list(range(nq + 6, nq + 18)) # Ignore floating base (fixed joints)
+    allJoints = list(range(0,nx))
     X = [0.] * nx
     for i, phase in enumerate(GAITPHASES):
         log = ddp[i].getCallbacks()[0]
@@ -149,15 +150,17 @@ if WITHLOG:
         #Get relevant joints states (x_LF, x_RF, v_LF, v_RF)
         for j in range(nx):
             X[j] = [np.asscalar(x[j]) for x in log.xs] 
-        for k in rangeRelJoints:
+        for k in allJoints:
             XRel.append(X[k])
         sol = list(map(list, zip(*XRel))) #transpose
         if firstWrite: # Write ('w') headers
             firstWrite = False
             with open(filename, 'w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(['q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
+                writer.writerow(['q_FBaseX', 'q_FBaseY', 'q_FBaseZ', 'q_FBaseQ1', 'q_FBaseQ2', 'q_FBaseQ3', 'q_FBaseQ4',
+                                 'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
                                  'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
+                                 'v_FBaseX', 'v_FBaseY', 'v_FBaseZ', 'v_FBaseQ1', 'v_FBaseQ2', 'v_FBaseQ3', 'v_FBaseQ4'
                                  'v_LRHip1', 'v_LRHip2', 'v_LRHip3', 'v_LRKnee', 'v_LRAnkleRoll', 'v_LRAnklePitch',
                                  'v_LLHip1', 'v_LLHip2', 'v_LLHip3', 'v_LLKnee', 'v_LLAnkleRoll', 'v_LLAnklePitch']) 
                 writer.writerows(sol)
@@ -215,5 +218,19 @@ if WITHPLOT:
                                   log.stops,
                                   log.steps,
                                   figTitle=title,
-                                  figIndex=i + 5,
+                                  figIndex=i + 6,
                                   show=True if i == len(GAITPHASES) - 1 else False)
+
+def quaternion_to_euler(x, y, z, w):
+
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + y * y)
+    roll = math.atan2(t0, t1)
+    t2 = +2.0 * (w * y - z * x)
+    t2 = +1.0 if t2 > +1.0 else t2
+    t2 = -1.0 if t2 < -1.0 else t2
+    pitch = math.asin(t2)
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (y * y + z * z)
+    yaw = math.atan2(t3, t4)
+    return [yaw, pitch, roll]

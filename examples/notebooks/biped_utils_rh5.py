@@ -374,6 +374,19 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
     plt.legend()
 
 
+    # Plot floating base coordinates
+    baseTranslationNames = ['x', 'y', 'z']
+    plt.figure(figIndex + 1)
+    plt.suptitle('Floating Base Coordinates')
+    [plt.plot(X[k], label=baseTranslationNames[i]) for i, k in enumerate(range(0, 3))]
+    plt.xlabel('Knots')
+    plt.ylabel('Translation [m]')
+    plt.legend()
+    plt.grid(True)
+    if show:
+        plt.show()
+        
+
     # Get 3 dim CoM
     rdata = rmodel.createData()
     Cx = []
@@ -388,7 +401,7 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
     knots = list(range(0,len(Cz)))
 
     # Plotting the Center of Mass (x,y,z over knots)
-    plt.figure(figIndex + 1)
+    plt.figure(figIndex + 2)
     plt.suptitle('CoM')
     plt.subplot(1, 3, 1)
     plt.plot(knots, Cx)
@@ -409,7 +422,7 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
         plt.show()
 
     # Plotting the Center of Mass (y,z over x)
-    plt.figure(figIndex + 2)
+    plt.figure(figIndex + 3)
     plt.suptitle('CoM')
     plt.subplot(1, 2, 1)
     plt.plot(Cx, Cy)
@@ -428,7 +441,7 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
     # Plotting the contact wrenches
     contactForceNames = ['fx','fy','fz'] 
     contactMomentNames = ['taux','tauy','tauz']
-    plt.figure(figIndex + 3)
+    plt.figure(figIndex + 4)
 
     plt.suptitle(figTitle)
     plt.subplot(2,2,1)
@@ -465,3 +478,17 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
     plt.legend()
     if show:
         plt.show()
+
+
+def quaternion_to_euler(x, y, z, w):
+    t0 = +2.0 * (w * x + y * z)
+    t1 = +1.0 - 2.0 * (x * x + y * y)
+    roll = math.atan2(t0, t1)
+    t2 = +2.0 * (w * y - z * x)
+    t2 = +1.0 if t2 > +1.0 else t2
+    t2 = -1.0 if t2 < -1.0 else t2
+    pitch = math.asin(t2)
+    t3 = +2.0 * (w * z + x * y)
+    t4 = +1.0 - 2.0 * (y * y + z * z)
+    yaw = math.atan2(t3, t4)
+    return [yaw, pitch, roll]
