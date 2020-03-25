@@ -18,7 +18,8 @@ WITHLOG = 'log' in sys.argv
 crocoddyl.switchToNumpyMatrix()
 
 # Loading the RH5 Model
-modelPath = "/home/dfki.uni-bremen.de/jesser/Dev/rh5-models"
+# modelPath = "/home/dfki.uni-bremen.de/jesser/Dev/rh5-models"
+modelPath = "/home/julian/Dev/rh5-models"
 #URDF_FILENAME = "RH5_PkgPath.urdf"
 URDF_FILENAME = "RH5Legs_PkgPath_PtContact.urdf"
 URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
@@ -137,6 +138,8 @@ fs = fsRel
 # Export solution to .csv file
 if WITHLOG:
     nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
+    nv = rmodel.nv
+    print('nq: ' + str(nq) + '; nv: ' + str(nv))
     filename = 'logSolutions/RH5Legs/logXs.csv'
     firstWrite = True
     # rangeRelJoints = list(range(7,nq)) + list(range(nq + 6, nq + 18)) # Ignore floating base (fixed joints)
@@ -160,7 +163,7 @@ if WITHLOG:
                 writer.writerow(['q_FBaseX', 'q_FBaseY', 'q_FBaseZ', 'q_FBaseQ1', 'q_FBaseQ2', 'q_FBaseQ3', 'q_FBaseQ4',
                                  'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
                                  'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
-                                 'v_FBaseX', 'v_FBaseY', 'v_FBaseZ', 'v_FBaseQ1', 'v_FBaseQ2', 'v_FBaseQ3', 'v_FBaseQ4'
+                                 'v_FBaseX', 'v_FBaseY', 'v_FBaseZ', 'v_FBaseWx', 'v_FBaseWy', 'v_FBaseWz',
                                  'v_LRHip1', 'v_LRHip2', 'v_LRHip3', 'v_LRKnee', 'v_LRAnkleRoll', 'v_LRAnklePitch',
                                  'v_LLHip1', 'v_LLHip2', 'v_LLHip3', 'v_LLKnee', 'v_LLAnkleRoll', 'v_LLAnklePitch']) 
                 writer.writerows(sol)
