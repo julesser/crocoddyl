@@ -1,8 +1,14 @@
-Abbreviations: LR = Right Leg; LL = Left Leg
+Description of the ---file--- Contents:
 
-Variable Prefixes: 
-q_*: Positions {FloatingBase Pose, RL, LL}
-v_*: Velocities {FloatingBase Pose, RL, LL}
-u_*: Input Torques {LR, LL}
-*L_f*: Contact Forces 
-*L_tau*: Contact Moments 
+--- logBaseStates.csv ---
+Pose of the Floating Base {Position, Orientation (Quaternions)},
+Velocity of the Floating Base {Twist of Linear and Angular Velocities}
+
+--- logJointStatesAndEffort.csv ---
+q_*: Joint Positions 
+dq_*: Joint Velocities 
+Tau_*: Input Torques
+
+--- logContactWrenches.csv ---
+F*: Contact Forces 
+T*: Contact Moments 
