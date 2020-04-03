@@ -175,7 +175,6 @@ if WITHLOG:
     X = [0.] * nx
     for i, phase in enumerate(GAITPHASES):
         log = ddp[i].getCallbacks()[0]
-        log.xs = log.xs[:-1] # Don't consider last element (cmp. plotSolution; propably doubled)
         XRel = []
         sol = []
         #Get relevant joints states (x_LF, x_RF, v_LF, v_RF)
