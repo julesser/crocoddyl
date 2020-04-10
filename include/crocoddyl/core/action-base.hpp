@@ -23,6 +23,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ActionModelAbstractTpl {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef ActionDataAbstractTpl<Scalar> ActionDataAbstract;
@@ -44,6 +46,8 @@ class ActionModelAbstractTpl {
 
   void quasiStatic(const boost::shared_ptr<ActionDataAbstract>& data, Eigen::Ref<VectorXs> u,
                    const Eigen::Ref<const VectorXs>& x, const std::size_t& maxiter = 100, const Scalar& tol = 1e-9);
+  VectorXs quasiStatic_x(const boost::shared_ptr<ActionDataAbstract>& data, const VectorXs& x,
+                         const std::size_t& maxiter = 100, const Scalar& tol = 1e-9);
 
   const std::size_t& get_nu() const;
   const std::size_t& get_nr() const;
@@ -66,40 +70,12 @@ class ActionModelAbstractTpl {
   bool has_control_limits_;                             //!< Indicates whether any of the control limits is finite
 
   void update_has_control_limits();
-
-#ifdef PYTHON_BINDINGS
-
- public:
-  void calc_wrap(const boost::shared_ptr<ActionDataAbstract>& data, const VectorXs& x,
-                 const VectorXs& u = VectorXs()) {
-    if (u.size() == 0) {
-      calc(data, x);
-    } else {
-      calc(data, x, u);
-    }
-  }
-
-  void calcDiff_wrap(const boost::shared_ptr<ActionDataAbstract>& data, const VectorXs& x, const VectorXs& u) {
-    calcDiff(data, x, u);
-  }
-  void calcDiff_wrap(const boost::shared_ptr<ActionDataAbstract>& data, const VectorXs& x) {
-    calcDiff(data, x, unone_);
-  }
-
-  VectorXs quasiStatic_wrap(const boost::shared_ptr<ActionDataAbstract>& data, const VectorXs& x,
-                            const std::size_t& maxiter = 100, const Scalar& tol = 1e-9) {
-    VectorXs u(nu_);
-    u.setZero();
-    quasiStatic(data, u, x, maxiter, tol);
-    return u;
-  }
-
-#endif
 };
 
 template <typename _Scalar>
 struct ActionDataAbstractTpl {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
 

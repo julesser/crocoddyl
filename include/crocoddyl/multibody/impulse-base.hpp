@@ -21,6 +21,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ImpulseModelAbstractTpl {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef StateMultibodyTpl<Scalar> StateMultibody;
@@ -29,7 +31,7 @@ class ImpulseModelAbstractTpl {
   typedef typename MathBase::MatrixXs MatrixXs;
 
   ImpulseModelAbstractTpl(boost::shared_ptr<StateMultibody> state, const std::size_t& ni);
-  ~ImpulseModelAbstractTpl();
+  virtual ~ImpulseModelAbstractTpl();
 
   virtual void calc(const boost::shared_ptr<ImpulseDataAbstract>& data, const Eigen::Ref<const VectorXs>& x) = 0;
   virtual void calcDiff(const boost::shared_ptr<ImpulseDataAbstract>& data, const Eigen::Ref<const VectorXs>& x) = 0;
@@ -45,15 +47,6 @@ class ImpulseModelAbstractTpl {
  protected:
   boost::shared_ptr<StateMultibody> state_;
   std::size_t ni_;
-
-#ifdef PYTHON_BINDINGS
-
- public:
-  void calc_wrap(const boost::shared_ptr<ImpulseDataAbstract>& data, const VectorXs& x) { calc(data, x); }
-
-  void calcDiff_wrap(const boost::shared_ptr<ImpulseDataAbstract>& data, const VectorXs& x) { calcDiff(data, x); }
-
-#endif
 };
 
 template <typename _Scalar>
@@ -72,8 +65,8 @@ struct ImpulseDataAbstractTpl {
         frame(0),
         Jc(model->get_ni(), model->get_state()->get_nv()),
         dv0_dq(model->get_ni(), model->get_state()->get_nv()),
-        df_dq(model->get_ni(), model->get_state()->get_nv()),
-        f(pinocchio::ForceTpl<Scalar>::Zero()) {
+        f(pinocchio::ForceTpl<Scalar>::Zero()),
+        df_dq(model->get_ni(), model->get_state()->get_nv()) {
     Jc.setZero();
     dv0_dq.setZero();
     df_dq.setZero();
@@ -85,8 +78,8 @@ struct ImpulseDataAbstractTpl {
   pinocchio::FrameIndex frame;
   MatrixXs Jc;
   MatrixXs dv0_dq;
-  MatrixXs df_dq;
   pinocchio::ForceTpl<Scalar> f;
+  MatrixXs df_dq;
 };
 
 }  // namespace crocoddyl

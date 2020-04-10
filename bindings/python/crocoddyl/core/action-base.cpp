@@ -38,6 +38,9 @@ void exposeActionAbstract() {
            ":param data: action data\n"
            ":param x: time-discrete state vector\n"
            ":param u: time-discrete control input")
+      .def<void (ActionModelAbstract::*)(const boost::shared_ptr<ActionDataAbstract>&,
+                                         const Eigen::Ref<const Eigen::VectorXd>&)>("calc", &ActionModelAbstract::calc,
+                                                                                    bp::args("self", "data", "x"))
       .def("calcDiff", pure_virtual(&ActionModelAbstract_wrap::calcDiff), bp::args("self", "data", "x", "u"),
            "Compute the derivatives of the dynamics and cost functions.\n\n"
            "It computes the partial derivatives of the dynamical system and the\n"
@@ -47,12 +50,15 @@ void exposeActionAbstract() {
            ":param data: action data\n"
            ":param x: time-discrete state vector\n"
            ":param u: time-discrete control input\n")
+      .def<void (ActionModelAbstract::*)(const boost::shared_ptr<ActionDataAbstract>&,
+                                         const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &ActionModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &ActionModelAbstract_wrap::createData, bp::args("self"),
            "Create the action data.\n\n"
            "Each action model (AM) has its own data that needs to be allocated.\n"
            "This function returns the allocated data for a predefined AM.\n"
            ":return AM data.")
-      .def("quasiStatic", &ActionModelAbstract_wrap::quasiStatic_wrap,
+      .def("quasiStatic", &ActionModelAbstract_wrap::quasiStatic_x,
            ActionModel_quasiStatic_wraps(
                bp::args("self", "data", "x", "maxiter", "tol"),
                "Compute the quasic-static control given a state.\n\n"
@@ -77,14 +83,10 @@ void exposeActionAbstract() {
                     bp::make_function(&ActionModelAbstract_wrap::get_has_control_limits,
                                       bp::return_value_policy<bp::return_by_value>()),
                     "indicates whether problem has finite control limits")
-      .add_property(
-          "u_lb",
-          bp::make_function(&ActionModelAbstract_wrap::get_u_lb, bp::return_value_policy<bp::return_by_value>()),
-          &ActionModelAbstract_wrap::set_u_lb, "lower control limits")
-      .add_property(
-          "u_ub",
-          bp::make_function(&ActionModelAbstract_wrap::get_u_ub, bp::return_value_policy<bp::return_by_value>()),
-          &ActionModelAbstract_wrap::set_u_ub, "upper control limits");
+      .add_property("u_lb", bp::make_function(&ActionModelAbstract_wrap::get_u_lb, bp::return_internal_reference<>()),
+                    &ActionModelAbstract_wrap::set_u_lb, "lower control limits")
+      .add_property("u_ub", bp::make_function(&ActionModelAbstract_wrap::get_u_ub, bp::return_internal_reference<>()),
+                    &ActionModelAbstract_wrap::set_u_ub, "upper control limits");
 
   bp::register_ptr_to_python<boost::shared_ptr<ActionDataAbstract> >();
 
@@ -101,24 +103,23 @@ void exposeActionAbstract() {
                                      ":param model: action model"))
       .add_property("cost", bp::make_getter(&ActionDataAbstract::cost, bp::return_value_policy<bp::return_by_value>()),
                     bp::make_setter(&ActionDataAbstract::cost), "cost value")
-      .add_property("xnext",
-                    bp::make_getter(&ActionDataAbstract::xnext, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("xnext", bp::make_getter(&ActionDataAbstract::xnext, bp::return_internal_reference<>()),
                     bp::make_setter(&ActionDataAbstract::xnext), "next state")
-      .add_property("r", bp::make_getter(&ActionDataAbstract::r, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("r", bp::make_getter(&ActionDataAbstract::r, bp::return_internal_reference<>()),
                     bp::make_setter(&ActionDataAbstract::r), "cost residual")
-      .add_property("Fx", bp::make_getter(&ActionDataAbstract::Fx, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Fx", bp::make_getter(&ActionDataAbstract::Fx, bp::return_internal_reference<>()),
                     bp::make_setter(&ActionDataAbstract::Fx), "Jacobian of the dynamics")
-      .add_property("Fu", bp::make_getter(&ActionDataAbstract::Fu, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Fu", bp::make_getter(&ActionDataAbstract::Fu, bp::return_internal_reference<>()),
                     bp::make_setter(&ActionDataAbstract::Fu), "Jacobian of the dynamics")
-      .add_property("Lx", bp::make_getter(&ActionDataAbstract::Lx, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Lx", bp::make_getter(&ActionDataAbstract::Lx, bp::return_internal_reference<>()),
                     bp::make_setter(&ActionDataAbstract::Lx), "Jacobian of the cost")
-      .add_property("Lu", bp::make_getter(&ActionDataAbstract::Lu, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Lu", bp::make_getter(&ActionDataAbstract::Lu, bp::return_internal_reference<>()),
                     bp::make_setter(&ActionDataAbstract::Lu), "Jacobian of the cost")
-      .add_property("Lxx", bp::make_getter(&ActionDataAbstract::Lxx, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Lxx", bp::make_getter(&ActionDataAbstract::Lxx, bp::return_internal_reference<>()),
                     bp::make_setter(&ActionDataAbstract::Lxx), "Hessian of the cost")
-      .add_property("Lxu", bp::make_getter(&ActionDataAbstract::Lxu, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Lxu", bp::make_getter(&ActionDataAbstract::Lxu, bp::return_internal_reference<>()),
                     bp::make_setter(&ActionDataAbstract::Lxu), "Hessian of the cost")
-      .add_property("Luu", bp::make_getter(&ActionDataAbstract::Luu, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Luu", bp::make_getter(&ActionDataAbstract::Luu, bp::return_internal_reference<>()),
                     bp::make_setter(&ActionDataAbstract::Luu), "Hessian of the cost");
 }
 

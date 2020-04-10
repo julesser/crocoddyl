@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2018-2020, LAAS-CNRS, The University of Edinburgh
+// Copyright (C) 2018-2020, LAAS-CNRS, University of Edinburgh
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -20,6 +20,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class CostModelFramePlacementTpl : public CostModelAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef CostModelAbstractTpl<Scalar> Base;
@@ -40,23 +42,25 @@ class CostModelFramePlacementTpl : public CostModelAbstractTpl<_Scalar> {
   CostModelFramePlacementTpl(boost::shared_ptr<StateMultibody> state, const FramePlacement& Fref,
                              const std::size_t& nu);
   CostModelFramePlacementTpl(boost::shared_ptr<StateMultibody> state, const FramePlacement& Fref);
-  ~CostModelFramePlacementTpl();
+  virtual ~CostModelFramePlacementTpl();
 
-  void calc(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-            const Eigen::Ref<const VectorXs>& u);
-  void calcDiff(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-                const Eigen::Ref<const VectorXs>& u);
-  boost::shared_ptr<CostDataAbstract> createData(DataCollectorAbstract* const data);
+  virtual void calc(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
+                    const Eigen::Ref<const VectorXs>& u);
+  virtual void calcDiff(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
+                        const Eigen::Ref<const VectorXs>& u);
+  virtual boost::shared_ptr<CostDataAbstract> createData(DataCollectorAbstract* const data);
 
   const FramePlacement& get_Mref() const;
   void set_Mref(const FramePlacement& Mref_in);
 
  protected:
+  virtual void set_referenceImpl(const std::type_info& ti, const void* pv);
+  virtual void get_referenceImpl(const std::type_info& ti, void* pv);
+
   using Base::activation_;
   using Base::nu_;
   using Base::state_;
   using Base::unone_;
-  using Base::with_residuals_;
 
  private:
   FramePlacement Mref_;
@@ -66,6 +70,7 @@ class CostModelFramePlacementTpl : public CostModelAbstractTpl<_Scalar> {
 template <typename _Scalar>
 struct CostDataFramePlacementTpl : public CostDataAbstractTpl<_Scalar> {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef CostDataAbstractTpl<Scalar> Base;

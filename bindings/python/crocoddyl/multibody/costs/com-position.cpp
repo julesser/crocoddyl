@@ -45,22 +45,28 @@ void exposeCostCoMPosition() {
           "crocoddyl.ActivationModelQuad(3), and nu is equals to model.nv.\n"
           ":param state: state of the multibody system\n"
           ":param cref: reference CoM position"))
-      .def("calc", &CostModelCoMPosition::calc_wrap,
-           CostModel_calc_wraps(bp::args("self", "data", "x", "u"),
-                                "Compute the CoM position cost.\n\n"
-                                ":param data: cost data\n"
-                                ":param x: time-discrete state vector\n"
-                                ":param u: time-discrete control input"))
-      .def<void (CostModelCoMPosition::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&,
-                                          const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelCoMPosition::calcDiff_wrap, bp::args("self", "data", "x", "u"),
+      .def<void (CostModelCoMPosition::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                          const Eigen::Ref<const Eigen::VectorXd>&,
+                                          const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &CostModelCoMPosition::calc, bp::args("self", "data", "x", "u"),
+          "Compute the CoM position cost.\n\n"
+          ":param data: cost data\n"
+          ":param x: time-discrete state vector\n"
+          ":param u: time-discrete control input")
+      .def<void (CostModelCoMPosition::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                          const Eigen::Ref<const Eigen::VectorXd>&)>("calc", &CostModelAbstract::calc,
+                                                                                     bp::args("self", "data", "x"))
+      .def<void (CostModelCoMPosition::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                          const Eigen::Ref<const Eigen::VectorXd>&,
+                                          const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelCoMPosition::calcDiff, bp::args("self", "data", "x", "u"),
           "Compute the derivatives of the CoM position cost.\n\n"
           ":param data: action data\n"
           ":param x: time-discrete state vector\n"
           ":param u: time-discrete control input\n")
-
-      .def<void (CostModelCoMPosition::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelCoMPosition::calcDiff_wrap, bp::args("self", "data", "x"))
+      .def<void (CostModelCoMPosition::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                          const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &CostModelCoMPosition::createData, bp::with_custodian_and_ward_postcall<0, 2>(),
            bp::args("self", "data"),
            "Create the CoM position cost data.\n\n"
@@ -68,8 +74,9 @@ void exposeCostCoMPosition() {
            "returns the allocated data for a predefined cost.\n"
            ":param data: shared data\n"
            ":return cost data.")
-      .add_property("cref",
-                    bp::make_function(&CostModelCoMPosition::get_cref, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("reference", bp::make_function(&CostModelCoMPosition::get_cref, bp::return_internal_reference<>()),
+                    &CostModelCoMPosition::set_reference<Eigen::Vector3d>, "reference CoM position")
+      .add_property("cref", bp::make_function(&CostModelCoMPosition::get_cref, bp::return_internal_reference<>()),
                     &CostModelCoMPosition::set_cref, "reference CoM position");
 }
 

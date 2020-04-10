@@ -20,6 +20,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ImpulseModel6DTpl : public ImpulseModelAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef ImpulseModelAbstractTpl<Scalar> Base;
@@ -32,12 +34,12 @@ class ImpulseModel6DTpl : public ImpulseModelAbstractTpl<_Scalar> {
   typedef typename MathBase::MatrixXs MatrixXs;
 
   ImpulseModel6DTpl(boost::shared_ptr<StateMultibody> state, const std::size_t& frame);
-  ~ImpulseModel6DTpl();
+  virtual ~ImpulseModel6DTpl();
 
-  void calc(const boost::shared_ptr<ImpulseDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
-  void calcDiff(const boost::shared_ptr<ImpulseDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
-  void updateForce(const boost::shared_ptr<ImpulseDataAbstract>& data, const VectorXs& force);
-  boost::shared_ptr<ImpulseDataAbstract> createData(pinocchio::DataTpl<Scalar>* const data);
+  virtual void calc(const boost::shared_ptr<ImpulseDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
+  virtual void calcDiff(const boost::shared_ptr<ImpulseDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
+  virtual void updateForce(const boost::shared_ptr<ImpulseDataAbstract>& data, const VectorXs& force);
+  virtual boost::shared_ptr<ImpulseDataAbstract> createData(pinocchio::DataTpl<Scalar>* const data);
 
   const std::size_t& get_frame() const;
 
@@ -78,12 +80,6 @@ struct ImpulseData6DTpl : public ImpulseDataAbstractTpl<_Scalar> {
     v_partial_dv.setZero();
   }
 
-  pinocchio::SE3Tpl<Scalar> jMf;
-  typename pinocchio::SE3Tpl<Scalar>::ActionMatrixType fXj;
-  Matrix6xs fJf;
-  Matrix6xs v_partial_dq;
-  Matrix6xs v_partial_dv;
-
   using Base::df_dq;
   using Base::dv0_dq;
   using Base::f;
@@ -91,6 +87,12 @@ struct ImpulseData6DTpl : public ImpulseDataAbstractTpl<_Scalar> {
   using Base::Jc;
   using Base::joint;
   using Base::pinocchio;
+
+  pinocchio::SE3Tpl<Scalar> jMf;
+  typename pinocchio::SE3Tpl<Scalar>::ActionMatrixType fXj;
+  Matrix6xs fJf;
+  Matrix6xs v_partial_dq;
+  Matrix6xs v_partial_dv;
 };
 
 }  // namespace crocoddyl

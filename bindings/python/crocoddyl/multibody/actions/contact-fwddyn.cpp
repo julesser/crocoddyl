@@ -34,19 +34,24 @@ void exposeDifferentialActionContactFwdDynamics() {
           ":param costs: stack of cost functions\n"
           ":param inv_damping: Damping factor for cholesky decomposition of JMinvJt (default 0.)\n"
           ":param enable_force: Enable the computation of force Jacobians (default False)"))
-      .def("calc", &DifferentialActionModelContactFwdDynamics::calc_wrap,
-           DiffActionModel_calc_wraps(
-               bp::args("self", "data", "x", "u"),
-               "Compute the next state and cost value.\n\n"
-               "It describes the time-continuous evolution of the multibody system with contact. The\n"
-               "contacts are modelled as holonomic constraints.\n"
-               "Additionally it computes the cost value associated to this state and control pair.\n"
-               ":param data: contact forward-dynamics action data\n"
-               ":param x: time-continuous state vector\n"
-               ":param u: time-continuous control input"))
       .def<void (DifferentialActionModelContactFwdDynamics::*)(
-          const boost::shared_ptr<DifferentialActionDataAbstract>&, const Eigen::VectorXd&, const Eigen::VectorXd&)>(
-          "calcDiff", &DifferentialActionModelContactFwdDynamics::calcDiff_wrap, bp::args("self", "data", "x", "u"),
+          const boost::shared_ptr<DifferentialActionDataAbstract>&, const Eigen::Ref<const Eigen::VectorXd>&,
+          const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &DifferentialActionModelContactFwdDynamics::calc, bp::args("self", "data", "x", "u"),
+          "Compute the next state and cost value.\n\n"
+          "It describes the time-continuous evolution of the multibody system with contact. The\n"
+          "contacts are modelled as holonomic constraints.\n"
+          "Additionally it computes the cost value associated to this state and control pair.\n"
+          ":param data: contact forward-dynamics action data\n"
+          ":param x: time-continuous state vector\n"
+          ":param u: time-continuous control input")
+      .def<void (DifferentialActionModelContactFwdDynamics::*)(
+          const boost::shared_ptr<DifferentialActionDataAbstract>&, const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &DifferentialActionModelAbstract::calc, bp::args("self", "data", "x"))
+      .def<void (DifferentialActionModelContactFwdDynamics::*)(
+          const boost::shared_ptr<DifferentialActionDataAbstract>&, const Eigen::Ref<const Eigen::VectorXd>&,
+          const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &DifferentialActionModelContactFwdDynamics::calcDiff, bp::args("self", "data", "x", "u"),
           "Compute the derivatives of the differential multibody system and its cost\n"
           "functions.\n\n"
           "It computes the partial derivatives of the differential multibody system and the\n"
@@ -57,11 +62,8 @@ void exposeDifferentialActionContactFwdDynamics() {
           ":param x: time-continuous state vector\n"
           ":param u: time-continuous control input\n")
       .def<void (DifferentialActionModelContactFwdDynamics::*)(
-          const boost::shared_ptr<DifferentialActionDataAbstract>&, const Eigen::VectorXd&, const Eigen::VectorXd&)>(
-          "calcDiff", &DifferentialActionModelContactFwdDynamics::calcDiff_wrap, bp::args("self", "data", "x", "u"))
-      .def<void (DifferentialActionModelContactFwdDynamics::*)(
-          const boost::shared_ptr<DifferentialActionDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &DifferentialActionModelContactFwdDynamics::calcDiff_wrap, bp::args("self", "data", "x"))
+          const boost::shared_ptr<DifferentialActionDataAbstract>&, const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &DifferentialActionModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &DifferentialActionModelContactFwdDynamics::createData, bp::args("self"),
            "Create the contact forward dynamics differential action data.")
       .add_property("pinocchio",
@@ -110,18 +112,17 @@ void exposeDifferentialActionContactFwdDynamics() {
                     bp::make_getter(&DifferentialActionDataContactFwdDynamics::costs,
                                     bp::return_value_policy<bp::return_by_value>()),
                     "total cost data")
-      .add_property("Kinv",
-                    bp::make_getter(&DifferentialActionDataContactFwdDynamics::Kinv,
-                                    bp::return_value_policy<bp::return_by_value>()),
-                    "inverse of the KKT matrix")
-      .add_property("df_dx",
-                    bp::make_getter(&DifferentialActionDataContactFwdDynamics::df_dx,
-                                    bp::return_value_policy<bp::return_by_value>()),
-                    "Jacobian of the contact force")
-      .add_property("df_du",
-                    bp::make_getter(&DifferentialActionDataContactFwdDynamics::df_du,
-                                    bp::return_value_policy<bp::return_by_value>()),
-                    "Jacobian of the contact force");
+      .add_property(
+          "Kinv", bp::make_getter(&DifferentialActionDataContactFwdDynamics::Kinv, bp::return_internal_reference<>()),
+          "inverse of the KKT matrix")
+      .add_property(
+          "df_dx",
+          bp::make_getter(&DifferentialActionDataContactFwdDynamics::df_dx, bp::return_internal_reference<>()),
+          "Jacobian of the contact force")
+      .add_property(
+          "df_du",
+          bp::make_getter(&DifferentialActionDataContactFwdDynamics::df_du, bp::return_internal_reference<>()),
+          "Jacobian of the contact force");
 }
 
 }  // namespace python

@@ -20,45 +20,46 @@ void exposeCostAbstract() {
       "Abstract multibody cost model using Pinocchio.\n\n"
       "It defines a template of cost model whose residual and derivatives can be retrieved from\n"
       "Pinocchio data, through the calc and calcDiff functions, respectively.",
-      bp::init<boost::shared_ptr<StateMultibody>, boost::shared_ptr<ActivationModelAbstract>, int,
-               bp::optional<bool> >(bp::args("self", "state", "activation", "nu", "withResiduals"),
-                                    "Initialize the cost model.\n\n"
-                                    ":param state: state of the multibody system\n"
-                                    ":param activation: Activation model\n"
-                                    ":param nu: dimension of control vector (default model.nv)\n"
-                                    ":param withResiduals: true if the cost function has residuals (default True)"))
-      .def(
-          bp::init<boost::shared_ptr<StateMultibody>, boost::shared_ptr<ActivationModelAbstract>, bp::optional<bool> >(
-              bp::args("self", "state", "activation", "withResiduals"),
-              "Initialize the cost model.\n\n"
-              ":param state: state of the multibody system\n"
-              ":param activation: Activation model\n"
-              ":param withResiduals: true if the cost function has residuals (default True)"))
-      .def(bp::init<boost::shared_ptr<StateMultibody>, int, int, bp::optional<bool> >(
-          bp::args("self", "state", "nr", "nu", "withResiduals"),
+      bp::init<boost::shared_ptr<StateMultibody>, boost::shared_ptr<ActivationModelAbstract>, int>(
+          bp::args("self", "state", "activation", "nu"),
+          "Initialize the cost model.\n\n"
+          ":param state: state of the multibody system\n"
+          ":param activation: Activation model\n"
+          ":param nu: dimension of control vector (default model.nv)"))
+      .def(bp::init<boost::shared_ptr<StateMultibody>, boost::shared_ptr<ActivationModelAbstract> >(
+          bp::args("self", "state", "activation"),
+          "Initialize the cost model.\n\n"
+          ":param state: state of the multibody system\n"
+          ":param activation: Activation model"))
+      .def(bp::init<boost::shared_ptr<StateMultibody>, int, int>(
+          bp::args("self", "state", "nr", "nu"),
           "Initialize the cost model.\n\n"
           "For this case the default activation model is quadratic, i.e. crocoddyl.ActivationModelQuad(nr).\n"
           ":param state: state of the multibody system\n"
           ":param nr: dimension of cost vector\n"
-          ":param nu: dimension of control vector (default model.nv)\n"
-          ":param withResiduals: true if the cost function has residuals (default True)"))
-      .def(bp::init<boost::shared_ptr<StateMultibody>, int, bp::optional<bool> >(
-          bp::args("self", "state", "nr", "withResiduals"),
+          ":param nu: dimension of control vector (default model.nv)"))
+      .def(bp::init<boost::shared_ptr<StateMultibody>, int>(
+          bp::args("self", "state", "nr"),
           "Initialize the cost model.\n\n"
           "For this case the default activation model is quadratic, i.e. crocoddyl.ActivationModelQuad(nr).\n"
           ":param state: state of the multibody system\n"
-          ":param nr: dimension of cost vector\n"
-          ":param withResiduals: true if the cost function has residuals (default True)"))
+          ":param nr: dimension of cost vector"))
       .def("calc", pure_virtual(&CostModelAbstract_wrap::calc), bp::args("self", "data", "x", "u"),
            "Compute the cost value and its residuals.\n\n"
            ":param data: cost data\n"
            ":param x: state vector\n"
            ":param u: control input")
+      .def<void (CostModelAbstract::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                       const Eigen::Ref<const Eigen::VectorXd>&)>("calc", &CostModelAbstract::calc,
+                                                                                  bp::args("self", "data", "x"))
       .def("calcDiff", pure_virtual(&CostModelAbstract_wrap::calcDiff), bp::args("self", "data", "x", "u"),
            "Compute the derivatives of the cost function and its residuals.\n\n"
            ":param data: cost data\n"
            ":param x: state vector\n"
            ":param u: control input\n")
+      .def<void (CostModelAbstract::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                       const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &CostModelAbstract_wrap::createData, bp::with_custodian_and_ward_postcall<0, 2>(),
            bp::args("self", "data"),
            "Create the cost data.\n\n"
@@ -94,21 +95,21 @@ void exposeCostAbstract() {
                     "terminal data")
       .add_property("cost", bp::make_getter(&CostDataAbstract::cost, bp::return_value_policy<bp::return_by_value>()),
                     bp::make_setter(&CostDataAbstract::cost), "cost value")
-      .add_property("Lx", bp::make_getter(&CostDataAbstract::Lx, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Lx", bp::make_getter(&CostDataAbstract::Lx, bp::return_internal_reference<>()),
                     bp::make_setter(&CostDataAbstract::Lx), "Jacobian of the cost")
-      .add_property("Lu", bp::make_getter(&CostDataAbstract::Lu, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Lu", bp::make_getter(&CostDataAbstract::Lu, bp::return_internal_reference<>()),
                     bp::make_setter(&CostDataAbstract::Lu), "Jacobian of the cost")
-      .add_property("Lxx", bp::make_getter(&CostDataAbstract::Lxx, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Lxx", bp::make_getter(&CostDataAbstract::Lxx, bp::return_internal_reference<>()),
                     bp::make_setter(&CostDataAbstract::Lxx), "Hessian of the cost")
-      .add_property("Lxu", bp::make_getter(&CostDataAbstract::Lxu, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Lxu", bp::make_getter(&CostDataAbstract::Lxu, bp::return_internal_reference<>()),
                     bp::make_setter(&CostDataAbstract::Lxu), "Hessian of the cost")
-      .add_property("Luu", bp::make_getter(&CostDataAbstract::Luu, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Luu", bp::make_getter(&CostDataAbstract::Luu, bp::return_internal_reference<>()),
                     bp::make_setter(&CostDataAbstract::Luu), "Hessian of the cost")
-      .add_property("r", bp::make_getter(&CostDataAbstract::r, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("r", bp::make_getter(&CostDataAbstract::r, bp::return_internal_reference<>()),
                     bp::make_setter(&CostDataAbstract::r), "cost residual")
-      .add_property("Rx", bp::make_getter(&CostDataAbstract::Rx, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Rx", bp::make_getter(&CostDataAbstract::Rx, bp::return_internal_reference<>()),
                     bp::make_setter(&CostDataAbstract::Rx), "Jacobian of the cost residual")
-      .add_property("Ru", bp::make_getter(&CostDataAbstract::Ru, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Ru", bp::make_getter(&CostDataAbstract::Ru, bp::return_internal_reference<>()),
                     bp::make_setter(&CostDataAbstract::Ru), "Jacobian of the cost residual");
 }
 

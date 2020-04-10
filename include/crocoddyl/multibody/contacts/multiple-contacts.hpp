@@ -21,18 +21,25 @@ namespace crocoddyl {
 
 template <typename _Scalar>
 struct ContactItemTpl {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
+  typedef ContactModelAbstractTpl<Scalar> ContactModelAbstract;
+
   ContactItemTpl() {}
-  ContactItemTpl(const std::string& name, boost::shared_ptr<ContactModelAbstractTpl<Scalar> > contact)
-      : name(name), contact(contact) {}
+  ContactItemTpl(const std::string& name, boost::shared_ptr<ContactModelAbstract> contact, bool active = true)
+      : name(name), contact(contact), active(active) {}
 
   std::string name;
-  boost::shared_ptr<ContactModelAbstractTpl<Scalar> > contact;
+  boost::shared_ptr<ContactModelAbstract> contact;
+  bool active;
 };
 
 template <typename _Scalar>
 class ContactModelMultipleTpl {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef StateMultibodyTpl<Scalar> StateMultibody;
@@ -47,7 +54,7 @@ class ContactModelMultipleTpl {
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
 
-  typedef std::map<std::string, ContactItem> ContactModelContainer;
+  typedef std::map<std::string, boost::shared_ptr<ContactItem> > ContactModelContainer;
   typedef std::map<std::string, boost::shared_ptr<ContactDataAbstract> > ContactDataContainer;
   typedef typename pinocchio::container::aligned_vector<pinocchio::ForceTpl<Scalar> >::iterator ForceIterator;
 
@@ -55,8 +62,9 @@ class ContactModelMultipleTpl {
   ContactModelMultipleTpl(boost::shared_ptr<StateMultibody> state);
   ~ContactModelMultipleTpl();
 
-  void addContact(const std::string& name, boost::shared_ptr<ContactModelAbstract> contact);
+  void addContact(const std::string& name, boost::shared_ptr<ContactModelAbstract> contact, bool active = true);
   void removeContact(const std::string& name);
+  void changeContactStatus(const std::string& name, bool active);
 
   void calc(const boost::shared_ptr<ContactDataMultiple>& data, const Eigen::Ref<const VectorXs>& x);
   void calcDiff(const boost::shared_ptr<ContactDataMultiple>& data, const Eigen::Ref<const VectorXs>& x);
@@ -71,56 +79,51 @@ class ContactModelMultipleTpl {
   const boost::shared_ptr<StateMultibody>& get_state() const;
   const ContactModelContainer& get_contacts() const;
   const std::size_t& get_nc() const;
+  const std::size_t& get_nc_total() const;
   const std::size_t& get_nu() const;
 
  private:
   boost::shared_ptr<StateMultibody> state_;
   ContactModelContainer contacts_;
   std::size_t nc_;
+  std::size_t nc_total_;
   std::size_t nu_;
-
-#ifdef PYTHON_BINDINGS
-
- public:
-  void calc_wrap(const boost::shared_ptr<ContactDataMultiple>& data, const VectorXs& x) { calc(data, x); }
-
-  void calcDiff_wrap(const boost::shared_ptr<ContactDataMultiple>& data, const VectorXs& x) { calcDiff(data, x); }
-
-#endif
 };
 
 template <typename _Scalar>
-struct ContactDataMultipleTpl : ContactDataAbstractTpl<_Scalar> {
+struct ContactDataMultipleTpl {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
-  typedef ContactDataAbstractTpl<Scalar> Base;
   typedef ContactModelMultipleTpl<Scalar> ContactModelMultiple;
   typedef ContactItemTpl<Scalar> ContactItem;
-
-  typedef typename MathBase::Vector2s Vector2s;
-  typedef typename MathBase::Vector3s Vector3s;
-  typedef typename MathBase::Matrix3s Matrix3s;
-  typedef typename MathBase::Matrix6xs Matrix6xs;
-  typedef typename MathBase::Matrix6s Matrix6s;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
 
   template <template <typename Scalar> class Model>
   ContactDataMultipleTpl(Model<Scalar>* const model, pinocchio::DataTpl<Scalar>* const data)
-      : Base(model, data),
+      : Jc(model->get_nc_total(), model->get_state()->get_nv()),
+        a0(model->get_nc_total()),
+        da0_dx(model->get_nc_total(), model->get_state()->get_ndx()),
         dv(model->get_state()->get_nv()),
         ddv_dx(model->get_state()->get_nv(), model->get_state()->get_ndx()),
         fext(model->get_state()->get_pinocchio()->njoints, pinocchio::ForceTpl<Scalar>::Zero()) {
+    Jc.setZero();
+    a0.setZero();
+    da0_dx.setZero();
     dv.setZero();
     ddv_dx.setZero();
     for (typename ContactModelMultiple::ContactModelContainer::const_iterator it = model->get_contacts().begin();
          it != model->get_contacts().end(); ++it) {
-      const ContactItem& item = it->second;
-      contacts.insert(std::make_pair(item.name, item.contact->createData(data)));
+      const boost::shared_ptr<ContactItem>& item = it->second;
+      contacts.insert(std::make_pair(item->name, item->contact->createData(data)));
     }
   }
 
+  MatrixXs Jc;
+  VectorXs a0;
+  MatrixXs da0_dx;
   VectorXs dv;
   MatrixXs ddv_dx;
   typename ContactModelMultiple::ContactDataContainer contacts;

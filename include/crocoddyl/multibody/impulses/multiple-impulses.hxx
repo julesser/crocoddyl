@@ -13,20 +13,23 @@ namespace crocoddyl {
 
 template <typename Scalar>
 ImpulseModelMultipleTpl<Scalar>::ImpulseModelMultipleTpl(boost::shared_ptr<StateMultibody> state)
-    : state_(state), ni_(0) {}
+    : state_(state), ni_(0), ni_total_(0) {}
 
 template <typename Scalar>
 ImpulseModelMultipleTpl<Scalar>::~ImpulseModelMultipleTpl() {}
 
 template <typename Scalar>
 void ImpulseModelMultipleTpl<Scalar>::addImpulse(const std::string& name,
-                                                 boost::shared_ptr<ImpulseModelAbstract> impulse) {
+                                                 boost::shared_ptr<ImpulseModelAbstract> impulse, bool active) {
   std::pair<typename ImpulseModelContainer::iterator, bool> ret =
-      impulses_.insert(std::make_pair(name, ImpulseItem(name, impulse)));
+      impulses_.insert(std::make_pair(name, boost::make_shared<ImpulseItem>(name, impulse, active)));
   if (ret.second == false) {
     std::cout << "Warning: this impulse item already existed, we cannot add it" << std::endl;
-  } else {
+  } else if (active) {
     ni_ += impulse->get_ni();
+    ni_total_ += impulse->get_ni();
+  } else if (!active) {
+    ni_total_ += impulse->get_ni();
   }
 }
 
@@ -34,10 +37,26 @@ template <typename Scalar>
 void ImpulseModelMultipleTpl<Scalar>::removeImpulse(const std::string& name) {
   typename ImpulseModelContainer::iterator it = impulses_.find(name);
   if (it != impulses_.end()) {
-    ni_ -= it->second.impulse->get_ni();
+    ni_ -= it->second->impulse->get_ni();
+    ni_total_ -= it->second->impulse->get_ni();
     impulses_.erase(it);
   } else {
     std::cout << "Warning: this impulse item doesn't exist, we cannot remove it" << std::endl;
+  }
+}
+
+template <typename Scalar>
+void ImpulseModelMultipleTpl<Scalar>::changeImpulseStatus(const std::string& name, bool active) {
+  typename ImpulseModelContainer::iterator it = impulses_.find(name);
+  if (it != impulses_.end()) {
+    if (active && !it->second->active) {
+      ni_ += it->second->impulse->get_ni();
+    } else if (!active && it->second->active) {
+      ni_ -= it->second->impulse->get_ni();
+    }
+    it->second->active = active;
+  } else {
+    std::cout << "Warning: this impulse item doesn't exist, we cannot change its status" << std::endl;
   }
 }
 
@@ -55,14 +74,16 @@ void ImpulseModelMultipleTpl<Scalar>::calc(const boost::shared_ptr<ImpulseDataMu
   typename ImpulseDataContainer::iterator it_d, end_d;
   for (it_m = impulses_.begin(), end_m = impulses_.end(), it_d = data->impulses.begin(), end_d = data->impulses.end();
        it_m != end_m || it_d != end_d; ++it_m, ++it_d) {
-    const ImpulseItem& m_i = it_m->second;
-    boost::shared_ptr<ImpulseDataAbstract>& d_i = it_d->second;
-    assert_pretty(it_m->first == it_d->first, "it doesn't match the impulse name between data and model");
+    const boost::shared_ptr<ImpulseItem>& m_i = it_m->second;
+    if (m_i->active) {
+      const boost::shared_ptr<ImpulseDataAbstract>& d_i = it_d->second;
+      assert_pretty(it_m->first == it_d->first, "it doesn't match the impulse name between data and model");
 
-    m_i.impulse->calc(d_i, x);
-    const std::size_t& ni_i = m_i.impulse->get_ni();
-    data->Jc.block(ni, 0, ni_i, nv) = d_i->Jc;
-    ni += ni_i;
+      m_i->impulse->calc(d_i, x);
+      const std::size_t& ni_i = m_i->impulse->get_ni();
+      data->Jc.block(ni, 0, ni_i, nv) = d_i->Jc;
+      ni += ni_i;
+    }
   }
 }
 
@@ -80,14 +101,16 @@ void ImpulseModelMultipleTpl<Scalar>::calcDiff(const boost::shared_ptr<ImpulseDa
   typename ImpulseDataContainer::iterator it_d, end_d;
   for (it_m = impulses_.begin(), end_m = impulses_.end(), it_d = data->impulses.begin(), end_d = data->impulses.end();
        it_m != end_m || it_d != end_d; ++it_m, ++it_d) {
-    const ImpulseItem& m_i = it_m->second;
-    boost::shared_ptr<ImpulseDataAbstract>& d_i = it_d->second;
-    assert_pretty(it_m->first == it_d->first, "it doesn't match the impulse name between data and model");
+    const boost::shared_ptr<ImpulseItem>& m_i = it_m->second;
+    if (m_i->active) {
+      const boost::shared_ptr<ImpulseDataAbstract>& d_i = it_d->second;
+      assert_pretty(it_m->first == it_d->first, "it doesn't match the impulse name between data and model");
 
-    m_i.impulse->calcDiff(d_i, x);
-    const std::size_t& ni_i = m_i.impulse->get_ni();
-    data->dv0_dq.block(ni, 0, ni_i, nv) = d_i->dv0_dq;
-    ni += ni_i;
+      m_i->impulse->calcDiff(d_i, x);
+      const std::size_t& ni_i = m_i->impulse->get_ni();
+      data->dv0_dq.block(ni, 0, ni_i, nv) = d_i->dv0_dq;
+      ni += ni_i;
+    }
   }
 }
 
@@ -122,15 +145,17 @@ void ImpulseModelMultipleTpl<Scalar>::updateForce(const boost::shared_ptr<Impuls
   typename ImpulseDataContainer::iterator it_d, end_d;
   for (it_m = impulses_.begin(), end_m = impulses_.end(), it_d = data->impulses.begin(), end_d = data->impulses.end();
        it_m != end_m || it_d != end_d; ++it_m, ++it_d) {
-    const ImpulseItem& m_i = it_m->second;
-    boost::shared_ptr<ImpulseDataAbstract>& d_i = it_d->second;
-    assert_pretty(it_m->first == it_d->first, "it doesn't match the impulse name between data and model");
+    const boost::shared_ptr<ImpulseItem>& m_i = it_m->second;
+    if (m_i->active) {
+      const boost::shared_ptr<ImpulseDataAbstract>& d_i = it_d->second;
+      assert_pretty(it_m->first == it_d->first, "it doesn't match the impulse name between data and model");
 
-    const std::size_t& ni_i = m_i.impulse->get_ni();
-    const Eigen::VectorBlock<const VectorXs, Eigen::Dynamic> force_i = force.segment(ni, ni_i);
-    m_i.impulse->updateForce(d_i, force_i);
-    data->fext[d_i->joint] = d_i->f;
-    ni += ni_i;
+      const std::size_t& ni_i = m_i->impulse->get_ni();
+      const Eigen::VectorBlock<const VectorXs, Eigen::Dynamic> force_i = force.segment(ni, ni_i);
+      m_i->impulse->updateForce(d_i, force_i);
+      data->fext[d_i->joint] = d_i->f;
+      ni += ni_i;
+    }
   }
 }
 
@@ -164,14 +189,16 @@ void ImpulseModelMultipleTpl<Scalar>::updateForceDiff(const boost::shared_ptr<Im
   typename ImpulseDataContainer::const_iterator it_d, end_d;
   for (it_m = impulses_.begin(), end_m = impulses_.end(), it_d = data->impulses.begin(), end_d = data->impulses.end();
        it_m != end_m || it_d != end_d; ++it_m, ++it_d) {
-    const ImpulseItem& m_i = it_m->second;
-    const boost::shared_ptr<ImpulseDataAbstract>& d_i = it_d->second;
-    assert_pretty(it_m->first == it_d->first, "it doesn't match the impulse name between data and model");
+    const boost::shared_ptr<ImpulseItem>& m_i = it_m->second;
+    if (m_i->active) {
+      const boost::shared_ptr<ImpulseDataAbstract>& d_i = it_d->second;
+      assert_pretty(it_m->first == it_d->first, "it doesn't match the impulse name between data and model");
 
-    const std::size_t& ni_i = m_i.impulse->get_ni();
-    const Eigen::Block<const MatrixXs> df_dq_i = df_dq.block(ni, 0, ni_i, nv);
-    m_i.impulse->updateForceDiff(d_i, df_dq_i);
-    ni += ni_i;
+      const std::size_t& ni_i = m_i->impulse->get_ni();
+      const Eigen::Block<const MatrixXs> df_dq_i = df_dq.block(ni, 0, ni_i, nv);
+      m_i->impulse->updateForceDiff(d_i, df_dq_i);
+      ni += ni_i;
+    }
   }
 }
 
@@ -195,6 +222,11 @@ const typename ImpulseModelMultipleTpl<Scalar>::ImpulseModelContainer& ImpulseMo
 template <typename Scalar>
 const std::size_t& ImpulseModelMultipleTpl<Scalar>::get_ni() const {
   return ni_;
+}
+
+template <typename Scalar>
+const std::size_t& ImpulseModelMultipleTpl<Scalar>::get_ni_total() const {
+  return ni_total_;
 }
 
 }  // namespace crocoddyl

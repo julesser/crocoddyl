@@ -19,6 +19,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class CostModelCoMPositionTpl : public CostModelAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef CostModelAbstractTpl<Scalar> Base;
@@ -38,23 +40,25 @@ class CostModelCoMPositionTpl : public CostModelAbstractTpl<_Scalar> {
                           boost::shared_ptr<ActivationModelAbstract> activation, const Vector3s& cref);
   CostModelCoMPositionTpl(boost::shared_ptr<StateMultibody> state, const Vector3s& cref, const std::size_t& nu);
   CostModelCoMPositionTpl(boost::shared_ptr<StateMultibody> state, const Vector3s& cref);
-  ~CostModelCoMPositionTpl();
+  virtual ~CostModelCoMPositionTpl();
 
-  void calc(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-            const Eigen::Ref<const VectorXs>& u);
-  void calcDiff(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-                const Eigen::Ref<const VectorXs>& u);
-  boost::shared_ptr<CostDataAbstract> createData(DataCollectorAbstract* const data);
+  virtual void calc(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
+                    const Eigen::Ref<const VectorXs>& u);
+  virtual void calcDiff(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
+                        const Eigen::Ref<const VectorXs>& u);
+  virtual boost::shared_ptr<CostDataAbstract> createData(DataCollectorAbstract* const data);
 
   const Vector3s& get_cref() const;
   void set_cref(const Vector3s& cref_in);
 
  protected:
+  virtual void set_referenceImpl(const std::type_info& ti, const void* pv);
+  virtual void get_referenceImpl(const std::type_info& ti, void* pv);
+
   using Base::activation_;
   using Base::nu_;
   using Base::state_;
   using Base::unone_;
-  using Base::with_residuals_;
 
  private:
   Vector3s cref_;

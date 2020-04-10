@@ -20,17 +20,16 @@ void exposeActivationNumDiff() {
           bp::args("self", "model"),
           "Initialize the activation model NumDiff.\n\n"
           ":param model: activation model where we compute the derivatives through NumDiff"))
-      .def("calc", &ActivationModelNumDiff::calc_wrap, bp::args("self", "data", "r"),
+      .def("calc", &ActivationModelNumDiff::calc, bp::args("self", "data", "r"),
            "Compute the activation value.\n\n"
            "The activation evolution is described in model.\n"
            ":param data: NumDiff action data\n"
            ":param r: residual vector")
-      .def<void (ActivationModelNumDiff::*)(const boost::shared_ptr<ActivationDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &ActivationModelNumDiff::calcDiff_wrap, bp::args("self", "data", "r"),
-          "Compute the derivatives of the residual.\n\n"
-          "It computes the Jacobian and Hessian using numerical differentiation.\n"
-          ":param data: NumDiff action data\n"
-          ":param r: residual vector\n")
+      .def("calcDiff", &ActivationModelNumDiff::calcDiff, bp::args("self", "data", "r"),
+           "Compute the derivatives of the residual.\n\n"
+           "It computes the Jacobian and Hessian using numerical differentiation.\n"
+           ":param data: NumDiff action data\n"
+           ":param r: residual vector\n")
       .def("createData", &ActivationModelNumDiff::createData, bp::args("self"),
            "Create the activation data.\n\n"
            "Each activation model (AM) has its own data that needs to be allocated.\n"
@@ -52,9 +51,9 @@ void exposeActivationNumDiff() {
       bp::init<ActivationModelNumDiff*>(bp::args("self", "model"),
                                         "Create numerical differentiation activation data.\n\n"
                                         ":param model: numdiff activation model"))
-      .add_property("dr", bp::make_getter(&ActivationDataNumDiff::dr, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("dr", bp::make_getter(&ActivationDataNumDiff::dr, bp::return_internal_reference<>()),
                     "disturbance.")
-      .add_property("rp", bp::make_getter(&ActivationDataNumDiff::rp, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("rp", bp::make_getter(&ActivationDataNumDiff::rp, bp::return_internal_reference<>()),
                     "input plus the disturbance.")
       .add_property("data_0",
                     bp::make_getter(&ActivationDataNumDiff::data_0, bp::return_value_policy<bp::return_by_value>()),

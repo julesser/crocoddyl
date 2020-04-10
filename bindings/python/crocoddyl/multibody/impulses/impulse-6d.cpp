@@ -23,13 +23,13 @@ void exposeImpulse6D() {
                                                        "Initialize the impulse model.\n\n"
                                                        ":param state: state of the multibody system\n"
                                                        ":param frame: reference frame id"))
-      .def("calc", &ImpulseModel6D::calc_wrap, bp::args("self", "data", "x"),
+      .def("calc", &ImpulseModel6D::calc, bp::args("self", "data", "x"),
            "Compute the 6D impulse Jacobian and drift.\n\n"
            "The rigid impulse model throught acceleration-base holonomic constraint\n"
            "of the impulse frame placement.\n"
            ":param data: impulse data\n"
            ":param x: state vector")
-      .def("calcDiff", &ImpulseModel6D::calcDiff_wrap, bp::args("self", "data", "x"),
+      .def("calcDiff", &ImpulseModel6D::calcDiff, bp::args("self", "data", "x"),
            "Compute the derivatives of the 6D impulse holonomic constraint.\n\n"
            "The rigid impulse model throught acceleration-base holonomic constraint\n"
            "of the impulse frame placement.\n"
@@ -63,13 +63,11 @@ void exposeImpulse6D() {
                     "local frame placement of the impulse frame")
       .add_property("fXj", bp::make_getter(&ImpulseData6D::fXj, bp::return_value_policy<bp::return_by_value>()),
                     "action matrix from impulse to local frames")
-      .add_property("fJf", bp::make_getter(&ImpulseData6D::fJf, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("fJf", bp::make_getter(&ImpulseData6D::fJf, bp::return_internal_reference<>()),
                     "local Jacobian of the impulse frame")
-      .add_property("v_partial_dq",
-                    bp::make_getter(&ImpulseData6D::v_partial_dq, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("v_partial_dq", bp::make_getter(&ImpulseData6D::v_partial_dq, bp::return_internal_reference<>()),
                     "Jacobian of the spatial body velocity")
-      .add_property("v_partial_dv",
-                    bp::make_getter(&ImpulseData6D::v_partial_dv, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("v_partial_dv", bp::make_getter(&ImpulseData6D::v_partial_dv, bp::return_internal_reference<>()),
                     "Jacobian of the spatial body velocity");
 }
 

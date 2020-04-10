@@ -70,31 +70,38 @@ void exposeCostState() {
           "For this case the default xref is the zeros state, i.e. state.zero(), the default activation\n"
           "model is quadratic, i.e. crocoddyl.ActivationModelQuad(state.ndx), and nu is equals to model.nv.\n"
           ":param state: state of the multibody system"))
-      .def("calc", &CostModelState::calc_wrap,
-           CostModel_calc_wraps(bp::args("self", "data", "x", "u"),
-                                "Compute the state cost.\n\n"
-                                ":param data: cost data\n"
-                                ":param x: time-discrete state vector\n"
-                                ":param u: time-discrete control input"))
-      .def<void (CostModelState::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&,
-                                    const Eigen::VectorXd&)>("calcDiff", &CostModelState::calcDiff_wrap,
-                                                             bp::args("self", "data", "x", "u"),
-                                                             "Compute the derivatives of the state cost.\n\n"
-                                                             ":param data: action data\n"
-                                                             ":param x: time-discrete state vector\n"
-                                                             ":param u: time-discrete control input\n")
-      .def<void (CostModelState::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelState::calcDiff_wrap, bp::args("self", "data", "x"))
-      .add_property("xref",
-                    bp::make_function(&CostModelState::get_xref, bp::return_value_policy<bp::return_by_value>()),
-                    "reference state")
+      .def<void (CostModelState::*)(
+          const boost::shared_ptr<CostDataAbstract>&, const Eigen::Ref<const Eigen::VectorXd>&,
+          const Eigen::Ref<const Eigen::VectorXd>&)>("calc", &CostModelState::calc, bp::args("self", "data", "x", "u"),
+                                                     "Compute the state cost.\n\n"
+                                                     ":param data: cost data\n"
+                                                     ":param x: time-discrete state vector\n"
+                                                     ":param u: time-discrete control input")
+      .def<void (CostModelState::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&)>("calc", &CostModelAbstract::calc,
+                                                                               bp::args("self", "data", "x"))
+      .def<void (CostModelState::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelState::calcDiff, bp::args("self", "data", "x", "u"),
+          "Compute the derivatives of the state cost.\n\n"
+          ":param data: action data\n"
+          ":param x: time-discrete state vector\n"
+          ":param u: time-discrete control input\n")
+      .def<void (CostModelState::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                    const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &CostModelState::createData, bp::with_custodian_and_ward_postcall<0, 2>(),
            bp::args("self", "data"),
            "Create the state cost data.\n\n"
            "Each cost model has its own data that needs to be allocated. This function\n"
            "returns the allocated data for a predefined cost.\n"
            ":param data: shared data\n"
-           ":return cost data.");
+           ":return cost data.")
+      .add_property("reference", bp::make_function(&CostModelState::get_xref, bp::return_internal_reference<>()),
+                    &CostModelState::set_reference<Eigen::VectorXd>, "reference state")
+      .add_property("xref", bp::make_function(&CostModelState::get_xref, bp::return_internal_reference<>()),
+                    "reference state");
 }
 
 }  // namespace python

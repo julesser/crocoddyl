@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2018-2019, LAAS-CNRS
+// Copyright (C) 2018-2020, LAAS-CNRS, University of Edinburgh
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -17,6 +17,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class StateMultibodyTpl : public StateAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef StateAbstractTpl<Scalar> Base;
@@ -26,18 +28,19 @@ class StateMultibodyTpl : public StateAbstractTpl<_Scalar> {
   enum JointType { FreeFlyer = 0, Spherical, Simple };
 
   explicit StateMultibodyTpl(boost::shared_ptr<pinocchio::ModelTpl<Scalar> > model);
-  ~StateMultibodyTpl();
+  virtual ~StateMultibodyTpl();
 
-  VectorXs zero() const;
-  VectorXs rand() const;
-  void diff(const Eigen::Ref<const VectorXs>& x0, const Eigen::Ref<const VectorXs>& x1,
-            Eigen::Ref<VectorXs> dxout) const;
-  void integrate(const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& dx,
-                 Eigen::Ref<VectorXs> xout) const;
-  void Jdiff(const Eigen::Ref<const VectorXs>&, const Eigen::Ref<const VectorXs>&, Eigen::Ref<MatrixXs> Jfirst,
-             Eigen::Ref<MatrixXs> Jsecond, Jcomponent firstsecond = both) const;
-  void Jintegrate(const Eigen::Ref<const VectorXs>&, const Eigen::Ref<const VectorXs>&, Eigen::Ref<MatrixXs> Jfirst,
-                  Eigen::Ref<MatrixXs> Jsecond, Jcomponent firstsecond = both) const;
+  virtual VectorXs zero() const;
+  virtual VectorXs rand() const;
+  virtual void diff(const Eigen::Ref<const VectorXs>& x0, const Eigen::Ref<const VectorXs>& x1,
+                    Eigen::Ref<VectorXs> dxout) const;
+  virtual void integrate(const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& dx,
+                         Eigen::Ref<VectorXs> xout) const;
+  virtual void Jdiff(const Eigen::Ref<const VectorXs>&, const Eigen::Ref<const VectorXs>&, Eigen::Ref<MatrixXs> Jfirst,
+                     Eigen::Ref<MatrixXs> Jsecond, Jcomponent firstsecond = both) const;
+  virtual void Jintegrate(const Eigen::Ref<const VectorXs>&, const Eigen::Ref<const VectorXs>&,
+                          Eigen::Ref<MatrixXs> Jfirst, Eigen::Ref<MatrixXs> Jsecond,
+                          Jcomponent firstsecond = both) const;
 
   const boost::shared_ptr<pinocchio::ModelTpl<Scalar> >& get_pinocchio() const;
 

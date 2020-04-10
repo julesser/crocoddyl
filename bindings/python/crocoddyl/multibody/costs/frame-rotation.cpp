@@ -45,21 +45,28 @@ void exposeCostFrameRotation() {
           "crocoddyl.ActivationModelQuad(6), and nu is equals to model.nv.\n"
           ":param state: state of the multibody system\n"
           ":param Rref: reference frame rotation"))
-      .def("calc", &CostModelFrameRotation::calc_wrap,
-           CostModel_calc_wraps(bp::args("self", "data", "x", "u"),
-                                "Compute the frame rotation cost.\n\n"
-                                ":param data: cost data\n"
-                                ":param x: time-discrete state vector\n"
-                                ":param u: time-discrete control input"))
-      .def<void (CostModelFrameRotation::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&,
-                                            const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelFrameRotation::calcDiff_wrap, bp::args("self", "data", "x", "u"),
+      .def<void (CostModelFrameRotation::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &CostModelFrameRotation::calc, bp::args("self", "data", "x", "u"),
+          "Compute the frame rotation cost.\n\n"
+          ":param data: cost data\n"
+          ":param x: time-discrete state vector\n"
+          ":param u: time-discrete control input")
+      .def<void (CostModelFrameRotation::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &CostModelAbstract::calc, bp::args("self", "data", "x"))
+      .def<void (CostModelFrameRotation::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelFrameRotation::calcDiff, bp::args("self", "data", "x", "u"),
           "Compute the derivatives of the frame rotation cost.\n\n"
           ":param data: action data\n"
           ":param x: time-discrete state vector\n"
           ":param u: time-discrete control input\n")
-      .def<void (CostModelFrameRotation::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelFrameRotation::calcDiff_wrap, bp::args("self", "data", "x"))
+      .def<void (CostModelFrameRotation::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &CostModelFrameRotation::createData, bp::with_custodian_and_ward_postcall<0, 2>(),
            bp::args("self", "data"),
            "Create the frame rotation cost data.\n\n"
@@ -67,6 +74,9 @@ void exposeCostFrameRotation() {
            "returns the allocated data for a predefined cost.\n"
            ":param data: shared data\n"
            ":return cost data.")
+      .add_property("reference",
+                    bp::make_function(&CostModelFrameRotation::get_Rref, bp::return_internal_reference<>()),
+                    &CostModelFrameRotation::set_reference<FrameRotation>, "reference frame rotation")
       .add_property("Rref", bp::make_function(&CostModelFrameRotation::get_Rref, bp::return_internal_reference<>()),
                     &CostModelFrameRotation::set_Rref, "reference frame rotation");
 
@@ -79,18 +89,15 @@ void exposeCostFrameRotation() {
           "Create frame rotation cost data.\n\n"
           ":param model: frame rotation cost model\n"
           ":param data: shared data")[bp::with_custodian_and_ward<1, 2, bp::with_custodian_and_ward<1, 3> >()])
-      .add_property("r", bp::make_getter(&CostDataFrameRotation::r, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("r", bp::make_getter(&CostDataFrameRotation::r, bp::return_internal_reference<>()),
                     "cost residual")
-      .add_property("rRf",
-                    bp::make_getter(&CostDataFrameRotation::rRf, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("rRf", bp::make_getter(&CostDataFrameRotation::rRf, bp::return_internal_reference<>()),
                     "rotation error of the frame")
-      .add_property("J", bp::make_getter(&CostDataFrameRotation::J, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("J", bp::make_getter(&CostDataFrameRotation::J, bp::return_internal_reference<>()),
                     "Jacobian at the error point")
-      .add_property("rJf",
-                    bp::make_getter(&CostDataFrameRotation::rJf, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("rJf", bp::make_getter(&CostDataFrameRotation::rJf, bp::return_internal_reference<>()),
                     "error Jacobian of the frame")
-      .add_property("fJf",
-                    bp::make_getter(&CostDataFrameRotation::fJf, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("fJf", bp::make_getter(&CostDataFrameRotation::fJf, bp::return_internal_reference<>()),
                     "local Jacobian of the frame");
 }
 

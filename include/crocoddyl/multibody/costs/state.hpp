@@ -18,6 +18,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class CostModelStateTpl : public CostModelAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef CostModelAbstractTpl<Scalar> Base;
@@ -40,24 +42,25 @@ class CostModelStateTpl : public CostModelAbstractTpl<_Scalar> {
   CostModelStateTpl(boost::shared_ptr<StateMultibody> state, const std::size_t& nu);
   CostModelStateTpl(boost::shared_ptr<StateMultibody> state, boost::shared_ptr<ActivationModelAbstract> activation);
   explicit CostModelStateTpl(boost::shared_ptr<StateMultibody> state);
+  virtual ~CostModelStateTpl();
 
-  ~CostModelStateTpl();
-
-  void calc(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-            const Eigen::Ref<const VectorXs>& u);
-  void calcDiff(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-                const Eigen::Ref<const VectorXs>& u);
-  boost::shared_ptr<CostDataAbstract> createData(DataCollectorAbstract* const data);
+  virtual void calc(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
+                    const Eigen::Ref<const VectorXs>& u);
+  virtual void calcDiff(const boost::shared_ptr<CostDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
+                        const Eigen::Ref<const VectorXs>& u);
+  virtual boost::shared_ptr<CostDataAbstract> createData(DataCollectorAbstract* const data);
 
   const VectorXs& get_xref() const;
   void set_xref(const VectorXs& xref_in);
 
  protected:
+  virtual void set_referenceImpl(const std::type_info& ti, const void* pv);
+  virtual void get_referenceImpl(const std::type_info& ti, void* pv);
+
   using Base::activation_;
   using Base::nu_;
   using Base::state_;
   using Base::unone_;
-  using Base::with_residuals_;
 
  private:
   VectorXs xref_;

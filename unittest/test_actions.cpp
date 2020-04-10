@@ -14,23 +14,14 @@
 #include "unittest_common.hpp"
 
 using namespace boost::unit_test;
-using namespace crocoddyl_unit_test;
+using namespace crocoddyl::unittest;
 
 //----------------------------------------------------------------------------//
 
-void test_construct_data(ActionModelTypes::Type action_model_type) {
-  // create the model
-  ActionModelFactory factory(action_model_type);
-  const boost::shared_ptr<crocoddyl::ActionModelAbstract>& model = factory.create();
-
-  // create the corresponding data object
-  const boost::shared_ptr<crocoddyl::ActionDataAbstract>& data = model->createData();
-}
-
 void test_calc_returns_state(ActionModelTypes::Type action_model_type) {
   // create the model
-  ActionModelFactory factory(action_model_type);
-  const boost::shared_ptr<crocoddyl::ActionModelAbstract>& model = factory.create();
+  ActionModelFactory factory;
+  const boost::shared_ptr<crocoddyl::ActionModelAbstract>& model = factory.create(action_model_type);
 
   // create the corresponding data object
   const boost::shared_ptr<crocoddyl::ActionDataAbstract>& data = model->createData();
@@ -43,13 +34,12 @@ void test_calc_returns_state(ActionModelTypes::Type action_model_type) {
   model->calc(data, x, u);
 
   BOOST_CHECK(static_cast<std::size_t>(data->xnext.size()) == model->get_state()->get_nx());
-  BOOST_CHECK(factory.get_nx() == model->get_state()->get_nx());
 }
 
 void test_calc_returns_a_cost(ActionModelTypes::Type action_model_type) {
   // create the model
-  ActionModelFactory factory(action_model_type);
-  const boost::shared_ptr<crocoddyl::ActionModelAbstract>& model = factory.create();
+  ActionModelFactory factory;
+  const boost::shared_ptr<crocoddyl::ActionModelAbstract>& model = factory.create(action_model_type);
 
   // create the corresponding data object and set the cost to nan
   const boost::shared_ptr<crocoddyl::ActionDataAbstract>& data = model->createData();
@@ -66,8 +56,8 @@ void test_calc_returns_a_cost(ActionModelTypes::Type action_model_type) {
 
 void test_partial_derivatives_against_numdiff(ActionModelTypes::Type action_model_type) {
   // create the model
-  ActionModelFactory factory(action_model_type);
-  const boost::shared_ptr<crocoddyl::ActionModelAbstract>& model = factory.create();
+  ActionModelFactory factory;
+  const boost::shared_ptr<crocoddyl::ActionModelAbstract>& model = factory.create(action_model_type);
 
   // create the corresponding data object and set the cost to nan
   const boost::shared_ptr<crocoddyl::ActionDataAbstract>& data = model->createData();
@@ -105,21 +95,20 @@ void test_partial_derivatives_against_numdiff(ActionModelTypes::Type action_mode
 
 //----------------------------------------------------------------------------//
 
-void register_action_model_unit_tests(ActionModelTypes::Type action_model_type, test_suite& ts) {
-  ts.add(BOOST_TEST_CASE(boost::bind(&test_construct_data, action_model_type)));
-  ts.add(BOOST_TEST_CASE(boost::bind(&test_calc_returns_state, action_model_type)));
-  ts.add(BOOST_TEST_CASE(boost::bind(&test_calc_returns_a_cost, action_model_type)));
-  ts.add(BOOST_TEST_CASE(boost::bind(&test_partial_derivatives_against_numdiff, action_model_type)));
+void register_action_model_unit_tests(ActionModelTypes::Type action_model_type) {
+  boost::test_tools::output_test_stream test_name;
+  test_name << "test_" << action_model_type;
+  std::cout << "Running " << test_name.str() << std::endl;
+  test_suite* ts = BOOST_TEST_SUITE(test_name.str());
+  ts->add(BOOST_TEST_CASE(boost::bind(&test_calc_returns_state, action_model_type)));
+  ts->add(BOOST_TEST_CASE(boost::bind(&test_calc_returns_a_cost, action_model_type)));
+  ts->add(BOOST_TEST_CASE(boost::bind(&test_partial_derivatives_against_numdiff, action_model_type)));
+  framework::master_test_suite().add(ts);
 }
 
 bool init_function() {
   for (size_t i = 0; i < ActionModelTypes::all.size(); ++i) {
-    std::ostringstream test_name;
-    test_name << "test_" << ActionModelTypes::all[i];
-    test_suite* ts = BOOST_TEST_SUITE(test_name.str());
-    std::cout << "Running " << test_name.str() << std::endl;
-    register_action_model_unit_tests(ActionModelTypes::all[i], *ts);
-    framework::master_test_suite().add(ts);
+    register_action_model_unit_tests(ActionModelTypes::all[i]);
   }
   return true;
 }

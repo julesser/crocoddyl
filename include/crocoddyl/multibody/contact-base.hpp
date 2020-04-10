@@ -22,6 +22,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ContactModelAbstractTpl {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef StateMultibodyTpl<Scalar> StateMultibody;
@@ -31,7 +33,7 @@ class ContactModelAbstractTpl {
 
   ContactModelAbstractTpl(boost::shared_ptr<StateMultibody> state, const std::size_t& nc, const std::size_t& nu);
   ContactModelAbstractTpl(boost::shared_ptr<StateMultibody> state, const std::size_t& nc);
-  ~ContactModelAbstractTpl();
+  virtual ~ContactModelAbstractTpl();
 
   virtual void calc(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x) = 0;
   virtual void calcDiff(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x) = 0;
@@ -49,15 +51,6 @@ class ContactModelAbstractTpl {
   boost::shared_ptr<StateMultibody> state_;
   std::size_t nc_;
   std::size_t nu_;
-
-#ifdef PYTHON_BINDINGS
-
- public:
-  void calc_wrap(const boost::shared_ptr<ContactDataAbstract>& data, const VectorXs& x) { calc(data, x); }
-
-  void calcDiff_wrap(const boost::shared_ptr<ContactDataAbstract>& data, const VectorXs& x) { calcDiff(data, x); }
-
-#endif
 };
 
 template <typename _Scalar>
@@ -79,9 +72,9 @@ struct ContactDataAbstractTpl {
         Jc(model->get_nc(), model->get_state()->get_nv()),
         a0(model->get_nc()),
         da0_dx(model->get_nc(), model->get_state()->get_ndx()),
+        f(pinocchio::ForceTpl<Scalar>::Zero()),
         df_dx(model->get_nc(), model->get_state()->get_ndx()),
-        df_du(model->get_nc(), model->get_nu()),
-        f(pinocchio::ForceTpl<Scalar>::Zero()) {
+        df_du(model->get_nc(), model->get_nu()) {
     Jc.setZero();
     a0.setZero();
     da0_dx.setZero();
@@ -98,9 +91,9 @@ struct ContactDataAbstractTpl {
   MatrixXs Jc;
   VectorXs a0;
   MatrixXs da0_dx;
+  pinocchio::ForceTpl<Scalar> f;
   MatrixXs df_dx;
   MatrixXs df_du;
-  pinocchio::ForceTpl<Scalar> f;
 };
 
 }  // namespace crocoddyl

@@ -1,7 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2018-2020, LAAS-CNRS, New York University, Max Planck Gesellschaft
+// Copyright (C) 2018-2020, LAAS-CNRS, University of Edinburgh,
+//                          New York University, Max Planck Gesellschaft
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,6 +20,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class DifferentialActionModelNumDiffTpl : public DifferentialActionModelAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef DifferentialActionModelAbstractTpl<Scalar> Base;
@@ -28,13 +31,13 @@ class DifferentialActionModelNumDiffTpl : public DifferentialActionModelAbstract
   typedef typename MathBase::MatrixXs MatrixXs;
 
   explicit DifferentialActionModelNumDiffTpl(boost::shared_ptr<Base> model, bool with_gauss_approx = false);
-  ~DifferentialActionModelNumDiffTpl();
+  virtual ~DifferentialActionModelNumDiffTpl();
 
-  void calc(const boost::shared_ptr<DifferentialActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-            const Eigen::Ref<const VectorXs>& u);
-  void calcDiff(const boost::shared_ptr<DifferentialActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-                const Eigen::Ref<const VectorXs>& u);
-  boost::shared_ptr<DifferentialActionDataAbstract> createData();
+  virtual void calc(const boost::shared_ptr<DifferentialActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
+                    const Eigen::Ref<const VectorXs>& u);
+  virtual void calcDiff(const boost::shared_ptr<DifferentialActionDataAbstract>& data,
+                        const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u);
+  virtual boost::shared_ptr<DifferentialActionDataAbstract> createData();
 
   const boost::shared_ptr<Base>& get_model() const;
   const Scalar& get_disturbance() const;

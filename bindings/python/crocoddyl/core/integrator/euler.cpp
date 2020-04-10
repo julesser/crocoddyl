@@ -26,16 +26,22 @@ void exposeIntegratedActionEuler() {
           ":param diffModel: differential action model\n"
           ":param stepTime: step time\n"
           ":param withCostResidual: includes the cost residuals and derivatives."))
-      .def("calc", &IntegratedActionModelEuler::calc_wrap,
-           ActionModel_calc_wraps(bp::args("self", "data", "x", "u"),
-                                  "Compute the time-discrete evolution of a differential action model.\n\n"
-                                  "It describes the time-discrete evolution of action model.\n"
-                                  ":param data: action data\n"
-                                  ":param x: state vector\n"
-                                  ":param u: control input"))
-      .def<void (IntegratedActionModelEuler::*)(const boost::shared_ptr<ActionDataAbstract>&, const Eigen::VectorXd&,
-                                                const Eigen::VectorXd&)>(
-          "calcDiff", &IntegratedActionModelEuler::calcDiff_wrap, bp::args("self", "data", "x", "u"),
+      .def<void (IntegratedActionModelEuler::*)(const boost::shared_ptr<ActionDataAbstract>&,
+                                                const Eigen::Ref<const Eigen::VectorXd>&,
+                                                const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &IntegratedActionModelEuler::calc, bp::args("self", "data", "x", "u"),
+          "Compute the time-discrete evolution of a differential action model.\n\n"
+          "It describes the time-discrete evolution of action model.\n"
+          ":param data: action data\n"
+          ":param x: state vector\n"
+          ":param u: control input")
+      .def<void (IntegratedActionModelEuler::*)(const boost::shared_ptr<ActionDataAbstract>&,
+                                                const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &ActionModelAbstract::calc, bp::args("self", "data", "x"))
+      .def<void (IntegratedActionModelEuler::*)(const boost::shared_ptr<ActionDataAbstract>&,
+                                                const Eigen::Ref<const Eigen::VectorXd>&,
+                                                const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &IntegratedActionModelEuler::calcDiff, bp::args("self", "data", "x", "u"),
           "Compute the time-discrete derivatives of a differential action model.\n\n"
           "It computes the time-discrete partial derivatives of a differential\n"
           "action model. It assumes that calc has been run first.\n"
@@ -44,10 +50,9 @@ void exposeIntegratedActionEuler() {
           ":param data: action data\n"
           ":param x: state vector\n"
           ":param u: control input\n")
-
-      .def<void (IntegratedActionModelEuler::*)(const boost::shared_ptr<ActionDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &IntegratedActionModelEuler::calcDiff_wrap, bp::args("self", "data", "x"))
-
+      .def<void (IntegratedActionModelEuler::*)(const boost::shared_ptr<ActionDataAbstract>&,
+                                                const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &ActionModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &IntegratedActionModelEuler::createData, bp::args("self"),
            "Create the Euler integrator data.")
       .add_property("differential",
@@ -69,25 +74,18 @@ void exposeIntegratedActionEuler() {
           "differential",
           bp::make_getter(&IntegratedActionDataEuler::differential, bp::return_value_policy<bp::return_by_value>()),
           "differential action data")
-      .add_property("dx",
-                    bp::make_getter(&IntegratedActionDataEuler::dx, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("dx", bp::make_getter(&IntegratedActionDataEuler::dx, bp::return_internal_reference<>()),
                     "state rate.")
-      .add_property(
-          "ddx_dx",
-          bp::make_getter(&IntegratedActionDataEuler::ddx_dx, bp::return_value_policy<bp::return_by_value>()),
-          "Jacobian of the state rate with respect to the state.")
-      .add_property(
-          "ddx_du",
-          bp::make_getter(&IntegratedActionDataEuler::ddx_du, bp::return_value_policy<bp::return_by_value>()),
-          "Jacobian of the state rate with respect to the control.")
-      .add_property(
-          "dxnext_dx",
-          bp::make_getter(&IntegratedActionDataEuler::dxnext_dx, bp::return_value_policy<bp::return_by_value>()),
-          "Jacobian of the next state with respect to the state.")
-      .add_property(
-          "dxnext_ddx",
-          bp::make_getter(&IntegratedActionDataEuler::dxnext_ddx, bp::return_value_policy<bp::return_by_value>()),
-          "Jacobian of the next state with respect to the state rate.");
+      .add_property("ddx_dx", bp::make_getter(&IntegratedActionDataEuler::ddx_dx, bp::return_internal_reference<>()),
+                    "Jacobian of the state rate with respect to the state.")
+      .add_property("ddx_du", bp::make_getter(&IntegratedActionDataEuler::ddx_du, bp::return_internal_reference<>()),
+                    "Jacobian of the state rate with respect to the control.")
+      .add_property("dxnext_dx",
+                    bp::make_getter(&IntegratedActionDataEuler::dxnext_dx, bp::return_internal_reference<>()),
+                    "Jacobian of the next state with respect to the state.")
+      .add_property("dxnext_ddx",
+                    bp::make_getter(&IntegratedActionDataEuler::dxnext_ddx, bp::return_internal_reference<>()),
+                    "Jacobian of the next state with respect to the state rate.");
 }
 
 }  // namespace python

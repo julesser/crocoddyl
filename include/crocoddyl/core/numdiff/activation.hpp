@@ -21,6 +21,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ActivationModelNumDiffTpl : public ActivationModelAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef ActivationModelAbstractTpl<Scalar> Base;
@@ -38,24 +40,24 @@ class ActivationModelNumDiffTpl : public ActivationModelAbstractTpl<_Scalar> {
   /**
    * @brief Destroy the ActivationModelNumDiff object
    */
-  ~ActivationModelNumDiffTpl();
+  virtual ~ActivationModelNumDiffTpl();
 
   /**
    * @brief @copydoc Base::calc()
    */
-  void calc(const boost::shared_ptr<ActivationDataAbstract>& data, const Eigen::Ref<const VectorXs>& r);
+  virtual void calc(const boost::shared_ptr<ActivationDataAbstract>& data, const Eigen::Ref<const VectorXs>& r);
 
   /**
    * @brief @copydoc Base::calcDiff()
    */
-  void calcDiff(const boost::shared_ptr<ActivationDataAbstract>& data, const Eigen::Ref<const VectorXs>& r);
+  virtual void calcDiff(const boost::shared_ptr<ActivationDataAbstract>& data, const Eigen::Ref<const VectorXs>& r);
 
   /**
    * @brief Create a Data object from the given model.
    *
    * @return boost::shared_ptr<ActivationDataAbstract>
    */
-  boost::shared_ptr<ActivationDataAbstract> createData();
+  virtual boost::shared_ptr<ActivationDataAbstract> createData();
 
   /**
    * @brief Get the model_ object
@@ -97,6 +99,7 @@ class ActivationModelNumDiffTpl : public ActivationModelAbstractTpl<_Scalar> {
 template <typename _Scalar>
 struct ActivationDataNumDiffTpl : public ActivationDataAbstractTpl<_Scalar> {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef typename MathBase::VectorXs VectorXs;

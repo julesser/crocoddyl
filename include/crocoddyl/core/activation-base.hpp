@@ -22,6 +22,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ActivationModelAbstractTpl {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef typename MathBase::VectorXs VectorXs;
@@ -42,36 +44,23 @@ class ActivationModelAbstractTpl {
 
  protected:
   std::size_t nr_;
-
-#ifdef PYTHON_BINDINGS
-
- public:
-  void calc_wrap(const boost::shared_ptr<ActivationDataAbstractTpl<Scalar> >& data, const VectorXs& r) {
-    calc(data, r);
-  }
-
-  void calcDiff_wrap(const boost::shared_ptr<ActivationDataAbstractTpl<Scalar> >& data, const VectorXs& r) {
-    calcDiff(data, r);
-  }
-
-#endif
 };
 
 template <typename _Scalar>
 struct ActivationDataAbstractTpl {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  template <typename Activation>
-  explicit ActivationDataAbstractTpl(Activation* const activation)
-      : a_value(0.),
-        Ar(VectorXs::Zero(activation->get_nr())),
-        Arr(MatrixXs::Zero(activation->get_nr(), activation->get_nr())) {}
-  virtual ~ActivationDataAbstractTpl() {}
-
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
+
+  template <template <typename Scalar> class Activation>
+  explicit ActivationDataAbstractTpl(Activation<Scalar>* const activation)
+      : a_value(0.),
+        Ar(VectorXs::Zero(activation->get_nr())),
+        Arr(MatrixXs::Zero(activation->get_nr(), activation->get_nr())) {}
+  virtual ~ActivationDataAbstractTpl() {}
 
   Scalar a_value;
   VectorXs Ar;

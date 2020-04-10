@@ -33,6 +33,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ActionModelImpulseFwdDynamicsTpl : public ActionModelAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef ActionModelAbstractTpl<Scalar> Base;
   typedef MathBaseTpl<Scalar> MathBase;
@@ -47,13 +49,13 @@ class ActionModelImpulseFwdDynamicsTpl : public ActionModelAbstractTpl<_Scalar> 
                                    boost::shared_ptr<ImpulseModelMultiple> impulses,
                                    boost::shared_ptr<CostModelSum> costs, const Scalar& r_coeff = 0.,
                                    const Scalar& JMinvJt_damping = 0., const bool& enable_force = false);
-  ~ActionModelImpulseFwdDynamicsTpl();
+  virtual ~ActionModelImpulseFwdDynamicsTpl();
 
-  void calc(const boost::shared_ptr<ActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-            const Eigen::Ref<const VectorXs>& u);
-  void calcDiff(const boost::shared_ptr<ActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
-                const Eigen::Ref<const VectorXs>& u);
-  boost::shared_ptr<ActionDataAbstract> createData();
+  virtual void calc(const boost::shared_ptr<ActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
+                    const Eigen::Ref<const VectorXs>& u);
+  virtual void calcDiff(const boost::shared_ptr<ActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
+                        const Eigen::Ref<const VectorXs>& u);
+  virtual boost::shared_ptr<ActionDataAbstract> createData();
 
   const boost::shared_ptr<ImpulseModelMultiple>& get_impulses() const;
   const boost::shared_ptr<CostModelSum>& get_costs() const;

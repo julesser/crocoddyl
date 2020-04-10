@@ -27,17 +27,15 @@ void exposeActivationWeightedQuadraticBarrier() {
                                                   "Initialize the activation model.\n\n"
                                                   ":param bounds: activation bounds\n"
                                                   ":param weights: weights"))
-      .def("calc", &ActivationModelWeightedQuadraticBarrier::calc_wrap, bp::args("self", "data", "r"),
+      .def("calc", &ActivationModelWeightedQuadraticBarrier::calc, bp::args("self", "data", "r"),
            "Compute the inequality activation.\n\n"
            ":param data: activation data\n"
            ":param r: residual vector")
-      .def<void (ActivationModelWeightedQuadraticBarrier::*)(const boost::shared_ptr<ActivationDataAbstract>&,
-                                                             const Eigen::VectorXd&)>(
-          "calcDiff", &ActivationModelWeightedQuadraticBarrier::calcDiff_wrap, bp::args("self", "data", "r"),
-          "Compute the derivatives of inequality activation.\n\n"
-          ":param data: activation data\n"
-          "Note that the Hessian is constant, so we don't write again this value.\n"
-          ":param r: residual vector \n")
+      .def("calcDiff", &ActivationModelWeightedQuadraticBarrier::calcDiff, bp::args("self", "data", "r"),
+           "Compute the derivatives of inequality activation.\n\n"
+           ":param data: activation data\n"
+           "Note that the Hessian is constant, so we don't write again this value.\n"
+           ":param r: residual vector \n")
       .def("createData", &ActivationModelWeightedQuadraticBarrier::createData, bp::args("self"),
            "Create the weighted quadratic action data.")
       .add_property("bounds",
@@ -45,10 +43,10 @@ void exposeActivationWeightedQuadraticBarrier() {
                                       bp::return_value_policy<bp::return_by_value>()),
                     bp::make_function(&ActivationModelWeightedQuadraticBarrier::set_bounds),
                     "bounds (beta, lower and upper bounds)")
-      .add_property("weights",
-                    bp::make_function(&ActivationModelWeightedQuadraticBarrier::get_weights,
-                                      bp::return_value_policy<bp::return_by_value>()),
-                    bp::make_function(&ActivationModelWeightedQuadraticBarrier::set_weights), "vector of weights");
+      .add_property(
+          "weights",
+          bp::make_function(&ActivationModelWeightedQuadraticBarrier::get_weights, bp::return_internal_reference<>()),
+          bp::make_function(&ActivationModelWeightedQuadraticBarrier::set_weights), "vector of weights");
 }
 
 }  // namespace python

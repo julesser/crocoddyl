@@ -23,17 +23,19 @@ CONTACT_3D = crocoddyl.ContactModel3D(
                                             pinocchio.SE3.Random().translation), ACTUATION.nu, pinocchio.utils.rand(2))
 CONTACTS.addContact("r_sole_contact", CONTACT_6D)
 CONTACTS.addContact("l_sole_contact", CONTACT_3D)
-COSTS = crocoddyl.CostModelSum(ROBOT_STATE, ACTUATION.nu, True)
+COSTS = crocoddyl.CostModelSum(ROBOT_STATE, ACTUATION.nu)
 
 frictionCone = crocoddyl.FrictionCone(np.matrix([0., 0., 1.]).T, 0.7, 4, False)
 activation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(frictionCone.lb, frictionCone.ub))
 COSTS.addCost(
     "r_sole_friction_cone",
-    crocoddyl.CostModelContactFrictionCone(ROBOT_STATE, activation, frictionCone, ROBOT_MODEL.getFrameId('r_sole'),
+    crocoddyl.CostModelContactFrictionCone(ROBOT_STATE, activation,
+                                           crocoddyl.FrameFrictionCone(ROBOT_MODEL.getFrameId('r_sole'), frictionCone),
                                            ACTUATION.nu), 1.)
 COSTS.addCost(
     "l_sole_friction_cone",
-    crocoddyl.CostModelContactFrictionCone(ROBOT_STATE, activation, frictionCone, ROBOT_MODEL.getFrameId('l_sole'),
+    crocoddyl.CostModelContactFrictionCone(ROBOT_STATE, activation,
+                                           crocoddyl.FrameFrictionCone(ROBOT_MODEL.getFrameId('l_sole'), frictionCone),
                                            ACTUATION.nu), 1.)
 MODEL = crocoddyl.DifferentialActionModelContactFwdDynamics(ROBOT_STATE, ACTUATION, CONTACTS, COSTS, 0., True)
 DATA = MODEL.createData()

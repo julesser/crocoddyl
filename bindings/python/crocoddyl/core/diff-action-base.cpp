@@ -40,6 +40,9 @@ void exposeDifferentialActionAbstract() {
            ":param data: differential action data\n"
            ":param x: state vector\n"
            ":param u: control input")
+      .def<void (DifferentialActionModelAbstract::*)(const boost::shared_ptr<DifferentialActionDataAbstract>&,
+                                                     const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &DifferentialActionModelAbstract::calc, bp::args("self", "data", "x"))
       .def("calcDiff", pure_virtual(&DifferentialActionModelAbstract_wrap::calcDiff),
            bp::args("self", "data", "x", "u"),
            "Compute the derivatives of the dynamics and cost functions.\n\n"
@@ -50,6 +53,9 @@ void exposeDifferentialActionAbstract() {
            ":param data: differential action data\n"
            ":param x: state vector\n"
            ":param u: control input\n")
+      .def<void (DifferentialActionModelAbstract::*)(const boost::shared_ptr<DifferentialActionDataAbstract>&,
+                                                     const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &DifferentialActionModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &DifferentialActionModelAbstract_wrap::createData, bp::args("self"),
            "Create the differential action data.\n\n"
            "Each differential action model has its own data that needs to be\n"
@@ -99,34 +105,24 @@ void exposeDifferentialActionAbstract() {
           "cost",
           bp::make_getter(&DifferentialActionDataAbstract::cost, bp::return_value_policy<bp::return_by_value>()),
           bp::make_setter(&DifferentialActionDataAbstract::cost), "cost value")
-      .add_property(
-          "xout",
-          bp::make_getter(&DifferentialActionDataAbstract::xout, bp::return_value_policy<bp::return_by_value>()),
-          bp::make_setter(&DifferentialActionDataAbstract::xout), "evolution state")
-      .add_property(
-          "r", bp::make_getter(&DifferentialActionDataAbstract::r, bp::return_value_policy<bp::return_by_value>()),
-          bp::make_setter(&DifferentialActionDataAbstract::r), "cost residual")
-      .add_property(
-          "Fx", bp::make_getter(&DifferentialActionDataAbstract::Fx, bp::return_value_policy<bp::return_by_value>()),
-          bp::make_setter(&DifferentialActionDataAbstract::Fx), "Jacobian of the dynamics")
-      .add_property(
-          "Fu", bp::make_getter(&DifferentialActionDataAbstract::Fu, bp::return_value_policy<bp::return_by_value>()),
-          bp::make_setter(&DifferentialActionDataAbstract::Fu), "Jacobian of the dynamics")
-      .add_property(
-          "Lx", bp::make_getter(&DifferentialActionDataAbstract::Lx, bp::return_value_policy<bp::return_by_value>()),
-          bp::make_setter(&DifferentialActionDataAbstract::Lx), "Jacobian of the cost")
-      .add_property(
-          "Lu", bp::make_getter(&DifferentialActionDataAbstract::Lu, bp::return_value_policy<bp::return_by_value>()),
-          bp::make_setter(&DifferentialActionDataAbstract::Lu), "Jacobian of the cost")
-      .add_property(
-          "Lxx", bp::make_getter(&DifferentialActionDataAbstract::Lxx, bp::return_value_policy<bp::return_by_value>()),
-          bp::make_setter(&DifferentialActionDataAbstract::Lxx), "Hessian of the cost")
-      .add_property(
-          "Lxu", bp::make_getter(&DifferentialActionDataAbstract::Lxu, bp::return_value_policy<bp::return_by_value>()),
-          bp::make_setter(&DifferentialActionDataAbstract::Lxu), "Hessian of the cost")
-      .add_property(
-          "Luu", bp::make_getter(&DifferentialActionDataAbstract::Luu, bp::return_value_policy<bp::return_by_value>()),
-          bp::make_setter(&DifferentialActionDataAbstract::Luu), "Hessian of the cost");
+      .add_property("xout", bp::make_getter(&DifferentialActionDataAbstract::xout, bp::return_internal_reference<>()),
+                    bp::make_setter(&DifferentialActionDataAbstract::xout), "evolution state")
+      .add_property("r", bp::make_getter(&DifferentialActionDataAbstract::r, bp::return_internal_reference<>()),
+                    bp::make_setter(&DifferentialActionDataAbstract::r), "cost residual")
+      .add_property("Fx", bp::make_getter(&DifferentialActionDataAbstract::Fx, bp::return_internal_reference<>()),
+                    bp::make_setter(&DifferentialActionDataAbstract::Fx), "Jacobian of the dynamics")
+      .add_property("Fu", bp::make_getter(&DifferentialActionDataAbstract::Fu, bp::return_internal_reference<>()),
+                    bp::make_setter(&DifferentialActionDataAbstract::Fu), "Jacobian of the dynamics")
+      .add_property("Lx", bp::make_getter(&DifferentialActionDataAbstract::Lx, bp::return_internal_reference<>()),
+                    bp::make_setter(&DifferentialActionDataAbstract::Lx), "Jacobian of the cost")
+      .add_property("Lu", bp::make_getter(&DifferentialActionDataAbstract::Lu, bp::return_internal_reference<>()),
+                    bp::make_setter(&DifferentialActionDataAbstract::Lu), "Jacobian of the cost")
+      .add_property("Lxx", bp::make_getter(&DifferentialActionDataAbstract::Lxx, bp::return_internal_reference<>()),
+                    bp::make_setter(&DifferentialActionDataAbstract::Lxx), "Hessian of the cost")
+      .add_property("Lxu", bp::make_getter(&DifferentialActionDataAbstract::Lxu, bp::return_internal_reference<>()),
+                    bp::make_setter(&DifferentialActionDataAbstract::Lxu), "Hessian of the cost")
+      .add_property("Luu", bp::make_getter(&DifferentialActionDataAbstract::Luu, bp::return_internal_reference<>()),
+                    bp::make_setter(&DifferentialActionDataAbstract::Luu), "Hessian of the cost");
 }
 
 }  // namespace python

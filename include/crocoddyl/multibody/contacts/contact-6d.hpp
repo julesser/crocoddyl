@@ -21,6 +21,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ContactModel6DTpl : public ContactModelAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef ContactModelAbstractTpl<Scalar> Base;
@@ -37,12 +39,12 @@ class ContactModel6DTpl : public ContactModelAbstractTpl<_Scalar> {
                     const Vector2s& gains = Vector2s::Zero());
   ContactModel6DTpl(boost::shared_ptr<StateMultibody> state, const FramePlacement& xref,
                     const Vector2s& gains = Vector2s::Zero());
-  ~ContactModel6DTpl();
+  virtual ~ContactModel6DTpl();
 
-  void calc(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
-  void calcDiff(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
-  void updateForce(const boost::shared_ptr<ContactDataAbstract>& data, const VectorXs& force);
-  boost::shared_ptr<ContactDataAbstract> createData(pinocchio::DataTpl<Scalar>* const data);
+  virtual void calc(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
+  virtual void calcDiff(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
+  virtual void updateForce(const boost::shared_ptr<ContactDataAbstract>& data, const VectorXs& force);
+  virtual boost::shared_ptr<ContactDataAbstract> createData(pinocchio::DataTpl<Scalar>* const data);
 
   const FramePlacement& get_Mref() const;
   const Vector2s& get_gains() const;
@@ -92,15 +94,6 @@ struct ContactData6DTpl : public ContactDataAbstractTpl<_Scalar> {
     rMf_Jlog6.setZero();
   }
 
-  pinocchio::SE3Tpl<Scalar> rMf;
-  pinocchio::MotionTpl<Scalar> v;
-  pinocchio::MotionTpl<Scalar> a;
-  Matrix6xs v_partial_dq;
-  Matrix6xs a_partial_dq;
-  Matrix6xs a_partial_dv;
-  Matrix6xs a_partial_da;
-  Matrix6s rMf_Jlog6;
-
   using Base::a0;
   using Base::da0_dx;
   using Base::df_du;
@@ -112,6 +105,15 @@ struct ContactData6DTpl : public ContactDataAbstractTpl<_Scalar> {
   using Base::jMf;
   using Base::joint;
   using Base::pinocchio;
+
+  pinocchio::SE3Tpl<Scalar> rMf;
+  pinocchio::MotionTpl<Scalar> v;
+  pinocchio::MotionTpl<Scalar> a;
+  Matrix6xs v_partial_dq;
+  Matrix6xs a_partial_dq;
+  Matrix6xs a_partial_dv;
+  Matrix6xs a_partial_da;
+  Matrix6s rMf_Jlog6;
 };
 
 }  // namespace crocoddyl

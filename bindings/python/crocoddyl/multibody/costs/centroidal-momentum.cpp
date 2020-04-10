@@ -46,23 +46,28 @@ void exposeCostCentroidalMomentum() {
           "crocoddyl.ActivationModelQuad(3), and nu is equals to model.nv.\n"
           ":param state: state of the multibody system\n"
           ":param ref: reference centroidal momentum"))
-      .def("calc", &CostModelCentroidalMomentum::calc_wrap,
-           CostModel_calc_wraps(bp::args("self", "data", "x", "u"),
-                                "Compute the centroidal momentum cost.\n\n"
-                                ":param data: cost data\n"
-                                ":param x: time-discrete state vector\n"
-                                ":param u: time-discrete control input"))
-      .def<void (CostModelCentroidalMomentum::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&,
-                                                 const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelCentroidalMomentum::calcDiff_wrap, bp::args("self", "data", "x", "u"),
+      .def<void (CostModelCentroidalMomentum::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                                 const Eigen::Ref<const Eigen::VectorXd>&,
+                                                 const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &CostModelCentroidalMomentum::calc, bp::args("self", "data", "x", "u"),
+          "Compute the centroidal momentum cost.\n\n"
+          ":param data: cost data\n"
+          ":param x: time-discrete state vector\n"
+          ":param u: time-discrete control input")
+      .def<void (CostModelCentroidalMomentum::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                                 const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &CostModelAbstract::calc, bp::args("self", "data", "x"))
+      .def<void (CostModelCentroidalMomentum::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                                 const Eigen::Ref<const Eigen::VectorXd>&,
+                                                 const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelCentroidalMomentum::calcDiff, bp::args("self", "data", "x", "u"),
           "Compute the derivatives of the centroidal momentum cost.\n\n"
           ":param data: action data\n"
           ":param x: time-discrete state vector\n"
           ":param u: time-discrete control input\n")
-      .def<void (CostModelCentroidalMomentum::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelCentroidalMomentum::calcDiff_wrap, bp::args("self", "data", "x"))
-      .def<void (CostModelCentroidalMomentum::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelCentroidalMomentum::calcDiff_wrap, bp::args("self", "data", "x"))
+      .def<void (CostModelCentroidalMomentum::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                                 const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &CostModelCentroidalMomentum::createData, bp::with_custodian_and_ward_postcall<0, 2>(),
            bp::args("self", "data"),
            "Create the centroidal momentum cost data.\n\n"
@@ -70,6 +75,10 @@ void exposeCostCentroidalMomentum() {
            "returns the allocated data for a predefined cost.\n"
            ":param data: shared data\n"
            ":return cost data.")
+      .add_property(
+          "reference",
+          bp::make_function(&CostModelCentroidalMomentum::get_href, bp::return_value_policy<bp::return_by_value>()),
+          &CostModelCentroidalMomentum::set_reference<MathBaseTpl<double>::Vector6s>, "reference centroidal momentum")
       .add_property(
           "href",
           bp::make_function(&CostModelCentroidalMomentum::get_href, bp::return_value_policy<bp::return_by_value>()),
@@ -82,14 +91,10 @@ void exposeCostCentroidalMomentum() {
           "Create centroidal momentum cost data.\n\n"
           ":param model: centroidal momentum cost model\n"
           ":param data: shared data")[bp::with_custodian_and_ward<1, 2, bp::with_custodian_and_ward<1, 3> >()])
-      .add_property(
-          "dhd_dq",
-          bp::make_getter(&CostDataCentroidalMomentum::dhd_dq, bp::return_value_policy<bp::return_by_value>()),
-          "Jacobian of the centroidal momentum")
-      .add_property(
-          "dhd_dv",
-          bp::make_getter(&CostDataCentroidalMomentum::dhd_dv, bp::return_value_policy<bp::return_by_value>()),
-          "Jacobian of the centroidal momentum");
+      .add_property("dhd_dq", bp::make_getter(&CostDataCentroidalMomentum::dhd_dq, bp::return_internal_reference<>()),
+                    "Jacobian of the centroidal momentum")
+      .add_property("dhd_dv", bp::make_getter(&CostDataCentroidalMomentum::dhd_dv, bp::return_internal_reference<>()),
+                    "Jacobian of the centroidal momentum");
 }
 
 }  // namespace python

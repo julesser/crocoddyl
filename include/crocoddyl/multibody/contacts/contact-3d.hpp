@@ -24,6 +24,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ContactModel3DTpl : public ContactModelAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef ContactModelAbstractTpl<Scalar> Base;
@@ -40,12 +42,12 @@ class ContactModel3DTpl : public ContactModelAbstractTpl<_Scalar> {
                     const Vector2s& gains = Vector2s::Zero());
   ContactModel3DTpl(boost::shared_ptr<StateMultibody> state, const FrameTranslation& xref,
                     const Vector2s& gains = Vector2s::Zero());
-  ~ContactModel3DTpl();
+  virtual ~ContactModel3DTpl();
 
-  void calc(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
-  void calcDiff(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
-  void updateForce(const boost::shared_ptr<ContactDataAbstract>& data, const VectorXs& force);
-  boost::shared_ptr<ContactDataAbstract> createData(pinocchio::DataTpl<Scalar>* const data);
+  virtual void calc(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
+  virtual void calcDiff(const boost::shared_ptr<ContactDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
+  virtual void updateForce(const boost::shared_ptr<ContactDataAbstract>& data, const VectorXs& force);
+  virtual boost::shared_ptr<ContactDataAbstract> createData(pinocchio::DataTpl<Scalar>* const data);
 
   const FrameTranslation& get_xref() const;
   const Vector2s& get_gains() const;
@@ -105,6 +107,18 @@ struct ContactData3DTpl : public ContactDataAbstractTpl<_Scalar> {
     oRf.setZero();
   }
 
+  using Base::a0;
+  using Base::da0_dx;
+  using Base::df_du;
+  using Base::df_dx;
+  using Base::f;
+  using Base::frame;
+  using Base::fXj;
+  using Base::Jc;
+  using Base::jMf;
+  using Base::joint;
+  using Base::pinocchio;
+
   pinocchio::MotionTpl<Scalar> v;
   pinocchio::MotionTpl<Scalar> a;
   Matrix6xs fJf;
@@ -120,18 +134,6 @@ struct ContactData3DTpl : public ContactDataAbstractTpl<_Scalar> {
   Matrix3s vv_skew;
   Matrix3s vw_skew;
   Matrix3s oRf;
-
-  using Base::a0;
-  using Base::da0_dx;
-  using Base::df_du;
-  using Base::df_dx;
-  using Base::f;
-  using Base::frame;
-  using Base::fXj;
-  using Base::Jc;
-  using Base::jMf;
-  using Base::joint;
-  using Base::pinocchio;
 };
 
 }  // namespace crocoddyl

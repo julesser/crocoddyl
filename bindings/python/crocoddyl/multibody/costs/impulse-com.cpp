@@ -30,15 +30,25 @@ void exposeCostImpulseCoM() {
           "For this case the default activation model is quadratic, i.e.\n"
           "crocoddyl.ActivationModelQuad(3), and nu is equals to model.nv.\n"
           ":param state: state of the multibody system"))
-      .def("calc", &CostModelImpulseCoM::calc_wrap, bp::args("self", "data", "x"),
-           "Compute the CoM position cost.\n\n"
-           ":param data: cost data\n"
-           ":param x: time-discrete state vector")
-      .def<void (CostModelImpulseCoM::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelImpulseCoM::calcDiff_wrap, bp::args("self", "data", "x"),
+      .def<void (CostModelImpulseCoM::*)(
+          const boost::shared_ptr<CostDataAbstract>&, const Eigen::Ref<const Eigen::VectorXd>&,
+          const Eigen::Ref<const Eigen::VectorXd>&)>("calc", &CostModelImpulseCoM::calc, bp::args("self", "data", "x"),
+                                                     "Compute the CoM position cost.\n\n"
+                                                     ":param data: cost data\n"
+                                                     ":param x: time-discrete state vector")
+      .def<void (CostModelImpulseCoM::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                         const Eigen::Ref<const Eigen::VectorXd>&)>("calc", &CostModelAbstract::calc,
+                                                                                    bp::args("self", "data", "x"))
+      .def<void (CostModelImpulseCoM::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                         const Eigen::Ref<const Eigen::VectorXd>&,
+                                         const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelImpulseCoM::calcDiff, bp::args("self", "data", "x"),
           "Compute the derivatives of the CoM position cost for impulse dynamics.\n\n"
           ":param data: action data\n"
           ":param x: time-discrete state vector\n")
+      .def<void (CostModelImpulseCoM::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                         const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &CostModelImpulseCoM::createData, bp::with_custodian_and_ward_postcall<0, 2>(),
            bp::args("self", "data"),
            "Create the CoM position cost data.\n\n"
@@ -59,14 +69,11 @@ void exposeCostImpulseCoM() {
       .add_property("impulses",
                     bp::make_getter(&CostDataImpulseCoM::impulses, bp::return_value_policy<bp::return_by_value>()),
                     bp::make_setter(&CostDataImpulseCoM::impulses), "impulses data associated with the current cost")
-      .add_property("Arr_Rx",
-                    bp::make_getter(&CostDataImpulseCoM::Arr_Rx, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("Arr_Rx", bp::make_getter(&CostDataImpulseCoM::Arr_Rx, bp::return_internal_reference<>()),
                     "Intermediate product of Arr (2nd deriv of Activation) with Rx (deriv of residue)")
-      .add_property("dvc_dq",
-                    bp::make_getter(&CostDataImpulseCoM::dvc_dq, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("dvc_dq", bp::make_getter(&CostDataImpulseCoM::dvc_dq, bp::return_internal_reference<>()),
                     "Jacobian of the CoM velocity")
-      .add_property("ddv_dv",
-                    bp::make_getter(&CostDataImpulseCoM::ddv_dv, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("ddv_dv", bp::make_getter(&CostDataImpulseCoM::ddv_dv, bp::return_internal_reference<>()),
                     "Jacobian of the impulse velocity")
       .add_property("pinocchio_internal",
                     bp::make_getter(&CostDataImpulseCoM::pinocchio_internal, bp::return_internal_reference<>()),

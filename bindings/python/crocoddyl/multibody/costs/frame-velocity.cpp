@@ -45,21 +45,28 @@ void exposeCostFrameVelocity() {
           "crocoddyl.ActivationModelQuad(6), and nu is equals to model.nv.\n"
           ":param state: state of the multibody system\n"
           ":param vref: reference frame velocity"))
-      .def("calc", &CostModelFrameVelocity::calc_wrap,
-           CostModel_calc_wraps(bp::args("self", "data", "x", "u"),
-                                "Compute the frame velocity cost.\n\n"
-                                ":param data: cost data\n"
-                                ":param x: time-discrete state vector\n"
-                                ":param u: time-discrete control input"))
-      .def<void (CostModelFrameVelocity::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&,
-                                            const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelFrameVelocity::calcDiff_wrap, bp::args("self", "data", "x", "u"),
+      .def<void (CostModelFrameVelocity::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &CostModelFrameVelocity::calc, bp::args("self", "data", "x", "u"),
+          "Compute the frame velocity cost.\n\n"
+          ":param data: cost data\n"
+          ":param x: time-discrete state vector\n"
+          ":param u: time-discrete control input")
+      .def<void (CostModelFrameVelocity::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &CostModelAbstract::calc, bp::args("self", "data", "x"))
+      .def<void (CostModelFrameVelocity::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelFrameVelocity::calcDiff, bp::args("self", "data", "x", "u"),
           "Compute the derivatives of the frame velocity cost.\n\n"
           ":param data: action data\n"
           ":param x: time-discrete state vector\n"
           ":param u: time-discrete control input\n")
-      .def<void (CostModelFrameVelocity::*)(const boost::shared_ptr<CostDataAbstract>&, const Eigen::VectorXd&)>(
-          "calcDiff", &CostModelFrameVelocity::calcDiff_wrap, bp::args("self", "data", "x"))
+      .def<void (CostModelFrameVelocity::*)(const boost::shared_ptr<CostDataAbstract>&,
+                                            const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &CostModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &CostModelFrameVelocity::createData, bp::with_custodian_and_ward_postcall<0, 2>(),
            bp::args("self", "data"),
            "Create the frame velocity cost data.\n\n"
@@ -67,6 +74,9 @@ void exposeCostFrameVelocity() {
            "returns the allocated data for a predefined cost.\n"
            ":param data: shared data\n"
            ":return cost data.")
+      .add_property("reference",
+                    bp::make_function(&CostModelFrameVelocity::get_vref, bp::return_internal_reference<>()),
+                    &CostModelFrameVelocity::set_reference<FrameMotion>, "reference frame velocity")
       .add_property("vref", bp::make_function(&CostModelFrameVelocity::get_vref, bp::return_internal_reference<>()),
                     &CostModelFrameVelocity::set_vref, "reference frame velocity");
 
@@ -85,11 +95,9 @@ void exposeCostFrameVelocity() {
       .add_property("fXj",
                     bp::make_getter(&CostDataFrameVelocity::fXj, bp::return_value_policy<bp::return_by_value>()),
                     "action matrix from contact to local frames")
-      .add_property("dv_dq",
-                    bp::make_getter(&CostDataFrameVelocity::dv_dq, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("dv_dq", bp::make_getter(&CostDataFrameVelocity::dv_dq, bp::return_internal_reference<>()),
                     "Jacobian of the spatial body velocity")
-      .add_property("dv_dv",
-                    bp::make_getter(&CostDataFrameVelocity::dv_dv, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("dv_dv", bp::make_getter(&CostDataFrameVelocity::dv_dv, bp::return_internal_reference<>()),
                     "Jacobian of the spatial body velocity");
 }
 

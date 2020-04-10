@@ -21,6 +21,8 @@ namespace crocoddyl {
 template <typename _Scalar>
 class StateNumDiffTpl : public StateAbstractTpl<_Scalar> {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef StateAbstractTpl<_Scalar> Base;
@@ -28,14 +30,14 @@ class StateNumDiffTpl : public StateAbstractTpl<_Scalar> {
   typedef typename MathBase::MatrixXs MatrixXs;
 
   explicit StateNumDiffTpl(boost::shared_ptr<Base> state);
-  ~StateNumDiffTpl();
+  virtual ~StateNumDiffTpl();
 
-  VectorXs zero() const;
-  VectorXs rand() const;
-  void diff(const Eigen::Ref<const VectorXs>& x0, const Eigen::Ref<const VectorXs>& x1,
-            Eigen::Ref<VectorXs> dxout) const;
-  void integrate(const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& dx,
-                 Eigen::Ref<VectorXs> xout) const;
+  virtual VectorXs zero() const;
+  virtual VectorXs rand() const;
+  virtual void diff(const Eigen::Ref<const VectorXs>& x0, const Eigen::Ref<const VectorXs>& x1,
+                    Eigen::Ref<VectorXs> dxout) const;
+  virtual void integrate(const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& dx,
+                         Eigen::Ref<VectorXs> xout) const;
   /**
    * @brief This computes the Jacobian of the diff method by finite
    * differentiation:
@@ -51,8 +53,8 @@ class StateNumDiffTpl : public StateAbstractTpl<_Scalar> {
    * @param Jsecond
    * @param firstsecond
    */
-  void Jdiff(const Eigen::Ref<const VectorXs>& x0, const Eigen::Ref<const VectorXs>& x1, Eigen::Ref<MatrixXs> Jfirst,
-             Eigen::Ref<MatrixXs> Jsecond, Jcomponent firstsecond = both) const;
+  virtual void Jdiff(const Eigen::Ref<const VectorXs>& x0, const Eigen::Ref<const VectorXs>& x1,
+                     Eigen::Ref<MatrixXs> Jfirst, Eigen::Ref<MatrixXs> Jsecond, Jcomponent firstsecond = both) const;
   /**
    * @brief This computes the Jacobian of the integrate method by finite
    * differentiation:
@@ -68,8 +70,9 @@ class StateNumDiffTpl : public StateAbstractTpl<_Scalar> {
    * @param Jsecond
    * @param firstsecond
    */
-  void Jintegrate(const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& dx,
-                  Eigen::Ref<MatrixXs> Jfirst, Eigen::Ref<MatrixXs> Jsecond, Jcomponent firstsecond = both) const;
+  virtual void Jintegrate(const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& dx,
+                          Eigen::Ref<MatrixXs> Jfirst, Eigen::Ref<MatrixXs> Jsecond,
+                          Jcomponent firstsecond = both) const;
   const Scalar& get_disturbance() const;
   void set_disturbance(const Scalar& disturbance);
 

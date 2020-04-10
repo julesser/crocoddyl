@@ -32,13 +32,13 @@ void exposeContact6D() {
           ":param state: state of the multibody system\n"
           ":param Mref: reference frame placement\n"
           ":param gains = gains of the contact model"))
-      .def("calc", &ContactModel6D::calc_wrap, bp::args("self", "data", "x"),
+      .def("calc", &ContactModel6D::calc, bp::args("self", "data", "x"),
            "Compute the 6D contact Jacobian and drift.\n\n"
            "The rigid contact model throught acceleration-base holonomic constraint\n"
            "of the contact frame placement.\n"
            ":param data: contact data\n"
            ":param x: state vector")
-      .def("calcDiff", &ContactModel6D::calcDiff_wrap, bp::args("self", "data", "x"),
+      .def("calcDiff", &ContactModel6D::calcDiff, bp::args("self", "data", "x"),
            "Compute the derivatives of the 6D contact holonomic constraint.\n\n"
            "The rigid contact model throught acceleration-base holonomic constraint\n"
            "of the contact frame placement.\n"
@@ -76,17 +76,13 @@ void exposeContact6D() {
                     "spatial velocity of the contact body")
       .add_property("a", bp::make_getter(&ContactData6D::a, bp::return_value_policy<bp::return_by_value>()),
                     "spatial acceleration of the contact body")
-      .add_property("v_partial_dq",
-                    bp::make_getter(&ContactData6D::v_partial_dq, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("v_partial_dq", bp::make_getter(&ContactData6D::v_partial_dq, bp::return_internal_reference<>()),
                     "Jacobian of the spatial body velocity")
-      .add_property("a_partial_dq",
-                    bp::make_getter(&ContactData6D::a_partial_dq, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("a_partial_dq", bp::make_getter(&ContactData6D::a_partial_dq, bp::return_internal_reference<>()),
                     "Jacobian of the spatial body acceleration")
-      .add_property("a_partial_dv",
-                    bp::make_getter(&ContactData6D::a_partial_dv, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("a_partial_dv", bp::make_getter(&ContactData6D::a_partial_dv, bp::return_internal_reference<>()),
                     "Jacobian of the spatial body acceleration")
-      .add_property("a_partial_da",
-                    bp::make_getter(&ContactData6D::a_partial_da, bp::return_value_policy<bp::return_by_value>()),
+      .add_property("a_partial_da", bp::make_getter(&ContactData6D::a_partial_da, bp::return_internal_reference<>()),
                     "Jacobian of the spatial body acceleration");
 }
 

@@ -35,19 +35,24 @@ void exposeActionImpulseFwdDynamics() {
           ":param inv_damping: Damping factor for cholesky decomposition of JMinvJt (default 0.)\n"
           ":param enable_force: Enable the computation of force Jacobians (default False)")
           [bp::with_custodian_and_ward<1, 3>()])
-      .def("calc", &ActionModelImpulseFwdDynamics::calc_wrap,
-           ActionModel_calc_wraps(
-               bp::args("self", "data", "x", "u"),
-               "Compute the next state and cost value.\n\n"
-               "It describes the time-continuous evolution of the multibody system with impulse. The\n"
-               "impulses are modelled as holonomic constraints.\n"
-               "Additionally it computes the cost value associated to this state and control pair.\n"
-               ":param data: impulse forward-dynamics action data\n"
-               ":param x: time-continuous state vector\n"
-               ":param u: time-continuous control input"))
       .def<void (ActionModelImpulseFwdDynamics::*)(const boost::shared_ptr<ActionDataAbstract>&,
-                                                   const Eigen::VectorXd&, const Eigen::VectorXd&)>(
-          "calcDiff", &ActionModelImpulseFwdDynamics::calcDiff_wrap, bp::args("self", "data", "x", "u"),
+                                                   const Eigen::Ref<const Eigen::VectorXd>&,
+                                                   const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &ActionModelImpulseFwdDynamics::calc, bp::args("self", "data", "x", "u"),
+          "Compute the next state and cost value.\n\n"
+          "It describes the time-continuous evolution of the multibody system with impulse. The\n"
+          "impulses are modelled as holonomic constraints.\n"
+          "Additionally it computes the cost value associated to this state and control pair.\n"
+          ":param data: impulse forward-dynamics action data\n"
+          ":param x: time-continuous state vector\n"
+          ":param u: time-continuous control input")
+      .def<void (ActionModelImpulseFwdDynamics::*)(const boost::shared_ptr<ActionDataAbstract>&,
+                                                   const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calc", &ActionModelAbstract::calc, bp::args("self", "data", "x"))
+      .def<void (ActionModelImpulseFwdDynamics::*)(const boost::shared_ptr<ActionDataAbstract>&,
+                                                   const Eigen::Ref<const Eigen::VectorXd>&,
+                                                   const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &ActionModelImpulseFwdDynamics::calcDiff, bp::args("self", "data", "x", "u"),
           "Compute the derivatives of the differential multibody system and its cost\n"
           "functions.\n\n"
           "It computes the partial derivatives of the differential multibody system and the\n"
@@ -59,8 +64,8 @@ void exposeActionImpulseFwdDynamics() {
           ":param u: time-continuous control input\n"
           "")
       .def<void (ActionModelImpulseFwdDynamics::*)(const boost::shared_ptr<ActionDataAbstract>&,
-                                                   const Eigen::VectorXd&)>(
-          "calcDiff", &ActionModelImpulseFwdDynamics::calcDiff_wrap, bp::args("self", "data", "x"))
+                                                   const Eigen::Ref<const Eigen::VectorXd>&)>(
+          "calcDiff", &ActionModelAbstract::calcDiff, bp::args("self", "data", "x"))
       .def("createData", &ActionModelImpulseFwdDynamics::createData, bp::args("self"),
            "Create the impulse forward dynamics differential action data.")
       .add_property(
@@ -76,8 +81,7 @@ void exposeActionImpulseFwdDynamics() {
           bp::make_function(&ActionModelImpulseFwdDynamics::get_costs, bp::return_value_policy<bp::return_by_value>()),
           "total cost model")
       .add_property("armature",
-                    bp::make_function(&ActionModelImpulseFwdDynamics::get_armature,
-                                      bp::return_value_policy<bp::return_by_value>()),
+                    bp::make_function(&ActionModelImpulseFwdDynamics::get_armature, bp::return_internal_reference<>()),
                     bp::make_function(&ActionModelImpulseFwdDynamics::set_armature),
                     "set an armature mechanism in the joints")
       .add_property("r_coeff",
@@ -108,13 +112,10 @@ void exposeActionImpulseFwdDynamics() {
           "costs",
           bp::make_getter(&ActionDataImpulseFwdDynamics::costs, bp::return_value_policy<bp::return_by_value>()),
           "total cost data")
-      .add_property(
-          "Kinv", bp::make_getter(&ActionDataImpulseFwdDynamics::Kinv, bp::return_value_policy<bp::return_by_value>()),
-          "inverse of the KKT matrix")
-      .add_property(
-          "df_dq",
-          bp::make_getter(&ActionDataImpulseFwdDynamics::df_dq, bp::return_value_policy<bp::return_by_value>()),
-          "Jacobian of the impulse force");
+      .add_property("Kinv", bp::make_getter(&ActionDataImpulseFwdDynamics::Kinv, bp::return_internal_reference<>()),
+                    "inverse of the KKT matrix")
+      .add_property("df_dq", bp::make_getter(&ActionDataImpulseFwdDynamics::df_dq, bp::return_internal_reference<>()),
+                    "Jacobian of the impulse force");
 }
 
 }  // namespace python
