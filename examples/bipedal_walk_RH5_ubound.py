@@ -105,17 +105,26 @@ for i, phase in enumerate(GAITPHASES):
         ddp[i].setCallbacks([crocoddyl.CallbackVerbose()])
 
     # Solving the problem with the DDP solver
-    xs = [rmodel.defaultState] * len(ddp[i].models())
-    us = [m.quasiStatic(d, rmodel.defaultState) for m, d in list(zip(ddp[i].models(), ddp[i].datas()))[:-1]]
+    # xs = [rmodel.defaultState] * len(ddp[i].models())
+    # us = [m.quasiStatic(d, rmodel.defaultState) for m, d in list(zip(ddp[i].models(), ddp[i].datas()))[:-1]]
+    xs = [rmodel.defaultState] * (ddp[i].problem.T + 1)
+    us = [
+        m.quasiStatic(d, rmodel.defaultState)
+        for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
+    ]
     ddp[i].solve(xs, us, 100, False, 0.1)
-
+    
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
 
-
+# BUG: Error caused by upgrade to v1.2.0 within 'display.getForceTrajectoryFromSolver'. 
+# This Bug was fixed with v1.2.1 (not released yet); see https://github.com/loco-3d/crocoddyl/commit/d8fa7b4230f61e120d5cedd52e00de7a55c3454e
+# Quick Fix: Manually modified function in /opt...;
+# TODO: When robotpkg to v1.2.1 is released: Update to this version!
 # Get contact wrenches f=[f,tau]
 display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
-fsRel = np.zeros((len(GAITPHASES)*(len(ddp[i].models())-1),12)) # e.g. for 3 gaitphases = [3*nKnots,12]
+# fsRel = np.zeros((len(GAITPHASES)*(len(ddp[i].problem.runningModels)-1),12)) # TODO: Erase -1?! e.g. for 3 gaitphases = [3*nKnots,12]
+fsRel = np.zeros((len(GAITPHASES)*(len(ddp[i].problem.runningModels)),12)) # e.g. for 3 gaitphases = [3*nKnots,12]
 for i, phase in enumerate(GAITPHASES):
     fs = display.getForceTrajectoryFromSolver(ddp[i])
     fs = fs[:-1] # Last element doubled
@@ -200,7 +209,7 @@ if WITHLOG:
     U = [0.] * nu
     for i, phase in enumerate(GAITPHASES):
         log = ddp[i].getCallbacks()[0]
-        #sol = log.us
+        sol = []
         for j in range(nu):
             U[j] = [np.asscalar(u[j]) for u in log.us] 
         sol = list(map(list, zip(*U))) #transpose
