@@ -43,6 +43,7 @@ lims = rmodel.effortLimit
 rmodel.effortLimit = lims
 
 # Setting up the 3d walking problem
+timeStep = 0.03
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
 gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)     
@@ -56,24 +57,24 @@ x0 = np.concatenate([q0, v0])
 # Repetitive gait
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}] """
+                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}}] """
 GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
      {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
      {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}]
+                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}}]
 # Changing, advanced gait
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
      {'walking': {'stepLength': 1.0, 'stepHeight': 0.1,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
      {'walking': {'stepLength': 0.6, 'stepHeight': 0.20,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
+                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
      {'walking': {'stepLength': 0.6, 'stepHeight': 0.30,
-                  'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}}] """
+                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}}] """
 cameraTF = [3., 3.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 
 ddp = [None] * len(GAITPHASES)
@@ -148,36 +149,56 @@ fs = fsRel
 if WITHLOG:
     nx, nq, nu = xs[0].shape[0], rmodel.nq, us[0].shape[0]
     nv = rmodel.nv
-    print('nq: ' + str(nq) + '; nv: ' + str(nv))
-    filename = 'logSolutions/RH5Legs/logJointStates.csv'
+    # print('nq: ' + str(nq) + '; nv: ' + str(nv) + '; nx: ' + str(nx) + '; nu: ' + str(nu))
+
+    # Collect time steps
+    time = []
+    for i in range(len(GAITPHASES)):
+        log = ddp[i].getCallbacks()[0]
+        log.xs = log.xs[:-1] # Don't consider very last element since doubled (cmp. plotSolution)
+        for t in range(len(log.xs)):
+            time.append(round(timeStep*(i*len(log.xs)+t),2))
+
+    filename = 'logSolutions/RH5Legs/logJointStatesAndEffort.csv'
     firstWrite = True
     rangeRelJoints = list(range(7,nq)) + list(range(nq + 6, nq + 18)) # Ignore floating base (fixed joints)
     X = [0.] * nx
+    U = [0.] * nu
     for i, phase in enumerate(GAITPHASES):
         log = ddp[i].getCallbacks()[0]
-        log.xs = log.xs[:-1] # Don't consider last element (cmp. plotSolution; propably doubled)
+        # time = []
+        # for t in range(len(log.xs)):
+        #     time.append(round(timeStep*(i*len(log.xs)+t),2))
         XRel = []
-        sol = []
         #Get relevant joints states (x_LF, x_RF, v_LF, v_RF)
         for j in range(nx):
             X[j] = [np.asscalar(x[j]) for x in log.xs] 
         for k in rangeRelJoints:
             XRel.append(X[k])
-        sol = list(map(list, zip(*XRel))) #transpose
+        sol = list(map(list, zip(*XRel))) # Transpose
+        for j in range(nu):
+            U[j] = [np.asscalar(u[j]) for u in log.us] 
+        solU = list(map(list, zip(*U))) # Transpose
+        # Include time and effort columns
+        for l in range(len(sol)):
+            sol[l] = [time[i*len(log.xs)+l]] + sol[l] + solU[l] 
         if firstWrite: # Write ('w') headers
             firstWrite = False
             with open(filename, 'w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(['q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
+                writer.writerow(['time', 
+                                 'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
                                  'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
                                  'qd_LRHip1', 'qd_LRHip2', 'qd_LRHip3', 'qd_LRKnee', 'qd_LRAnkleRoll', 'qd_LRAnklePitch',
-                                 'qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch']) 
+                                 'qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch',
+                                 'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch',
+                                 'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch']) 
                 writer.writerows(sol)
         else: # Append ('a') log of other phases (prevent overwriting)
             with open(filename, 'a', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerows(sol)
-
+    
     filename = 'logSolutions/RH5Legs/logBaseStates.csv'
     firstWrite = True
     rangeRelJoints = list(range(0,7)) + list(range(nq, nq + 6)) # Ignore floating base (fixed joints)
