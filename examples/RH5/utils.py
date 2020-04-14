@@ -1,6 +1,7 @@
 import crocoddyl
 import pinocchio
 import numpy as np
+import csv
 
 class SimpleBipedGaitProblem:
     """ Defines a simple 3d locomotion problem
@@ -16,10 +17,10 @@ class SimpleBipedGaitProblem:
         # Defining default state
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init RH5 Full Body
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init Zero Configuration
-        q0 = np.matrix([0,0,0.90,0,0,0,1,              #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
+        q0 = np.matrix([0,0,0.90,0,0,0,1,        #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
                         0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg
-        """ q0 = np.matrix([0,0,0.88,0,0,0,1,              #q1-7:   Floating Base (quaternions) # Init like in smurf file
+        """ q0 = np.matrix([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file
                         0,0,-0.353,0.642,0,-0.289,     #q8-13:  Left Leg     
                         0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg """
         self.q0 = q0
@@ -171,7 +172,7 @@ class SimpleBipedGaitProblem:
         model = crocoddyl.IntegratedActionModelEuler(dmodel, timeStep)
         return model
 
-    def createFootSwitchModel(self, supportFootIds, swingFootTask, pseudoImpulse=True):
+    def createFootSwitchModel(self, supportFootIds, swingFootTask, pseudoImpulse):
         """ Action model for a foot switch phase.
 
         :param supportFootIds: Ids of the constrained feet
@@ -265,6 +266,23 @@ class SimpleBipedGaitProblem:
         return model
 
 
+
+
+
+def setLimits(rmodel):
+    # Add the free-flyer joint limits (floating base)
+    ub = rmodel.upperPositionLimit
+    ub[:7] = 1
+    rmodel.upperPositionLimit = ub
+    lb = rmodel.lowerPositionLimit
+    lb[:7] = -1
+    rmodel.lowerPositionLimit = lb
+
+    # If desired: Artificially reduce the torque limits
+    lims = rmodel.effortLimit
+    # lims *= 0.5 
+    # lims[11] = 70
+    rmodel.effortLimit = lims
 
 
 
@@ -482,15 +500,97 @@ def plotSolution(solver, fs, bounds=True, figIndex=1, figTitle="", show=True):
         plt.show()
 
 
-def quaternion_to_euler(x, y, z, w):
-    t0 = +2.0 * (w * x + y * z)
-    t1 = +1.0 - 2.0 * (x * x + y * y)
-    roll = math.atan2(t0, t1)
-    t2 = +2.0 * (w * y - z * x)
-    t2 = +1.0 if t2 > +1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    pitch = math.asin(t2)
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (y * y + z * z)
-    yaw = math.atan2(t3, t4)
-    return [yaw, pitch, roll]
+
+def logSolution(xs, us, fs, rmodel, GAITPHASES, ddp, timeStep):
+    nx, nq, nu, nv = xs[0].shape[0], rmodel.nq, us[0].shape[0], rmodel.nv
+    # print('nq: ' + str(nq) + '; nv: ' + str(nv) + '; nx: ' + str(nx) + '; nu: ' + str(nu))
+
+    # Collect time steps
+    time = []
+    for i in range(len(GAITPHASES)):
+        log = ddp[i].getCallbacks()[0]
+        log.xs = log.xs[:-1] # Don't consider very last element since doubled (cmp. plotSolution)
+        for t in range(len(log.xs)):
+            time.append(round(timeStep*(i*len(log.xs)+t),2))
+
+    filename = 'log/6Steps/logJointStatesAndEffort.csv'
+    firstWrite = True
+    rangeRelJoints = list(range(7,nq)) + list(range(nq + 6, nq + 18)) # Ignore floating base (fixed joints)
+    X = [0.] * nx
+    U = [0.] * nu
+    for i, phase in enumerate(GAITPHASES):
+        log = ddp[i].getCallbacks()[0]
+        # time = []
+        # for t in range(len(log.xs)):
+        #     time.append(round(timeStep*(i*len(log.xs)+t),2))
+        XRel = []
+        #Get relevant joints states (x_LF, x_RF, v_LF, v_RF)
+        for j in range(nx):
+            X[j] = [np.asscalar(x[j]) for x in log.xs] 
+        for k in rangeRelJoints:
+            XRel.append(X[k])
+        sol = list(map(list, zip(*XRel))) # Transpose
+        for j in range(nu):
+            U[j] = [np.asscalar(u[j]) for u in log.us] 
+        solU = list(map(list, zip(*U))) # Transpose
+        # Include time and effort columns
+        for l in range(len(sol)):
+            sol[l] = [time[i*len(log.xs)+l]] + sol[l] + solU[l] 
+        if firstWrite: # Write ('w') headers
+            firstWrite = False
+            with open(filename, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['t[s]', 
+                                 'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
+                                 'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
+                                 'qd_LRHip1', 'qd_LRHip2', 'qd_LRHip3', 'qd_LRKnee', 'qd_LRAnkleRoll', 'qd_LRAnklePitch',
+                                 'qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch',
+                                 'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch',
+                                 'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch']) 
+                writer.writerows(sol)
+        else: # Append ('a') log of other phases (prevent overwriting)
+            with open(filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(sol)
+    
+    filename = 'log/6Steps/logBaseStates.csv'
+    firstWrite = True
+    rangeRelJoints = list(range(0,7)) + list(range(nq, nq + 6)) # Ignore floating base (fixed joints)
+    X = [0.] * nx
+    for i, phase in enumerate(GAITPHASES):
+        log = ddp[i].getCallbacks()[0]
+        XRel = []
+        sol = []
+        #Get relevant joints states (x_LF, x_RF, v_LF, v_RF)
+        for j in range(nx):
+            X[j] = [np.asscalar(x[j]) for x in log.xs] 
+        for k in rangeRelJoints:
+            XRel.append(X[k])
+        sol = list(map(list, zip(*XRel))) #transpose
+        # Include time column
+        for l in range(len(sol)):
+            sol[l] = [time[i*len(log.xs)+l]] + sol[l] 
+        if firstWrite: # Write ('w') headers
+            firstWrite = False
+            with open(filename, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['t[s]',
+                                 'X', 'Y', 'Z', 'Qx', 'Qy', 'Qz', 'Qw',
+                                 'vx', 'vy', 'vz', 'wx', 'wy', 'wz']) 
+                writer.writerows(sol)
+        else: # Append ('a') log of other phases (prevent overwriting)
+            with open(filename, 'a', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerows(sol)
+
+    filename = 'log/6Steps/logContactWrenches.csv'
+    # Include time column
+    sol = np.zeros([len(time), 13])
+    for l in range(len(time)):
+        sol[l] = [*[time[l]],*fs[l]] 
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['t[s]',
+                         'Fx_FR_SupportCenter', 'Fy_FR_SupportCenter', 'Fz_FR_SupportCenter', 'Tx_FR_SupportCenter', 'Ty_FR_SupportCenter', 'Tz_FR_SupportCenter',
+                         'Fx_FL_SupportCenter', 'Fy_FL_SupportCenter', 'Fz_FL_SupportCenter', 'Tx_FL_SupportCenter', 'Ty_FL_SupportCenter', 'Tz_FL_SupportCenter'])
+        writer.writerows(sol)
