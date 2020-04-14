@@ -186,7 +186,7 @@ if WITHLOG:
             firstWrite = False
             with open(filename, 'w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(['time', 
+                writer.writerow(['t[s]', 
                                  'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
                                  'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
                                  'qd_LRHip1', 'qd_LRHip2', 'qd_LRHip3', 'qd_LRKnee', 'qd_LRAnkleRoll', 'qd_LRAnklePitch',
@@ -213,11 +213,15 @@ if WITHLOG:
         for k in rangeRelJoints:
             XRel.append(X[k])
         sol = list(map(list, zip(*XRel))) #transpose
+        # Include time column
+        for l in range(len(sol)):
+            sol[l] = [time[i*len(log.xs)+l]] + sol[l] 
         if firstWrite: # Write ('w') headers
             firstWrite = False
             with open(filename, 'w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(['X', 'Y', 'Z', 'Qx', 'Qy', 'Qz', 'Qw',
+                writer.writerow(['t[s]',
+                                 'X', 'Y', 'Z', 'Qx', 'Qy', 'Qz', 'Qw',
                                  'vx', 'vy', 'vz', 'wx', 'wy', 'wz']) 
                 writer.writerows(sol)
         else: # Append ('a') log of other phases (prevent overwriting)
@@ -225,33 +229,17 @@ if WITHLOG:
                 writer = csv.writer(f)
                 writer.writerows(sol)
 
-    filename = 'logSolutions/RH5Legs/logEffort.csv'
-    firstWrite = True
-    U = [0.] * nu
-    for i, phase in enumerate(GAITPHASES):
-        log = ddp[i].getCallbacks()[0]
-        sol = []
-        for j in range(nu):
-            U[j] = [np.asscalar(u[j]) for u in log.us] 
-        sol = list(map(list, zip(*U))) #transpose
-        if firstWrite: # Write ('w') headers
-            firstWrite = False
-            with open(filename, 'w', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerow(['Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch',
-                                 'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch']) 
-                writer.writerows(sol)
-        else: # Append ('a') log of other phases (prevent overwriting)
-            with open(filename, 'a', newline='') as f:
-                writer = csv.writer(f)
-                writer.writerows(sol)
-
     filename = 'logSolutions/RH5Legs/logContactWrenches.csv'
+    # Include time column
+    sol = np.zeros([len(time), 13])
+    for l in range(len(time)):
+        sol[l] = [*[time[l]],*fs[l]] 
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Fx_FR_SupportCenter', 'Fy_FR_SupportCenter', 'Fz_FR_SupportCenter', 'Tx_FR_SupportCenter', 'Ty_FR_SupportCenter', 'Tz_FR_SupportCenter',
+        writer.writerow(['t[s]',
+                         'Fx_FR_SupportCenter', 'Fy_FR_SupportCenter', 'Fz_FR_SupportCenter', 'Tx_FR_SupportCenter', 'Ty_FR_SupportCenter', 'Tz_FR_SupportCenter',
                          'Fx_FL_SupportCenter', 'Fy_FL_SupportCenter', 'Fz_FL_SupportCenter', 'Tx_FL_SupportCenter', 'Ty_FL_SupportCenter', 'Tz_FL_SupportCenter'])
-        writer.writerows(fs)
+        writer.writerows(sol)
 
 # Display the entire motion
 if WITHDISPLAY:
