@@ -6,7 +6,8 @@ import itertools
 import crocoddyl
 import example_robot_data
 import pinocchio
-from utils import SimpleBipedGaitProblem, setLimits, plotSolution, logSolution 
+from utils.walkProblem import SimpleBipedGaitProblem
+from utils.utils import setLimits, plotSolution, logSolution 
 from pinocchio.robot_wrapper import RobotWrapper
 
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
@@ -36,10 +37,10 @@ v0 = pinocchio.utils.zero(rmodel.nv)
 x0 = np.concatenate([q0, v0])
 
 # Setting up all tasks
-# Repetitive gait
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}}] """
+# Repetitive gait
 GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
@@ -67,12 +68,7 @@ for i, phase in enumerate(GAITPHASES):
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
                                           value['stepKnots'], value['supportKnots']))
-        if key == 'jumping':
-            # Creating a walking problem
-            ddp[i] = crocoddyl.SolverBoxDDP(
-                gait.createJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
-                                          value['groundKnots'], value['flyingKnots']))
-                                          
+            # ddp[i].th_stop = 1e-8                                          
 
     # Add the callback functions
     print('*** SOLVE ' + key + ' ***')
