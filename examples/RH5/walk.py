@@ -112,6 +112,15 @@ for i, phase in enumerate(GAITPHASES):
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
 
+# Calc resulting CoM velocity (average)
+log = ddp[-1].getCallbacks()[0]
+final_xs = log.xs[-1]
+final_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), final_xs[:rmodel.nq]) # calc CoM for final pose
+# n_knots = 2*len(GAITPHASES)*(stepKnots + supportKnots + impulseKnots) 
+n_knots = 2*len(GAITPHASES)*(stepKnots + impulseKnots) # Don't consider support knots -> Pause
+t_total = n_knots * timeStep # total time = f(knots, timeStep)
+v_com = final_com[0] / t_total
+print('Average CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
 
 # Get contact wrenches f=[f,tau]
 display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
