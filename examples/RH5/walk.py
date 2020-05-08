@@ -45,20 +45,20 @@ x0 = np.concatenate([q0, v0])
 """ GAITPHASES = \
     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}}] """
-""" # Repetitive gait
-GAITPHASES = \
-    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
 # Repetitive gait
 GAITPHASES = \
     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
      {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+# Repetitive gait
+""" GAITPHASES = \
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
@@ -68,7 +68,7 @@ GAITPHASES = \
     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
      {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
 # Changing, advanced gait
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
@@ -146,7 +146,7 @@ fs = fsRel
 
 # Export solution to .csv file
 if WITHLOG:
-    logSolution(xs, us, fs, rmodel, GAITPHASES, ddp, timeStep)
+    logSolution(ddp, fs, timeStep)
 
 # Display the entire motion
 if WITHDISPLAY:
