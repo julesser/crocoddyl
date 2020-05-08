@@ -23,6 +23,7 @@ class SimpleBipedGaitProblem:
                         0,0,-0.353,0.642,0,-0.289,     #q8-13:  Left Leg     
                         0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg """
         self.q0 = q0
+        self.comRefY = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, self.q0)[2])
         self.rmodel.defaultState = np.concatenate([q0, np.zeros((self.rmodel.nv, 1))])
         self.firstStep = True
         # Defining the friction coefficient and normal
@@ -47,13 +48,14 @@ class SimpleBipedGaitProblem:
         rfPos0 = self.rdata.oMf[self.rfId].translation
         lfPos0 = self.rdata.oMf[self.lfId].translation
         comRef = (rfPos0 + lfPos0) / 2
-        comRef[2] = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2])
-
+        # comRef[2] = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2])
+        comRef[2] = self.comRefY
         # Defining the action models along the time instances
         loco3dModel = []
         doubleSupport = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId]) for k in range(supportKnots)]
 
         # Creating the action models for three steps
+        # print(comRef)
         if self.firstStep is True:
             rStep = self.createFootstepModels(comRef, [rfPos0], 0.5 * stepLength, stepHeight, timeStep, stepKnots, [self.lfId], [self.rfId])
             self.firstStep = False
