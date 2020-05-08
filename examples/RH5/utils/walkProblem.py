@@ -1,6 +1,7 @@
 import crocoddyl
 import pinocchio
 import numpy as np
+import sys
 
 class SimpleBipedGaitProblem:
     """ Defines a simple 3d locomotion problem
@@ -160,7 +161,23 @@ class SimpleBipedGaitProblem:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
                 costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6)
-
+        # Add cost for self-collision (joint limits) TODO: Right now no joint limits violated - Joint inperiodicity has other reason!
+        # maxfloat = sys.float_info.max
+        # xlb = np.vstack([
+        #     -maxfloat * np.matrix(np.ones((6, 1))),  # dimension of the SE(3) manifold
+        #     self.rmodel.lowerPositionLimit[7:],
+        #     -maxfloat * np.matrix(np.ones((self.state.nv, 1)))
+        # ])
+        # xub = np.vstack([
+        #     maxfloat * np.matrix(np.ones((6, 1))),  # dimension of the SE(3) manifold
+        #     self.rmodel.upperPositionLimit[7:],
+        #     maxfloat * np.matrix(np.ones((self.state.nv, 1)))
+        # ])
+        # print(xub)
+        # bounds = crocoddyl.ActivationBounds(xlb, xub, 1.)
+        # limitCost = crocoddyl.CostModelState(self.state, crocoddyl.ActivationModelQuadraticBarrier(bounds), self.rmodel.defaultState,
+        #                                     self.actuation.nu)
+        # costModel.addCost("limitCost", limitCost, 1e3)
         stateWeights = np.array([0] * 3 + [500.] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv)
         stateReg = crocoddyl.CostModelState(self.state,
                                             crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
