@@ -27,6 +27,11 @@ setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.03
+stepKnots = 25
+supportKnots = 1
+impulseKnots = 1
+stepLength = 0.3
+stepHeight = 0.1
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
 gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)     
@@ -38,26 +43,42 @@ x0 = np.concatenate([q0, v0])
 
 # Setting up all tasks
 """ GAITPHASES = \
-    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}}] """
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}}] """
+""" # Repetitive gait
+GAITPHASES = \
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
 # Repetitive gait
 GAITPHASES = \
-    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}}]
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 # Changing, advanced gait
 """ GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots}},
      {'walking': {'stepLength': 1.0, 'stepHeight': 0.1,
-                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots}},
      {'walking': {'stepLength': 0.6, 'stepHeight': 0.20,
-                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}},
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots}},
      {'walking': {'stepLength': 0.6, 'stepHeight': 0.30,
-                  'timeStep': timeStep, 'stepKnots': 25, 'supportKnots': 1}}] """
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots}}] """
 cameraTF = [3., 3.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 
 ddp = [None] * len(GAITPHASES)
@@ -67,7 +88,7 @@ for i, phase in enumerate(GAITPHASES):
             # Creating a walking problem
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
-                                          value['stepKnots'], value['supportKnots']))
+                                          value['stepKnots'], value['supportKnots'], value['isLastPhase']))
             # ddp[i].th_stop = 1e-8                                          
 
     # Add the callback functions
@@ -110,7 +131,8 @@ for i, phase in enumerate(GAITPHASES):
                 for k in range(3):
                     fsRel[i*len(fs)+j,k+6] = wrench.linear[k]
                     fsRel[i*len(fs)+j,k+9] = wrench.angular[k]
-            # print('Foot: ' + str(key), wrench) 
+            #print('Foot: ' + str(key), wrench) 
+            # print("fs[" + str(j) + "]: " + f)
 fs = fsRel
 
 # Export solution to .csv file

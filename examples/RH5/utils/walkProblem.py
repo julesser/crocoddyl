@@ -30,7 +30,7 @@ class SimpleBipedGaitProblem:
         self.mu = 0.7
         self.nsurf = np.matrix([0., 0., 1.]).T
 
-    def createWalkingProblem(self, x0, stepLength, stepHeight, timeStep, stepKnots, supportKnots):
+    def createWalkingProblem(self, x0, stepLength, stepHeight, timeStep, stepKnots, supportKnots, isLastPhase):
         """ Create a shooting problem for a simple walking gait.
 
         :param x0: initial state
@@ -61,7 +61,11 @@ class SimpleBipedGaitProblem:
             self.firstStep = False
         else:
             rStep = self.createFootstepModels(comRef, [rfPos0], stepLength, stepHeight, timeStep, stepKnots, [self.lfId], [self.rfId])
-        lStep = self.createFootstepModels(comRef, [lfPos0], stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
+        # print(comRef)
+        if isLastPhase is True: 
+            lStep = self.createFootstepModels(comRef, [lfPos0], 0.5* stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
+        else: 
+            lStep = self.createFootstepModels(comRef, [lfPos0], stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
 
         # We defined the problem as:
         loco3dModel += doubleSupport + rStep
