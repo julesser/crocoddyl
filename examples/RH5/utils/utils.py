@@ -3,82 +3,9 @@ import pinocchio
 import numpy as np
 import csv
 
-def setLimits(rmodel):
-    # Add the free-flyer joint limits (floating base)
-    ub = rmodel.upperPositionLimit
-    ub[:7] = 1
-    rmodel.upperPositionLimit = ub
-    lb = rmodel.lowerPositionLimit
-    lb[:7] = -1
-    rmodel.lowerPositionLimit = lb
-
-    # If desired: Artificially reduce the torque limits
-    lims = rmodel.effortLimit
-    # lims *= 0.5 
-    # lims[11] = 70
-    rmodel.effortLimit = lims
-
-
-def getTrajectories(ddp, fs, bounds):
-    xs, us = [], []
-    if bounds:
-        us_lb, us_ub = [], []
-        xs_lb, xs_ub = [], []
-    if isinstance(ddp, list):
-        rmodel = ddp[0].problem.runningModels[0].state.pinocchio
-        for s in ddp:
-            xs.extend(s.xs[:-1])
-            us.extend(s.us)
-            if bounds:
-                models = s.problem.runningModels + [s.problem.terminalModel]
-                for m in models:
-                    us_lb += [m.u_lb]
-                    us_ub += [m.u_ub]
-                    xs_lb += [m.state.lb]
-                    xs_ub += [m.state.ub]
-    else:
-        rmodel = ddp.problem.runningModels[0].state.pinocchio
-        xs, us = ddp.xs, ddp.us
-        if bounds:
-            models = s.problem.runningModels + [s.problem.terminalModel]
-            for m in models:
-                us_lb += [m.u_lb]
-                us_ub += [m.u_ub]
-                xs_lb += [m.state.lb]
-                xs_ub += [m.state.ub]
-
-    # Getting the state, control and wrench trajectories
-    nx, nq, nu, nf = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0]
-    X = [0.] * nx
-    U = [0.] * nu
-    F = [0.] * 12
-    if bounds:
-        U_LB = [0.] * nu
-        U_UB = [0.] * nu
-        X_LB = [0.] * nx
-        X_UB = [0.] * nx
-    for i in range(nf):
-        F[i] = [np.asscalar(f[i]) for f in fs]
-    for i in range(nx):
-        X[i] = [np.asscalar(x[i]) for x in xs]
-        if bounds:
-            X_LB[i] = [np.asscalar(x[i]) for x in xs_lb]
-            X_UB[i] = [np.asscalar(x[i]) for x in xs_ub]
-    for i in range(nu):
-        U[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else 0 for u in us]
-        if bounds:
-            U_LB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_lb]
-            U_UB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_ub]
-
-    if bounds: 
-        return rmodel, xs, us, X, U, F, X_LB, X_UB, U_LB, U_UB
-    else: 
-        return rmodel, xs, us, X, U, F
-
 
 def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
-    
     if bounds: 
         rmodel, xs, us, X, U, F, X_LB, X_UB, U_LB, U_UB = getTrajectories(ddp, fs, bounds)
     else: 
@@ -309,21 +236,92 @@ def logSolution(ddp, fs, timeStep):
         writer.writerows(sol)
 
     filename = logPath + 'logCoM.csv'
+    cs = []
+    sol = np.zeros([len(time), 3])
     rdata = rmodel.createData()
-    Cx = []
-    Cy = []
-    Cz = []
+    # Calculate CoMs for all joint positions
     for x in xs:
         q = x[:rmodel.nq]
         c = pinocchio.centerOfMass(rmodel, rdata, q)
-        # print(c)
-        Cx.append(np.asscalar(c[0]))
-        Cy.append(np.asscalar(c[1]))
-        Cz.append(np.asscalar(c[2]))
-    sol = np.zeros([len(xs), 3])
-    for l in range(len(xs)):
-        sol[l] = [Cx[l]+Cy[l]+Cz[l]]
+        cs.append(c)
+    # Hacky solution to erase brackets from cs: 
+    for k in range(len(time)):
+        for l in range(3):
+            sol[k][l] = cs[k][l]
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['Cx', 'Cy', 'Cz'])
         writer.writerows(sol)
+
+
+def setLimits(rmodel):
+    # Add the free-flyer joint limits (floating base)
+    ub = rmodel.upperPositionLimit
+    ub[:7] = 1
+    rmodel.upperPositionLimit = ub
+    lb = rmodel.lowerPositionLimit
+    lb[:7] = -1
+    rmodel.lowerPositionLimit = lb
+
+    # If desired: Artificially reduce the torque limits
+    lims = rmodel.effortLimit
+    # lims *= 0.5 
+    # lims[11] = 70
+    rmodel.effortLimit = lims
+
+
+def getTrajectories(ddp, fs, bounds):
+    xs, us = [], []
+    if bounds:
+        us_lb, us_ub = [], []
+        xs_lb, xs_ub = [], []
+    if isinstance(ddp, list):
+        rmodel = ddp[0].problem.runningModels[0].state.pinocchio
+        for s in ddp:
+            xs.extend(s.xs[:-1])
+            us.extend(s.us)
+            if bounds:
+                models = s.problem.runningModels + [s.problem.terminalModel]
+                for m in models:
+                    us_lb += [m.u_lb]
+                    us_ub += [m.u_ub]
+                    xs_lb += [m.state.lb]
+                    xs_ub += [m.state.ub]
+    else:
+        rmodel = ddp.problem.runningModels[0].state.pinocchio
+        xs, us = ddp.xs, ddp.us
+        if bounds:
+            models = s.problem.runningModels + [s.problem.terminalModel]
+            for m in models:
+                us_lb += [m.u_lb]
+                us_ub += [m.u_ub]
+                xs_lb += [m.state.lb]
+                xs_ub += [m.state.ub]
+
+    # Getting the state, control and wrench trajectories
+    nx, nq, nu, nf = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0]
+    X = [0.] * nx
+    U = [0.] * nu
+    F = [0.] * 12
+    if bounds:
+        U_LB = [0.] * nu
+        U_UB = [0.] * nu
+        X_LB = [0.] * nx
+        X_UB = [0.] * nx
+    for i in range(nf):
+        F[i] = [np.asscalar(f[i]) for f in fs]
+    for i in range(nx):
+        X[i] = [np.asscalar(x[i]) for x in xs]
+        if bounds:
+            X_LB[i] = [np.asscalar(x[i]) for x in xs_lb]
+            X_UB[i] = [np.asscalar(x[i]) for x in xs_ub]
+    for i in range(nu):
+        U[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else 0 for u in us]
+        if bounds:
+            U_LB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_lb]
+            U_UB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_ub]
+
+    if bounds: 
+        return rmodel, xs, us, X, U, F, X_LB, X_UB, U_LB, U_UB
+    else: 
+        return rmodel, xs, us, X, U, F
