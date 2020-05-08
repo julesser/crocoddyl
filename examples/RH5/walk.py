@@ -112,14 +112,15 @@ for i, phase in enumerate(GAITPHASES):
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
 
-# Calc resulting CoM velocity (average)
-log = ddp[-1].getCallbacks()[0]
-final_xs = log.xs[-1]
-final_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), final_xs[:rmodel.nq]) # calc CoM for final pose
+# Calc resulting CoM velocity (average) # TODO: Put in utils
+logFirst = ddp[0].getCallbacks()[0]
+logLast = ddp[-1].getCallbacks()[0]
+first_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logFirst.xs[1][:rmodel.nq]) # calc CoM for init pose
+final_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logLast.xs[-1][:rmodel.nq]) # calc CoM for final pose
 # n_knots = 2*len(GAITPHASES)*(stepKnots + supportKnots + impulseKnots) 
 n_knots = 2*len(GAITPHASES)*(stepKnots + impulseKnots) # Don't consider support knots -> Pause
 t_total = n_knots * timeStep # total time = f(knots, timeStep)
-v_com = final_com[0] / t_total
+v_com = (final_com[0] - first_com[0]) / t_total
 print('Average CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
 
 # Get contact wrenches f=[f,tau]
