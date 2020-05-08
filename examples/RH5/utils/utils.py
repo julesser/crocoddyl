@@ -325,3 +325,24 @@ def logSolution(xs, us, fs, rmodel, GAITPHASES, ddp, timeStep):
                          'Fx_FR_SupportCenter', 'Fy_FR_SupportCenter', 'Fz_FR_SupportCenter', 'Tx_FR_SupportCenter', 'Ty_FR_SupportCenter', 'Tz_FR_SupportCenter',
                          'Fx_FL_SupportCenter', 'Fy_FL_SupportCenter', 'Fz_FL_SupportCenter', 'Tx_FL_SupportCenter', 'Ty_FL_SupportCenter', 'Tz_FL_SupportCenter'])
         writer.writerows(sol)
+
+    filename = 'log/6Steps/logCoM.csv'
+    rdata = rmodel.createData()
+    Cx = []
+    Cy = []
+    Cz = []
+    log = ddp[0].getCallbacks()[0] #TODO: Also consider other gaitphases (now only first)
+    for x in log.xs:
+        q = x[:rmodel.nq]
+        c = pinocchio.centerOfMass(rmodel, rdata, q)
+        # print(c)
+        Cx.append(np.asscalar(c[0]))
+        Cy.append(np.asscalar(c[1]))
+        Cz.append(np.asscalar(c[2]))
+    sol = np.zeros([len(log.xs), 3])
+    for l in range(len(log.xs)):
+        sol[l] = [Cx[l]+Cy[l]+Cz[l]]
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Cx', 'Cy', 'Cz'])
+        writer.writerows(sol)
