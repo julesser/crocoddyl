@@ -247,16 +247,13 @@ def logSolution(xs, us, fs, rmodel, GAITPHASES, ddp, timeStep):
         for t in range(len(log.xs)):
             time.append(round(timeStep*(i*len(log.xs)+t),2))
 
-    filename = '../log/6Steps/logJointStatesAndEffort.csv'
+    filename = 'log/6Steps/logJointStatesAndEffort.csv'
     firstWrite = True
     rangeRelJoints = list(range(7,nq)) + list(range(nq + 6, nq + 18)) # Ignore floating base (fixed joints)
     X = [0.] * nx
     U = [0.] * nu
     for i, phase in enumerate(GAITPHASES):
         log = ddp[i].getCallbacks()[0]
-        # time = []
-        # for t in range(len(log.xs)):
-        #     time.append(round(timeStep*(i*len(log.xs)+t),2))
         XRel = []
         #Get relevant joints states (x_LF, x_RF, v_LF, v_RF)
         for j in range(nx):
@@ -287,7 +284,7 @@ def logSolution(xs, us, fs, rmodel, GAITPHASES, ddp, timeStep):
                 writer = csv.writer(f)
                 writer.writerows(sol)
     
-    filename = '../log/6Steps/logBaseStates.csv'
+    filename = 'log/6Steps/logBaseStates.csv'
     firstWrite = True
     rangeRelJoints = list(range(0,7)) + list(range(nq, nq + 6)) # Ignore floating base (fixed joints)
     X = [0.] * nx
@@ -317,7 +314,7 @@ def logSolution(xs, us, fs, rmodel, GAITPHASES, ddp, timeStep):
                 writer = csv.writer(f)
                 writer.writerows(sol)
 
-    filename = '../log/6Steps/logContactWrenches.csv'
+    filename = 'log/6Steps/logContactWrenches.csv'
     # Include time column
     sol = np.zeros([len(time), 13])
     for l in range(len(time)):
