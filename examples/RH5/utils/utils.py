@@ -2,15 +2,16 @@ import crocoddyl
 import pinocchio
 import numpy as np
 import csv
+import os
 
 
 def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
     if bounds: 
-        rmodel, xs, us, X, U, F, X_LB, X_UB, U_LB, U_UB = getTrajectories(ddp, fs, bounds)
+        rmodel, xs, us, accs, X, U, F, A, X_LB, X_UB, U_LB, U_UB = mergeDataFromSolvers(ddp, fs, bounds)
     else: 
-        rmodel, xs, us, X, U, F = getTrajectories(ddp, fs, bounds)
-    nx, nq, nu, nf = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0]
+         rmodel, xs, us, accs, X, U, F, A = mergeDataFromSolvers(ddp, fs, bounds)
+    nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
 
     # Plotting the joint positions, velocities and torques
     plt.figure(figIndex)
@@ -174,10 +175,43 @@ def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
         plt.show()
 
 
-def logSolution(ddp, fs, timeStep):
-    rmodel, xs, us, X, U, F = getTrajectories(ddp, fs, bounds=False)
-    nx, nq, nu, nf = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0]
-    logPath = 'log/6Steps/'
+    # Plotting the Acceleration
+    AccFBNames = ['vxd', 'vyd', 'vzd', 'wxd', 'wyd', 'wzd']
+    AccRFNames = ['qdd_LRHip1', 'qdd_LRHip2', 'qdd_LRHip3', 'qdd_LRKnee', 'qdd_LRAnkleRoll', 'qdd_LRAnklePitch']
+    AccLFNames = ['qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch']
+    plt.figure(figIndex + 4)
+        
+    plt.suptitle(figTitle)
+    plt.subplot(3,1,1)
+    [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(0, 6))]
+    plt.title('Acceleration')
+    plt.xlabel('Knots')
+    plt.ylabel('FB')
+    plt.legend()
+
+    plt.suptitle(figTitle)
+    plt.subplot(3,1,2)
+    [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(6, 9))]
+    plt.title('Acceleration')
+    plt.xlabel('Knots')
+    plt.ylabel('RF')
+    plt.legend()
+
+    plt.suptitle(figTitle)
+    plt.subplot(3,1,3)
+    [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(9, 12))]
+    plt.title('Acceleration')
+    plt.xlabel('Knots')
+    plt.ylabel('LF')
+    plt.legend()
+
+def logSolution(ddp, fs, timeStep, logPath):
+    # Check if target path exists, otherwise create it
+    if not os.path.exists(logPath):
+        os.makedirs(logPath)
+    # Stack together all data contained in multiple solvers
+    rmodel, xs, us, accs, X, U, F, A = mergeDataFromSolvers(ddp, fs, bounds=False)
+    nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
     # Collect time steps
     time = []
     for t in range(len(xs)):
@@ -185,15 +219,21 @@ def logSolution(ddp, fs, timeStep):
 
     filename = logPath + 'logJointStatesAndEffort.csv'
     rangeRelJoints = list(range(7, nq)) + list(range(nq + 6, nq + 18))  # Ignore floating base (fixed joints)
+    rangeRelAccs = list(range(6, na)) # Acceleration is 6-dim
     XRel = []
+    ARel = []
     # Get relevant joints states (x_LF, x_RF, v_LF, v_RF)
     for k in rangeRelJoints:
         XRel.append(X[k])
+    # Get relevant accelerations (x_LF, x_RF, v_LF, v_RF)
+    for l in rangeRelAccs: 
+        ARel.append(A[l])
     sol = list(map(list, zip(*XRel))) # Transpose
     solU = list(map(list, zip(*U))) # Transpose
+    solA = list(map(list, zip(*ARel)))  # Transpose
     # Include time and effort columns
-    for l in range(len(sol)):
-        sol[l] = [time[l]] + sol[l] + solU[l]
+    for m in range(len(sol)):
+        sol[m] = [time[m]] + sol[m] + solA[m] + solU[m] 
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['t[s]',
@@ -201,26 +241,35 @@ def logSolution(ddp, fs, timeStep):
                          'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
                          'qd_LRHip1', 'qd_LRHip2', 'qd_LRHip3', 'qd_LRKnee', 'qd_LRAnkleRoll', 'qd_LRAnklePitch',
                          'qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch',
+                         'qdd_LRHip1', 'qdd_LRHip2', 'qdd_LRHip3', 'qdd_LRKnee', 'qdd_LRAnkleRoll', 'qdd_LRAnklePitch',
+                         'qdd_LLHip1', 'qdd_LLHip2', 'qdd_LLHip3', 'qdd_LLKnee', 'qdd_LLAnkleRoll', 'qdd_LLAnklePitch',
                          'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch',
                          'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch'])
         writer.writerows(sol)
 
     filename = logPath + 'logBaseStates.csv'
     rangeRelJoints = list(range(0, 7)) + list(range(nq, nq + 6)) # Ignore other joints
+    rangeRelAccs = list(range(0, 6)) # Acceleration is 6-dim
     XRel = []
+    ARel = []
     sol = []
     # Get relevant joints states (floating base)
     for k in rangeRelJoints:
         XRel.append(X[k])
     sol = list(map(list, zip(*XRel)))  # Transpose
+    # Get relevant accelerations (floating base)
+    for l in rangeRelAccs: 
+        ARel.append(A[l])
+    solA = list(map(list, zip(*ARel)))  # Transpose
     # Include time column
-    for l in range(len(sol)):
-        sol[l] = [time[l]] + sol[l]  
+    for m in range(len(sol)):
+        sol[m] = [time[m]] + sol[m] + solA[m] 
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['t[s]',
                          'X', 'Y', 'Z', 'Qx', 'Qy', 'Qz', 'Qw',
-                         'vx', 'vy', 'vz', 'wx', 'wy', 'wz'])
+                         'vx', 'vy', 'vz', 'wx', 'wy', 'wz',
+                         'vxd', 'vyd', 'vzd', 'wxd', 'wyd', 'wzd'])
         writer.writerows(sol)
 
     filename = logPath + 'logContactWrenches.csv'
@@ -235,7 +284,7 @@ def logSolution(ddp, fs, timeStep):
                          'Fx_FL_SupportCenter', 'Fy_FL_SupportCenter', 'Fz_FL_SupportCenter', 'Tx_FL_SupportCenter', 'Ty_FL_SupportCenter', 'Tz_FL_SupportCenter'])
         writer.writerows(sol)
 
-    filename = logPath + 'logCoM.csv'
+    filename = logPath + 'logCoMAndFeetPoses.csv'
     cs = []
     sol = np.zeros([len(time), 3])
     rdata = rmodel.createData()
@@ -270,8 +319,8 @@ def setLimits(rmodel):
     rmodel.effortLimit = lims
 
 
-def getTrajectories(ddp, fs, bounds):
-    xs, us = [], []
+def mergeDataFromSolvers(ddp, fs, bounds):
+    xs, us, accs = [], [], []
     if bounds:
         us_lb, us_ub = [], []
         xs_lb, xs_ub = [], []
@@ -280,6 +329,8 @@ def getTrajectories(ddp, fs, bounds):
         for s in ddp:
             xs.extend(s.xs[:-1])
             us.extend(s.us)
+            for j in range(s.problem.T):
+                accs.append(s.problem.runningDatas[j].differential.xout)
             if bounds:
                 models = s.problem.runningModels + [s.problem.terminalModel]
                 for m in models:
@@ -290,6 +341,8 @@ def getTrajectories(ddp, fs, bounds):
     else:
         rmodel = ddp.problem.runningModels[0].state.pinocchio
         xs, us = ddp.xs, ddp.us
+        for j in range(ddp.problem.T):
+                accs.extend(s.problem.runningDatas[j].differential.xout)
         if bounds:
             models = s.problem.runningModels + [s.problem.terminalModel]
             for m in models:
@@ -299,15 +352,18 @@ def getTrajectories(ddp, fs, bounds):
                 xs_ub += [m.state.ub]
 
     # Getting the state, control and wrench trajectories
-    nx, nq, nu, nf = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0]
+    nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
     X = [0.] * nx
     U = [0.] * nu
     F = [0.] * 12
+    A = [0.] * na
     if bounds:
         U_LB = [0.] * nu
         U_UB = [0.] * nu
         X_LB = [0.] * nx
         X_UB = [0.] * nx
+    for i in range(na):
+        A[i] = [np.asscalar(a[i]) for a in accs]
     for i in range(nf):
         F[i] = [np.asscalar(f[i]) for f in fs]
     for i in range(nx):
@@ -322,6 +378,6 @@ def getTrajectories(ddp, fs, bounds):
             U_UB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_ub]
 
     if bounds: 
-        return rmodel, xs, us, X, U, F, X_LB, X_UB, U_LB, U_UB
+        return rmodel, xs, us, accs, X, U, F, A, X_LB, X_UB, U_LB, U_UB
     else: 
-        return rmodel, xs, us, X, U, F
+        return rmodel, xs, us, accs, X, U, F, A
