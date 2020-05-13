@@ -2,10 +2,9 @@ import crocoddyl
 import pinocchio
 import numpy as np
 import csv
-import os
 
 
-def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
+def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
     if bounds: 
         rmodel, xs, us, accs, X, U, F, A, X_LB, X_UB, U_LB, U_UB = mergeDataFromSolvers(ddp, fs, bounds)
@@ -14,12 +13,11 @@ def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
 
     # Plotting the joint positions, velocities and torques
-    plt.figure(figIndex)
-    plt.suptitle(figTitle)
-    legJointNames = ['1', '2', '3', '4', '5', '6']
+    plt.figure(figIndex, figsize=(32,18)) # (16,9) for bigger headings
+    legJointNames = ['Hip1', 'Hip2', 'Hip3', 'Knee', 'AnkleRoll', 'AnklePitch'] # Hip 1-3: Yaw, Roll, Pitch 
     # left foot
     plt.subplot(2, 3, 1)
-    plt.title('joint position [rad]')
+    plt.title('Joint Position [rad]')
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(7, 13))]
     if bounds:
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(7, 13))]
@@ -27,7 +25,7 @@ def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
     plt.ylabel('LF')
     plt.legend()
     plt.subplot(2, 3, 2)
-    plt.title('joint velocity [rad/s]')
+    plt.title('Joint Velocity [rad/s]')
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 6, nq + 12))]
     if bounds:
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 12))]
@@ -35,7 +33,7 @@ def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
     plt.ylabel('LF')
     plt.legend()
     plt.subplot(2, 3, 3)
-    plt.title('joint torque [Nm]')
+    plt.title('Joint Torque [Nm]')
     [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(0, 6))]
     if bounds:
         [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(0, 6))]
@@ -49,7 +47,7 @@ def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(13, 19))]
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(13, 19))]
     plt.ylabel('RF')
-    plt.xlabel('knots')
+    plt.xlabel('Knots')
     plt.legend()
     plt.subplot(2, 3, 5)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 12, nq + 18))]
@@ -57,7 +55,7 @@ def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 12, nq + 18))]
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 12, nq + 18))]
     plt.ylabel('RF')
-    plt.xlabel('knots')
+    plt.xlabel('Knots')
     plt.legend()
     plt.subplot(2, 3, 6)
     [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(6, 12))]
@@ -65,21 +63,19 @@ def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
         [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(6, 12))]
         [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(6, 12))]
     plt.ylabel('RF')
-    plt.xlabel('knots')
+    plt.xlabel('Knots')
     plt.legend()
+    plt.savefig(dirName + 'Solution.png', bbox_inches = 'tight', dpi = 300)
 
 
-    # Plot floating base coordinates
-    baseTranslationNames = ['x', 'y', 'z']
-    plt.figure(figIndex + 1)
-    plt.suptitle('Floating Base Coordinates')
+    # Plotting floating base coordinates
+    plt.figure(figIndex + 1, figsize=(16,9))
+    baseTranslationNames = ['X', 'Y', 'Z']
     [plt.plot(X[k], label=baseTranslationNames[i]) for i, k in enumerate(range(0, 3))]
     plt.xlabel('Knots')
     plt.ylabel('Translation [m]')
     plt.legend()
-    plt.grid(True)
-    if show:
-        plt.show()
+    plt.savefig(dirName + 'FloatingBase.png', bbox_inches = 'tight', dpi = 300)
         
 
     # Get 3 dim CoM
@@ -96,119 +92,89 @@ def plotSolution(ddp, fs, bounds=True, figIndex=1, figTitle="", show=True):
     knots = list(range(0,len(Cz)))
 
     # Plotting the Center of Mass (x,y,z over knots)
-    plt.figure(figIndex + 2)
-    plt.suptitle('CoM')
+    plt.figure(figIndex + 2, figsize=(16,9))
     plt.subplot(1, 3, 1)
     plt.plot(knots, Cx)
-    plt.xlabel('knots')
-    plt.ylabel('x [m]')
-    plt.grid(True)
+    plt.xlabel('Knots')
+    plt.ylabel('X [m]')
     plt.subplot(1, 3, 2)
     plt.plot(knots, Cy)
-    plt.xlabel('knots')
-    plt.ylabel('y [m]')
-    plt.grid(True)
+    plt.xlabel('Knots')
+    plt.ylabel('Y [m]')
     plt.subplot(1, 3, 3)
     plt.plot(knots, Cz)
-    plt.xlabel('knots')
-    plt.ylabel('z [m]')
-    plt.grid(True)
-    if show:
-        plt.show()
+    plt.xlabel('Knots')
+    plt.ylabel('Z [m]')
+    plt.savefig(dirName + 'CoM1.png', bbox_inches = 'tight', dpi = 300)
+
 
     # Plotting the Center of Mass (y,z over x)
-    plt.figure(figIndex + 3)
-    plt.suptitle('CoM')
+    plt.figure(figIndex + 3, figsize=(16,9))
     plt.subplot(1, 2, 1)
     plt.plot(Cx, Cy)
-    plt.xlabel('x [m]')
-    plt.ylabel('y [m]')
-    plt.grid(True)
+    plt.xlabel('X [m]')
+    plt.ylabel('Y [m]')
     plt.subplot(1, 2, 2)
     plt.plot(Cx, Cz)
-    plt.xlabel('x [m]')
-    plt.ylabel('z [m]')
-    plt.grid(True)
-    if show:
-        plt.show()
+    plt.xlabel('X [m]')
+    plt.ylabel('Z [m]')
+    plt.savefig(dirName + 'CoM2.png', bbox_inches = 'tight', dpi = 300)
 
 
     # Plotting the contact wrenches
-    contactForceNames = ['fx','fy','fz'] 
-    contactMomentNames = ['taux','tauy','tauz']
-    plt.figure(figIndex + 4)
+    contactForceNames = ['Fx','Fy','Fz'] 
+    contactMomentNames = ['Tx','Ty','Tz']
+    plt.figure(figIndex + 4, figsize=(16,9))
 
-    plt.suptitle(figTitle)
     plt.subplot(2,2,1)
+    plt.title('Contact Forces [N]')
     [plt.plot(F[k], label=contactForceNames[i]) for i, k in enumerate(range(0, 3))]
-    plt.title('Contact Forces [RF]')
     plt.xlabel('Knots')
-    plt.ylabel('Force [N]')
+    plt.ylabel('LF')
     plt.legend()
-
-    plt.suptitle(figTitle)
     plt.subplot(2,2,2)
+    plt.title('Contact Moment [Nm]')
     [plt.plot(F[k], label=contactMomentNames[i]) for i, k in enumerate(range(3, 6))]
     plt.plot()
-    plt.title('Contact Moments [RF]')
     plt.xlabel('Knots')
-    plt.ylabel('Moment [Nm]')
+    plt.ylabel('LF')
     plt.legend()
-
-    plt.suptitle(figTitle)
     plt.subplot(2,2,3)
     [plt.plot(F[k], label=contactForceNames[i]) for i, k in enumerate(range(6, 9))]
-    plt.title('Contact Forces [LF]')
     plt.xlabel('Knots')
-    plt.ylabel('Force [N]')
+    plt.ylabel('RF')
     plt.legend()
-
-    plt.suptitle(figTitle)
     plt.subplot(2,2,4)
     [plt.plot(F[k], label=contactMomentNames[i]) for i, k in enumerate(range(9, nf))]
     plt.plot()
-    plt.title('Contact Moments [LF]')
     plt.xlabel('Knots')
-    plt.ylabel('Moment [Nm]')
+    plt.ylabel('RF')
     plt.legend()
-    if show:
-        plt.show()
+    plt.savefig(dirName + 'ContactWrenches.png', bbox_inches = 'tight', dpi = 300)
 
 
     # Plotting the Acceleration
     AccFBNames = ['vxd', 'vyd', 'vzd', 'wxd', 'wyd', 'wzd']
-    AccRFNames = ['qdd_LRHip1', 'qdd_LRHip2', 'qdd_LRHip3', 'qdd_LRKnee', 'qdd_LRAnkleRoll', 'qdd_LRAnklePitch']
-    AccLFNames = ['qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch']
-    plt.figure(figIndex + 4)
-        
-    plt.suptitle(figTitle)
+    plt.figure(figIndex + 5, figsize=(16,9))
+
     plt.subplot(3,1,1)
     [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(0, 6))]
-    plt.title('Acceleration')
     plt.xlabel('Knots')
     plt.ylabel('FB')
     plt.legend()
-
-    plt.suptitle(figTitle)
     plt.subplot(3,1,2)
-    [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(6, 9))]
-    plt.title('Acceleration')
-    plt.xlabel('Knots')
-    plt.ylabel('RF')
-    plt.legend()
-
-    plt.suptitle(figTitle)
-    plt.subplot(3,1,3)
-    [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(9, 12))]
-    plt.title('Acceleration')
+    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(6, 9))]
     plt.xlabel('Knots')
     plt.ylabel('LF')
     plt.legend()
+    plt.subplot(3,1,3)
+    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(9, 12))]
+    plt.xlabel('Knots')
+    plt.ylabel('RF')
+    plt.legend()
+    plt.savefig(dirName + 'Acceleration.png', bbox_inches = 'tight', dpi = 300)
 
 def logSolution(ddp, fs, timeStep, logPath):
-    # Check if target path exists, otherwise create it
-    if not os.path.exists(logPath):
-        os.makedirs(logPath)
     # Stack together all data contained in multiple solvers
     rmodel, xs, us, accs, X, U, F, A = mergeDataFromSolvers(ddp, fs, bounds=False)
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
@@ -237,14 +203,14 @@ def logSolution(ddp, fs, timeStep, logPath):
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['t[s]',
-                         'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
                          'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
-                         'qd_LRHip1', 'qd_LRHip2', 'qd_LRHip3', 'qd_LRKnee', 'qd_LRAnkleRoll', 'qd_LRAnklePitch',
+                         'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
                          'qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch',
-                         'qdd_LRHip1', 'qdd_LRHip2', 'qdd_LRHip3', 'qdd_LRKnee', 'qdd_LRAnkleRoll', 'qdd_LRAnklePitch',
+                         'qd_LRHip1', 'qd_LRHip2', 'qd_LRHip3', 'qd_LRKnee', 'qd_LRAnkleRoll', 'qd_LRAnklePitch',
                          'qdd_LLHip1', 'qdd_LLHip2', 'qdd_LLHip3', 'qdd_LLKnee', 'qdd_LLAnkleRoll', 'qdd_LLAnklePitch',
-                         'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch',
-                         'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch'])
+                         'qdd_LRHip1', 'qdd_LRHip2', 'qdd_LRHip3', 'qdd_LRKnee', 'qdd_LRAnkleRoll', 'qdd_LRAnklePitch',
+                         'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch',
+                         'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch'])
         writer.writerows(sol)
 
     filename = logPath + 'logBaseStates.csv'

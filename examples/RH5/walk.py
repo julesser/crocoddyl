@@ -38,21 +38,27 @@ gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)
 
 # Defining the initial state of the robot
 q0 = gait.q0
+# q0 = np.matrix([0,0,0.90,0,0,0,1,        #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
+#                         0,0,-0.5,1,0,-0.5,     #q8-13:  Left Leg     
+#                         0,0,-0.5,1,0,-0.5]).T  #q14-19: Right Leg
 v0 = pinocchio.utils.zero(rmodel.nv)
 x0 = np.concatenate([q0, v0])
 
+# display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, frameNames=[rightFoot, leftFoot])
+# display.display(xs=[x0])
+
 # Setting up all tasks
-""" GAITPHASES = \
-    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}}] """
-# Repetitive gait
 GAITPHASES = \
     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+# Repetitive gait
+""" GAITPHASES = \
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
 # Repetitive gait
 """ GAITPHASES = \
     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
@@ -100,8 +106,6 @@ for i, phase in enumerate(GAITPHASES):
          crocoddyl.CallbackDisplay(display)])
 
     # Solving the problem with the DDP solver
-    # xs = [rmodel.defaultState] * len(ddp[i].models())
-    # us = [m.quasiStatic(d, rmodel.defaultState) for m, d in list(zip(ddp[i].models(), ddp[i].datas()))[:-1]]
     xs = [rmodel.defaultState] * (ddp[i].problem.T + 1)
     us = [
         m.quasiStatic(d, rmodel.defaultState)
@@ -111,6 +115,7 @@ for i, phase in enumerate(GAITPHASES):
     
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
+
 
 # Calc resulting CoM velocity (average) # TODO: Put in utils
 logFirst = ddp[0].getCallbacks()[0]
@@ -133,21 +138,24 @@ for i, phase in enumerate(GAITPHASES):
         for f in fs[j]: # iter over all contacts (LF, RF)
             key = f["key"]
             wrench = f["f"]
-            if key == "7": # right foot
+            if key == "13": # left foot
                 for k in range(3):
                     fsRel[i*len(fs)+j,k] = wrench.linear[k]
                     fsRel[i*len(fs)+j,k+3] = wrench.angular[k]
-            elif key == "13": # left foot
+            elif key == "7": # right foot
                 for k in range(3):
                     fsRel[i*len(fs)+j,k+6] = wrench.linear[k]
                     fsRel[i*len(fs)+j,k+9] = wrench.angular[k]
-            #print('Foot: ' + str(key), wrench) 
-            # print("fs[" + str(j) + "]: " + f)
+            # print('Foot: ' + str(key), wrench) # Check key-foot mapping
 fs = fsRel
 
-# Export solution to .csv file
+simName = 'results/biped/2Steps_30cmStride/'
+if not os.path.exists(simName):
+    os.makedirs(simName)
+
+# Export solution to .csv files
 if WITHLOG:
-    logSolution(ddp, fs, timeStep)
+    logSolution(ddp, fs, timeStep, simName)
 
 # Display the entire motion
 if WITHDISPLAY:
@@ -157,7 +165,7 @@ if WITHDISPLAY:
 
 # Plotting the entire motion
 if WITHPLOT:
-    plotSolution(ddp, fs, bounds=False, figIndex=1, show=False)
+    plotSolution(ddp, fs, simName, bounds=False, figIndex=1, show=False)
 
     for i, phase in enumerate(GAITPHASES):
         # title = phase.keys()[0] + " (phase " + str(i) + ")"

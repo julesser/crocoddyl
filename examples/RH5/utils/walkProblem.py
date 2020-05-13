@@ -17,7 +17,7 @@ class SimpleBipedGaitProblem:
         # Defining default state
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init RH5 Full Body
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init Zero Configuration
-        q0 = np.matrix([0,0,0.90,0,0,0,1,        #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
+        q0 = np.matrix([0,0,0.9,0,0,0,1,        #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
                         0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg
         """ q0 = np.matrix([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file
@@ -65,12 +65,17 @@ class SimpleBipedGaitProblem:
         # print(comRef)
         if isLastPhase is True: 
             lStep = self.createFootstepModels(comRef, [lfPos0], 0.5* stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
+            # rearrangeKnots = 10
+            # rearrangePose = [self.createRearrangeModel(timeStep, [self.rfId, self.lfId]) for k in range(rearrangeKnots)]
+            # lStep += rearrangePose # TODO: Right now it has now effect on final joint pose -> right default state set?
         else: 
             lStep = self.createFootstepModels(comRef, [lfPos0], stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
 
+        
         # We defined the problem as:
         loco3dModel += doubleSupport + rStep
         loco3dModel += doubleSupport + lStep
+        # loco3dModel += rearrangePose
 
         problem = crocoddyl.ShootingProblem(x0, loco3dModel, loco3dModel[-1])
         return problem
@@ -120,7 +125,7 @@ class SimpleBipedGaitProblem:
             ]
 
         # Action model for the foot switch
-        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=True)
+        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=True) #TODO: Temporaily use PseudoImpulse because impulseModel does not contain acceleration information
 
         # Updating the current foot position for next step
         comPos0 += np.matrix([stepLength * comPercentage, 0., 0.]).T
@@ -185,6 +190,50 @@ class SimpleBipedGaitProblem:
         ctrlReg = crocoddyl.CostModelControl(self.state, self.actuation.nu)
         costModel.addCost("stateReg", stateReg, 1e1)
         # costModel.addCost("stateReg", stateReg, 1e2)
+        costModel.addCost("ctrlReg", ctrlReg, 1e-1)
+
+        # Creating the action model for the KKT dynamics with simpletic Euler
+        # integration scheme
+        dmodel = crocoddyl.DifferentialActionModelContactFwdDynamics(self.state, self.actuation, contactModel,
+                                                                     costModel, 0., True)
+        model = crocoddyl.IntegratedActionModelEuler(dmodel, timeStep)
+        return model
+
+    def createRearrangeModel(self, timeStep, supportFootIds):
+        """ Action model for a swing foot phase.
+
+        :param timeStep: step duration of the action model
+        :param supportFootIds: Ids of the constrained feet
+        :param comTask: CoM task
+        :param swingFootTask: swinging foot task
+        :return action model for a swing foot phase
+        """
+        # Creating a 6D multi-contact model, and then including the supporting
+        # foot
+        contactModel = crocoddyl.ContactModelMultiple(self.state, self.actuation.nu)
+        for i in supportFootIds:
+            Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
+            supportContactModel = \
+                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.matrix([0., 0.]).T)
+            contactModel.addContact(self.rmodel.frames[i].name + "_contact", supportContactModel)
+
+        # Creating the cost model for a contact phase
+        costModel = crocoddyl.CostModelSum(self.state, self.actuation.nu)
+        # if isinstance(comTask, np.ndarray):
+        #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
+        #     costModel.addCost("comTrack", comTrack, 1e6)
+        # for i in supportFootIds:
+        #     cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
+        #     frictionCone = crocoddyl.CostModelContactFrictionCone(
+        #         self.state, crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(cone.lb, cone.ub)),
+        #         crocoddyl.FrameFrictionCone(i, cone), self.actuation.nu)
+        #     costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e1)
+        stateWeights = np.array([0] * 3 + [500.] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv)
+        stateReg = crocoddyl.CostModelState(self.state,
+                                            crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
+                                            self.rmodel.defaultState, self.actuation.nu)
+        ctrlReg = crocoddyl.CostModelControl(self.state, self.actuation.nu)
+        costModel.addCost("stateReg", stateReg, 1e6)
         costModel.addCost("ctrlReg", ctrlReg, 1e-1)
 
         # Creating the action model for the KKT dynamics with simpletic Euler
