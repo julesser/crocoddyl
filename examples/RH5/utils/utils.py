@@ -13,7 +13,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
 
     # Plotting the joint positions, velocities and torques
-    plt.figure(figIndex, figsize=(32,18)) # (16,9) for bigger headings
+    plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
     legJointNames = ['Hip1', 'Hip2', 'Hip3', 'Knee', 'AnkleRoll', 'AnklePitch'] # Hip 1-3: Yaw, Roll, Pitch 
     # left foot
     plt.subplot(2, 3, 1)
@@ -78,53 +78,82 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     plt.savefig(dirName + 'FloatingBase.png', bbox_inches = 'tight', dpi = 300)
         
 
-    # Get 3 dim CoM
+    # Get 3 dim CoM, get feet poses
     rdata = rmodel.createData()
     Cx = []
     Cy = []
     Cz = []
+    lfPoses = []
+    rfPoses = []
     for x in xs:
         q = x[:rmodel.nq]
         c = pinocchio.centerOfMass(rmodel, rdata, q)
         Cx.append(np.asscalar(c[0]))
         Cy.append(np.asscalar(c[1]))
         Cz.append(np.asscalar(c[2]))
+        pinocchio.forwardKinematics(rmodel, rdata, q)
+        pinocchio.updateFramePlacements(rmodel, rdata)
+        lfId = rmodel.getFrameId('FL_SupportCenter')
+        rfId = rmodel.getFrameId('FR_SupportCenter')
+        lfPoses.append(rdata.oMf[lfId].translation) # TODO: Add rotation as seperate vector
+        rfPoses.append(rdata.oMf[rfId].translation)
+    
+    nfeet = lfPoses[0].shape[0]
+    lfPose, rfPose = [0.] * nfeet, [0.] * nfeet       
+    for i in range(nfeet):
+        lfPose[i] = [np.asscalar(p[i]) for p in lfPoses]
+        rfPose[i] = [np.asscalar(p[i]) for p in rfPoses]
+
     knots = list(range(0,len(Cz)))
 
     # Plotting the Center of Mass (x,y,z over knots)
     plt.figure(figIndex + 2, figsize=(16,9))
-    plt.subplot(1, 3, 1)
+    plt.subplot(2, 3, 1)
     plt.plot(knots, Cx)
     plt.xlabel('Knots')
-    plt.ylabel('X [m]')
-    plt.subplot(1, 3, 2)
+    plt.ylabel('CoM X [m]')
+    plt.subplot(2, 3, 2)
     plt.plot(knots, Cy)
     plt.xlabel('Knots')
-    plt.ylabel('Y [m]')
-    plt.subplot(1, 3, 3)
+    plt.ylabel('CoM Y [m]')
+    plt.subplot(2, 3, 3)
     plt.plot(knots, Cz)
     plt.xlabel('Knots')
-    plt.ylabel('Z [m]')
+    plt.ylabel('CoM Z [m]')
+    plt.subplot(2, 3, 4)
+    [plt.plot(knots, lfPose[0], label='LF'), plt.plot(knots, rfPose[0], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot X [m]')
+    plt.legend()
+    plt.subplot(2, 3, 5)
+    [plt.plot(knots, lfPose[1], label='LF'), plt.plot(knots, rfPose[1], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot Y [m]')
+    plt.legend()
+    plt.subplot(2, 3, 6)
+    [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot Z [m]')
+    plt.legend()
     plt.savefig(dirName + 'CoM1.png', bbox_inches = 'tight', dpi = 300)
 
-
-    # Plotting the Center of Mass (y,z over x)
-    plt.figure(figIndex + 3, figsize=(16,9))
-    plt.subplot(1, 2, 1)
-    plt.plot(Cx, Cy)
-    plt.xlabel('X [m]')
-    plt.ylabel('Y [m]')
-    plt.subplot(1, 2, 2)
-    plt.plot(Cx, Cz)
-    plt.xlabel('X [m]')
-    plt.ylabel('Z [m]')
-    plt.savefig(dirName + 'CoM2.png', bbox_inches = 'tight', dpi = 300)
+    # # Plotting the Center of Mass (y,z over x)
+    # plt.figure(figIndex + 3, figsize=(16,9))
+    # plt.subplot(1, 2, 1)
+    # plt.plot(Cx, Cy)
+    # plt.xlabel('X [m]')
+    # plt.ylabel('Y [m]')
+    # plt.subplot(1, 2, 2)
+    # plt.plot(Cx, Cz)
+    # plt.xlabel('X [m]')
+    # plt.ylabel('Z [m]')
+    # plt.savefig(dirName + 'CoM2.png', bbox_inches = 'tight', dpi = 300)
 
 
     # Plotting the contact wrenches
     contactForceNames = ['Fx','Fy','Fz'] 
     contactMomentNames = ['Tx','Ty','Tz']
-    plt.figure(figIndex + 4, figsize=(16,9))
+    plt.figure(figIndex + 3, figsize=(16,9))
 
     plt.subplot(2,2,1)
     plt.title('Contact Forces [N]')
@@ -155,7 +184,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
 
     # Plotting the Acceleration
     AccFBNames = ['vxd', 'vyd', 'vzd', 'wxd', 'wyd', 'wzd']
-    plt.figure(figIndex + 5, figsize=(16,9))
+    plt.figure(figIndex + 4, figsize=(16,9))
 
     plt.subplot(3,1,1)
     [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(0, 6))]
@@ -173,6 +202,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     plt.ylabel('RF')
     plt.legend()
     plt.savefig(dirName + 'Acceleration.png', bbox_inches = 'tight', dpi = 300)
+
 
 def logSolution(ddp, fs, timeStep, logPath):
     # Stack together all data contained in multiple solvers
@@ -246,26 +276,34 @@ def logSolution(ddp, fs, timeStep, logPath):
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['t[s]',
-                         'Fx_FR_SupportCenter', 'Fy_FR_SupportCenter', 'Fz_FR_SupportCenter', 'Tx_FR_SupportCenter', 'Ty_FR_SupportCenter', 'Tz_FR_SupportCenter',
-                         'Fx_FL_SupportCenter', 'Fy_FL_SupportCenter', 'Fz_FL_SupportCenter', 'Tx_FL_SupportCenter', 'Ty_FL_SupportCenter', 'Tz_FL_SupportCenter'])
+                         'Fx_FL_SupportCenter', 'Fy_FL_SupportCenter', 'Fz_FL_SupportCenter', 'Tx_FL_SupportCenter', 'Ty_FL_SupportCenter', 'Tz_FL_SupportCenter',
+                         'Fx_FR_SupportCenter', 'Fy_FR_SupportCenter', 'Fz_FR_SupportCenter', 'Tx_FR_SupportCenter', 'Ty_FR_SupportCenter', 'Tz_FR_SupportCenter'])
         writer.writerows(sol)
 
     filename = logPath + 'logCoMAndFeetPoses.csv'
     cs = []
-    sol = np.zeros([len(time), 3])
+    lfPoses = []
+    rfPoses = []
+    sol = np.zeros([len(time), 9])
     rdata = rmodel.createData()
-    # Calculate CoMs for all joint positions
+    # Calculate CoM and foot poses for all states
     for x in xs:
         q = x[:rmodel.nq]
         c = pinocchio.centerOfMass(rmodel, rdata, q)
         cs.append(c)
-    # Hacky solution to erase brackets from cs: 
-    for k in range(len(time)):
-        for l in range(3):
-            sol[k][l] = cs[k][l]
+        pinocchio.forwardKinematics(rmodel, rdata, q)
+        pinocchio.updateFramePlacements(rmodel, rdata)
+        lfId = rmodel.getFrameId('FL_SupportCenter')
+        rfId = rmodel.getFrameId('FR_SupportCenter')
+        lfPoses.append(rdata.oMf[lfId].translation) # TODO: Add rotation as seperate vector
+        rfPoses.append(rdata.oMf[rfId].translation)
+    for l in range(len(time)):
+        sol[l] = [*cs[l], *lfPoses[l], *rfPoses[l]]
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Cx', 'Cy', 'Cz'])
+        writer.writerow(['Cx', 'Cy', 'Cz', 
+                         'X_FL_SupportCenter', 'Y_FL_SupportCenter', 'Z_FL_SupportCenter',
+                         'X_FR_SupportCenter', 'Y_FR_SupportCenter', 'Z_FR_SupportCenter'])
         writer.writerows(sol)
 
 
