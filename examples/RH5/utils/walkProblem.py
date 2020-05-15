@@ -17,7 +17,7 @@ class SimpleBipedGaitProblem:
         # Defining default state
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init RH5 Full Body
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init Zero Configuration
-        q0 = np.matrix([0,0,0.9,0,0,0,1,        #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
+        q0 = np.matrix([0,0,0.9163,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
                         0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg
         """ q0 = np.matrix([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file
@@ -25,6 +25,7 @@ class SimpleBipedGaitProblem:
                         0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg """
         self.q0 = q0
         self.comRefY = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, self.q0)[2])
+        self.heightRef = self.rdata.oMf[self.rfId].translation[2] # height for RF and LF identical
         self.rmodel.defaultState = np.concatenate([q0, np.zeros((self.rmodel.nv, 1))])
         self.firstStep = True
         # Defining the friction coefficient and normal
@@ -48,6 +49,7 @@ class SimpleBipedGaitProblem:
         pinocchio.updateFramePlacements(self.rmodel, self.rdata)
         rfPos0 = self.rdata.oMf[self.rfId].translation
         lfPos0 = self.rdata.oMf[self.lfId].translation
+        rfPos0[2], lfPos0[2] = self.heightRef, self.heightRef # correct reference height of feet
         comRef = (rfPos0 + lfPos0) / 2
         # comRef[2] = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2])
         comRef[2] = self.comRefY
@@ -107,18 +109,28 @@ class SimpleBipedGaitProblem:
                 # deliveratively to allocated the same number of nodes (i.e. phKnots)
                 # in each phase. With this, we define a proper z-component for the
                 # swing-leg motion.
-                phKnots = numKnots / 2
+
+                # phKnots = numKnots / 2 # Problem: stepHeight of last knot is greater than zero!
+                if numKnots % 2 == 0: 
+                    phKnots = (numKnots / 2) - 0.5 # If even numKnots (not preferred): Two knots have maxHeight, target height for first and last knot is zero 
+                else: 
+                    phKnots = (numKnots / 2) - 0.5 # If odd numKnots (preferred): One knot at stepHeight,target height for first and last knot is zero
+                
                 if k < phKnots:
-                    dp = np.matrix([[stepLength * (k + 1) / numKnots, 0., stepHeight * k / phKnots]]).T
+                    dp = np.matrix([[stepLength * (k + 1) / numKnots, 0., stepHeight * k / phKnots]]).T 
                 elif k == phKnots:
                     dp = np.matrix([[stepLength * (k + 1) / numKnots, 0., stepHeight]]).T
                 else:
                     dp = np.matrix(
                         [[stepLength * (k + 1) / numKnots, 0., stepHeight * (1 - float(k - phKnots) / phKnots)]]).T
                 tref = np.asmatrix(p + dp)
-
+                # print('p[' + str(k) + ']: ') 
+                # print(p)
+                # print('dp[' + str(k) + ']: ') 
+                # print(dp)
+                # print('tref[' + str(k) + ']: ') 
+                # print(tref)
                 swingFootTask += [crocoddyl.FramePlacement(i, pinocchio.SE3(np.eye(3), tref))]
-
             comTask = np.matrix([stepLength * (k + 1) / numKnots, 0., 0.]).T * comPercentage + comPos0
             footSwingModel += [
                 self.createSwingFootModel(timeStep, supportFootIds, comTask=comTask, swingFootTask=swingFootTask)
