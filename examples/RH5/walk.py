@@ -27,10 +27,11 @@ setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.03
-stepKnots = 25
+stepKnots = 40
+# stepKnots = 25
 supportKnots = 1
 impulseKnots = 1
-stepLength = 0.3
+stepLength = 0.6
 stepHeight = 0.1
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
@@ -38,14 +39,17 @@ gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)
 
 # Defining the initial state of the robot
 q0 = gait.q0
-# q0 = np.matrix([0,0,0.90,0,0,0,1,        #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
-#                         0,0,-0.5,1,0,-0.5,     #q8-13:  Left Leg     
-#                         0,0,-0.5,1,0,-0.5]).T  #q14-19: Right Leg
 v0 = pinocchio.utils.zero(rmodel.nv)
 x0 = np.concatenate([q0, v0])
 
 # display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, frameNames=[rightFoot, leftFoot])
 # display.display(xs=[x0])
+
+simName = 'results/biped/2Steps_30cmStride/'
+# simName = 'results/biped/LongGait/'
+# simName = 'results/biped/testing'
+if not os.path.exists(simName):
+    os.makedirs(simName)
 
 # Setting up all tasks
 GAITPHASES = \
@@ -123,7 +127,7 @@ logLast = ddp[-1].getCallbacks()[0]
 first_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logFirst.xs[1][:rmodel.nq]) # calc CoM for init pose
 final_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logLast.xs[-1][:rmodel.nq]) # calc CoM for final pose
 # n_knots = 2*len(GAITPHASES)*(stepKnots + supportKnots + impulseKnots) 
-n_knots = 2*len(GAITPHASES)*(stepKnots + impulseKnots) # Don't consider support knots -> Pause
+n_knots = 2*len(GAITPHASES)*(stepKnots) # Don't consider: support knots -> pause; impulse knots -> dt=0
 t_total = n_knots * timeStep # total time = f(knots, timeStep)
 v_com = (final_com[0] - first_com[0]) / t_total
 print('Average CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
@@ -138,20 +142,16 @@ for i, phase in enumerate(GAITPHASES):
         for f in fs[j]: # iter over all contacts (LF, RF)
             key = f["key"]
             wrench = f["f"]
-            if key == "13": # left foot
+            if key == "7": # left foot
                 for k in range(3):
                     fsRel[i*len(fs)+j,k] = wrench.linear[k]
                     fsRel[i*len(fs)+j,k+3] = wrench.angular[k]
-            elif key == "7": # right foot
+            elif key == "13": # right foot
                 for k in range(3):
                     fsRel[i*len(fs)+j,k+6] = wrench.linear[k]
                     fsRel[i*len(fs)+j,k+9] = wrench.angular[k]
             # print('Foot: ' + str(key), wrench) # Check key-foot mapping
 fs = fsRel
-
-simName = 'results/biped/2Steps_30cmStride/'
-if not os.path.exists(simName):
-    os.makedirs(simName)
 
 # Export solution to .csv files
 if WITHLOG:

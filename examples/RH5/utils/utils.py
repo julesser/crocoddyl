@@ -106,7 +106,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
 
     knots = list(range(0,len(Cz)))
 
-    # Plotting the Center of Mass (x,y,z over knots)
+    # Plotting the Center of Mass and Feet (x,y,z over knots)
     plt.figure(figIndex + 2, figsize=(16,9))
     plt.subplot(2, 3, 1)
     plt.plot(knots, Cx)
@@ -135,7 +135,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     plt.xlabel('Knots')
     plt.ylabel('Foot Z [m]')
     plt.legend()
-    plt.savefig(dirName + 'CoM1.png', bbox_inches = 'tight', dpi = 300)
+    plt.savefig(dirName + 'CoMAndFeet.png', bbox_inches = 'tight', dpi = 300)
 
     # # Plotting the Center of Mass (y,z over x)
     # plt.figure(figIndex + 3, figsize=(16,9))

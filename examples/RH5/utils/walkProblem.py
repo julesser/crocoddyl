@@ -17,14 +17,19 @@ class SimpleBipedGaitProblem:
         # Defining default state
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init RH5 Full Body
         # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init Zero Configuration
-        q0 = np.matrix([0,0,0.9163,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
+        """ q0 = np.matrix([0,0,0.9163,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
-                        0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg
+                        0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg """
+        q0 = np.matrix([0,0,0.9039,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Stable init pose from long-time gait
+                        0,0,-0.2,0.4,0,-0.2,     #q8-13:  Left Leg     
+                        0,0,-0.2,0.4,0,-0.2]).T  #q14-19: Right Leg
         """ q0 = np.matrix([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file
                         0,0,-0.353,0.642,0,-0.289,     #q8-13:  Left Leg     
                         0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg """
         self.q0 = q0
         self.comRefY = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, self.q0)[2])
+        pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
+        pinocchio.updateFramePlacements(self.rmodel, self.rdata)
         self.heightRef = self.rdata.oMf[self.rfId].translation[2] # height for RF and LF identical
         self.rmodel.defaultState = np.concatenate([q0, np.zeros((self.rmodel.nv, 1))])
         self.firstStep = True
@@ -49,10 +54,10 @@ class SimpleBipedGaitProblem:
         pinocchio.updateFramePlacements(self.rmodel, self.rdata)
         rfPos0 = self.rdata.oMf[self.rfId].translation
         lfPos0 = self.rdata.oMf[self.lfId].translation
-        rfPos0[2], lfPos0[2] = self.heightRef, self.heightRef # correct reference height of feet
+        rfPos0[2], lfPos0[2] = self.heightRef, self.heightRef # Set global target height of feet to initial height from q0
         comRef = (rfPos0 + lfPos0) / 2
         # comRef[2] = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2])
-        comRef[2] = self.comRefY
+        comRef[2] = self.comRefY # Define global CoM target height 
         # Defining the action models along the time instances
         loco3dModel = []
         doubleSupport = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId]) for k in range(supportKnots)]
