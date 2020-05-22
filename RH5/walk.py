@@ -27,12 +27,13 @@ setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.03
-stepKnots = 40
 # stepKnots = 25
+stepKnots = 50
 supportKnots = 1
 impulseKnots = 1
-stepLength = 0.6
-stepHeight = 0.1
+stepLength = 0.2
+# stepHeight = 0.1
+stepHeight = 0.05
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
 gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)     
@@ -45,50 +46,29 @@ x0 = np.concatenate([q0, v0])
 # display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, frameNames=[rightFoot, leftFoot])
 # display.display(xs=[x0])
 
-simName = 'results/biped/2Steps_30cmStride/'
-# simName = 'results/biped/LongGait/'
-# simName = 'results/biped/testing'
+# simName = 'results/' # Used when just testing
+# simName = 'results/2Steps_10cmStride/'
+# simName = 'results/2Steps_30cmStride/'
+simName = 'results/LongGait/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
-# Setting up all tasks
+# Perform 2 Steps
+""" GAITPHASES = \
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
+# Perform 10 Steps
 GAITPHASES = \
     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
-# Repetitive gait
-""" GAITPHASES = \
-    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
-# Repetitive gait
-""" GAITPHASES = \
-    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
-# Changing, advanced gait
-""" GAITPHASES = \
-    [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots}},
-     {'walking': {'stepLength': 1.0, 'stepHeight': 0.1,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.20,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots}},
-     {'walking': {'stepLength': 0.6, 'stepHeight': 0.30,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots}}] """
 cameraTF = [3., 3.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 
 ddp = [None] * len(GAITPHASES)
@@ -119,6 +99,7 @@ for i, phase in enumerate(GAITPHASES):
     
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
+    # print(x0[:rmodel.nq]) # print last state of long gait as reference for two steps experiments
 
 
 # Calc resulting CoM velocity (average) # TODO: Put in utils
@@ -129,8 +110,14 @@ final_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logLast.xs[-1][:
 # n_knots = 2*len(GAITPHASES)*(stepKnots + supportKnots + impulseKnots) 
 n_knots = 2*len(GAITPHASES)*(stepKnots) # Don't consider: support knots -> pause; impulse knots -> dt=0
 t_total = n_knots * timeStep # total time = f(knots, timeStep)
-v_com = (final_com[0] - first_com[0]) / t_total
-print('Average CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
+distance = final_com[0] - first_com[0]
+v_com = distance / t_total
+print('..................')
+print('Simulation Results')
+print('..................')
+print('Step Time:    ' + str(stepKnots * timeStep) + ' s')
+print('Step Length:  ' + str(distance / len(GAITPHASES)).strip('[]') + ' m')
+print('CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
 
 # Get contact wrenches f=[f,tau]
 display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
@@ -167,16 +154,16 @@ if WITHDISPLAY:
 if WITHPLOT:
     plotSolution(ddp, fs, simName, bounds=False, figIndex=1, show=False)
 
-    for i, phase in enumerate(GAITPHASES):
-        # title = phase.keys()[0] + " (phase " + str(i) + ")"
-        title = list(phase.keys())[0] + " (phase " + str(i) + ")" #Fix python3 dict bug (TypeError: 'dict_keys' object does not support indexing) 
-        log = ddp[i].getCallbacks()[0]
-        crocoddyl.plotConvergence(log.costs,
-                                  log.u_regs,
-                                  log.x_regs,
-                                  log.grads,
-                                  log.stops,
-                                  log.steps,
-                                  figTitle=title,
-                                  figIndex=i + 6,
-                                  show=True if i == len(GAITPHASES) - 1 else False)
+    # for i, phase in enumerate(GAITPHASES):
+    #     # title = phase.keys()[0] + " (phase " + str(i) + ")"
+    #     title = list(phase.keys())[0] + " (phase " + str(i) + ")" #Fix python3 dict bug (TypeError: 'dict_keys' object does not support indexing) 
+    #     log = ddp[i].getCallbacks()[0]
+    #     crocoddyl.plotConvergence(log.costs,
+    #                               log.u_regs,
+    #                               log.x_regs,
+    #                               log.grads,
+    #                               log.stops,
+    #                               log.steps,
+    #                               figTitle=title,
+    #                               figIndex=i + 6,
+    #                               show=True if i == len(GAITPHASES) - 1 else False)
