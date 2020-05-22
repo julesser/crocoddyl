@@ -12,7 +12,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
          rmodel, xs, us, accs, X, U, F, A = mergeDataFromSolvers(ddp, fs, bounds)
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
 
-    # Plotting the joint positions, velocities and torques
+    # Plotting the joint Space: positions, velocities and torques
     plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
     legJointNames = ['Hip1', 'Hip2', 'Hip3', 'Knee', 'AnkleRoll', 'AnklePitch'] # Hip 1-3: Yaw, Roll, Pitch 
     # left foot
@@ -23,7 +23,6 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(7, 13))]
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(7, 13))]
     plt.ylabel('LF')
-    plt.legend()
     plt.subplot(2, 3, 2)
     plt.title('Joint Velocity [rad/s]')
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 6, nq + 12))]
@@ -31,7 +30,6 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 12))]
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 12))]
     plt.ylabel('LF')
-    plt.legend()
     plt.subplot(2, 3, 3)
     plt.title('Joint Torque [Nm]')
     [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(0, 6))]
@@ -48,7 +46,6 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(13, 19))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
-    plt.legend()
     plt.subplot(2, 3, 5)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 12, nq + 18))]
     if bounds:
@@ -56,7 +53,6 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 12, nq + 18))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
-    plt.legend()
     plt.subplot(2, 3, 6)
     [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(6, 12))]
     if bounds:
@@ -64,22 +60,22 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
         [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(6, 12))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
-    plt.legend()
-    plt.savefig(dirName + 'Solution.png', bbox_inches = 'tight', dpi = 300)
+    plt.savefig(dirName + 'JointSpace.png', dpi = 300)
 
-
-    # Plotting floating base coordinates
-    plt.figure(figIndex + 1, figsize=(16,9))
-    baseTranslationNames = ['X', 'Y', 'Z']
-    [plt.plot(X[k], label=baseTranslationNames[i]) for i, k in enumerate(range(0, 3))]
-    plt.xlabel('Knots')
-    plt.ylabel('Translation [m]')
-    plt.legend()
-    plt.savefig(dirName + 'FloatingBase.png', bbox_inches = 'tight', dpi = 300)
+    # Backup plot to show that CoM height nearly is constant
+    # # Plotting floating base coordinates
+    # plt.figure(figIndex + 1, figsize=(16,9))
+    # baseTranslationNames = ['X', 'Y', 'Z']
+    # [plt.plot(X[k], label=baseTranslationNames[i]) for i, k in enumerate(range(0, 3))]
+    # plt.xlabel('Knots')
+    # plt.ylabel('Translation [m]')
+    # plt.legend()
+    # plt.savefig(dirName + 'Base.png', bbox_inches = 'tight', dpi = 300)
         
-
     # Get 3 dim CoM, get feet poses
     rdata = rmodel.createData()
+    lfId = rmodel.getFrameId('FL_SupportCenter')
+    rfId = rmodel.getFrameId('FR_SupportCenter')
     Cx = []
     Cy = []
     Cz = []
@@ -93,11 +89,11 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
         Cz.append(np.asscalar(c[2]))
         pinocchio.forwardKinematics(rmodel, rdata, q)
         pinocchio.updateFramePlacements(rmodel, rdata)
-        lfId = rmodel.getFrameId('FL_SupportCenter')
-        rfId = rmodel.getFrameId('FR_SupportCenter')
-        lfPoses.append(rdata.oMf[lfId].translation) # TODO: Add rotation as seperate vector
+        lfPoses.append(rdata.oMf[lfId].translation) 
         rfPoses.append(rdata.oMf[rfId].translation)
-    
+        # print(rdata.oMf[lfId]) # Pose specified via rotation matrix + translation vector
+        # print(pinocchio.SE3ToXYZQUATtuple(rdata.oMf[lfId])) # Pose specified via quaternion + translation vector
+
     nfeet = lfPoses[0].shape[0]
     lfPose, rfPose = [0.] * nfeet, [0.] * nfeet       
     for i in range(nfeet):
@@ -106,51 +102,50 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
 
     knots = list(range(0,len(Cz)))
 
-    # Plotting the Center of Mass and Feet (x,y,z over knots)
+    # Plotting the Task Space: Center of Mass and Feet (x,y,z over knots)
     plt.figure(figIndex + 2, figsize=(16,9))
-    plt.subplot(2, 3, 1)
+    plt.subplot(3, 3, 1)
+    plt.plot(knots, X[0])
+    plt.xlabel('Knots')
+    plt.ylabel('Base X [m]')
+    plt.subplot(3, 3, 2)
+    plt.plot(knots, X[1])
+    plt.xlabel('Knots')
+    plt.ylabel('Base Y [m]')
+    plt.subplot(3, 3, 3)
+    plt.plot(knots, X[2])
+    plt.xlabel('Knots')
+    plt.ylabel('Base Z [m]')
+    plt.subplot(3, 3, 4)
     plt.plot(knots, Cx)
     plt.xlabel('Knots')
     plt.ylabel('CoM X [m]')
-    plt.subplot(2, 3, 2)
+    plt.subplot(3, 3, 5)
     plt.plot(knots, Cy)
     plt.xlabel('Knots')
     plt.ylabel('CoM Y [m]')
-    plt.subplot(2, 3, 3)
+    plt.subplot(3, 3, 6)
     plt.plot(knots, Cz)
     plt.xlabel('Knots')
     plt.ylabel('CoM Z [m]')
-    plt.subplot(2, 3, 4)
+    plt.subplot(3, 3, 7)
     [plt.plot(knots, lfPose[0], label='LF'), plt.plot(knots, rfPose[0], label='RF')]
     plt.xlabel('Knots')
     plt.ylabel('Foot X [m]')
     plt.legend()
-    plt.subplot(2, 3, 5)
+    plt.subplot(3, 3, 8)
     [plt.plot(knots, lfPose[1], label='LF'), plt.plot(knots, rfPose[1], label='RF')]
     plt.xlabel('Knots')
     plt.ylabel('Foot Y [m]')
     plt.legend()
-    plt.subplot(2, 3, 6)
+    plt.subplot(3, 3, 9)
     [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
     plt.xlabel('Knots')
     plt.ylabel('Foot Z [m]')
     plt.legend()
-    plt.savefig(dirName + 'CoMAndFeet.png', bbox_inches = 'tight', dpi = 300)
+    plt.savefig(dirName + 'TaskSpace.png', dpi = 300)
 
-    # # Plotting the Center of Mass (y,z over x)
-    # plt.figure(figIndex + 3, figsize=(16,9))
-    # plt.subplot(1, 2, 1)
-    # plt.plot(Cx, Cy)
-    # plt.xlabel('X [m]')
-    # plt.ylabel('Y [m]')
-    # plt.subplot(1, 2, 2)
-    # plt.plot(Cx, Cz)
-    # plt.xlabel('X [m]')
-    # plt.ylabel('Z [m]')
-    # plt.savefig(dirName + 'CoM2.png', bbox_inches = 'tight', dpi = 300)
-
-
-    # Plotting the contact wrenches
+    # Plotting the Contact Wrenches
     contactForceNames = ['Fx','Fy','Fz'] 
     contactMomentNames = ['Tx','Ty','Tz']
     plt.figure(figIndex + 3, figsize=(16,9))
@@ -192,12 +187,12 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     plt.ylabel('FB')
     plt.legend()
     plt.subplot(3,1,2)
-    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(6, 9))]
+    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(6, 12))]
     plt.xlabel('Knots')
     plt.ylabel('LF')
     plt.legend()
     plt.subplot(3,1,3)
-    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(9, 12))]
+    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(12, 18))]
     plt.xlabel('Knots')
     plt.ylabel('RF')
     plt.legend()
@@ -213,7 +208,7 @@ def logSolution(ddp, fs, timeStep, logPath):
     for t in range(len(xs)):
         time.append(round(timeStep * t, 2))
 
-    filename = logPath + 'logJointStatesAndEffort.csv'
+    filename = logPath + 'logJointSpace.csv'
     rangeRelJoints = list(range(7, nq)) + list(range(nq + 6, nq + 18))  # Ignore floating base (fixed joints)
     rangeRelAccs = list(range(6, na)) # Acceleration is 6-dim
     XRel = []
@@ -243,7 +238,7 @@ def logSolution(ddp, fs, timeStep, logPath):
                          'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch'])
         writer.writerows(sol)
 
-    filename = logPath + 'logBaseStates.csv'
+    filename = logPath + 'logBase.csv'
     rangeRelJoints = list(range(0, 7)) + list(range(nq, nq + 6)) # Ignore other joints
     rangeRelAccs = list(range(0, 6)) # Acceleration is 6-dim
     XRel = []
@@ -280,12 +275,14 @@ def logSolution(ddp, fs, timeStep, logPath):
                          'Fx_FR_SupportCenter', 'Fy_FR_SupportCenter', 'Fz_FR_SupportCenter', 'Tx_FR_SupportCenter', 'Ty_FR_SupportCenter', 'Tz_FR_SupportCenter'])
         writer.writerows(sol)
 
-    filename = logPath + 'logCoMAndFeetPoses.csv'
+    filename = logPath + 'logTaskSpace.csv'
     cs = []
     lfPoses = []
     rfPoses = []
-    sol = np.zeros([len(time), 9])
+    sol = np.zeros([len(time), 17])
     rdata = rmodel.createData()
+    lfId = rmodel.getFrameId('FL_SupportCenter')
+    rfId = rmodel.getFrameId('FR_SupportCenter')
     # Calculate CoM and foot poses for all states
     for x in xs:
         q = x[:rmodel.nq]
@@ -293,17 +290,18 @@ def logSolution(ddp, fs, timeStep, logPath):
         cs.append(c)
         pinocchio.forwardKinematics(rmodel, rdata, q)
         pinocchio.updateFramePlacements(rmodel, rdata)
-        lfId = rmodel.getFrameId('FL_SupportCenter')
-        rfId = rmodel.getFrameId('FR_SupportCenter')
-        lfPoses.append(rdata.oMf[lfId].translation) # TODO: Add rotation as seperate vector
-        rfPoses.append(rdata.oMf[rfId].translation)
+        # print(rdata.oMf[lfId])  # Pose specified via rotation matrix + translation vector
+        # print(pinocchio.SE3ToXYZQUATtuple(rdata.oMf[lfId]))  # Pose specified via quaternion + translation vector
+        lfPoses.append(pinocchio.SE3ToXYZQUATtuple(rdata.oMf[lfId]))
+        rfPoses.append(pinocchio.SE3ToXYZQUATtuple(rdata.oMf[rfId]))
+        
     for l in range(len(time)):
         sol[l] = [*cs[l], *lfPoses[l], *rfPoses[l]]
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['Cx', 'Cy', 'Cz', 
-                         'X_FL_SupportCenter', 'Y_FL_SupportCenter', 'Z_FL_SupportCenter',
-                         'X_FR_SupportCenter', 'Y_FR_SupportCenter', 'Z_FR_SupportCenter'])
+                         'X_FL_SupportCenter', 'Y_FL_SupportCenter', 'Z_FL_SupportCenter', 'Qx_FL_SupportCenter', 'Qy_FL_SupportCenter', 'Qz_FL_SupportCenter', 'Qw_FL_SupportCenter',
+                         'X_FR_SupportCenter', 'Y_FR_SupportCenter', 'Z_FR_SupportCenter', 'Qx_FR_SupportCenter', 'Qy_FR_SupportCenter', 'Qz_FR_SupportCenter', 'Qw_FR_SupportCenter',])
         writer.writerows(sol)
 
 
