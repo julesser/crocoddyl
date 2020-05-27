@@ -170,9 +170,9 @@ class SimpleBipedGaitProblem:
 
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, self.actuation.nu)
-        if isinstance(comTask, np.ndarray):
-            comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
-            costModel.addCost("comTrack", comTrack, 1e6)
+        # if isinstance(comTask, np.ndarray):
+        #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
+        #     costModel.addCost("comTrack", comTrack, 1e6)
         for i in supportFootIds:
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
             frictionCone = crocoddyl.CostModelContactFrictionCone(
@@ -200,13 +200,13 @@ class SimpleBipedGaitProblem:
         # limitCost = crocoddyl.CostModelState(self.state, crocoddyl.ActivationModelQuadraticBarrier(bounds), self.rmodel.defaultState,
         #                                     self.actuation.nu)
         # costModel.addCost("limitCost", limitCost, 1e3)
-        stateWeights = np.array([0] * 3 + [500.] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv)
+        # stateWeights = np.array([0] * 3 + [500.] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv)
+        stateWeights = np.array([0] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv)
         stateReg = crocoddyl.CostModelState(self.state,
                                             crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
                                             self.rmodel.defaultState, self.actuation.nu)
         ctrlReg = crocoddyl.CostModelControl(self.state, self.actuation.nu)
         costModel.addCost("stateReg", stateReg, 1e1)
-        # costModel.addCost("stateReg", stateReg, 1e2)
         costModel.addCost("ctrlReg", ctrlReg, 1e-1)
 
         # Creating the action model for the KKT dynamics with simpletic Euler
@@ -306,7 +306,8 @@ class SimpleBipedGaitProblem:
                 impulseFootVelCost = crocoddyl.CostModelFrameVelocity(self.state, footVel, self.actuation.nu)
                 costModel.addCost(self.rmodel.frames[i.frame].name + "_impulseVel", impulseFootVelCost, 1e6)
 
-        stateWeights = np.array([0] * 3 + [500.] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv)
+        # stateWeights = np.array([0] * 3 + [500.] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv)
+        stateWeights = np.array([0] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv)
         stateReg = crocoddyl.CostModelState(self.state,
                                             crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
                                             self.rmodel.defaultState, self.actuation.nu)
