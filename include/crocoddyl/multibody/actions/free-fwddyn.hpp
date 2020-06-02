@@ -27,6 +27,7 @@ class DifferentialActionModelFreeFwdDynamicsTpl : public DifferentialActionModel
 
   typedef _Scalar Scalar;
   typedef DifferentialActionModelAbstractTpl<Scalar> Base;
+  typedef DifferentialActionDataFreeFwdDynamicsTpl<Scalar> Data;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef CostModelSumTpl<Scalar> CostModelSum;
   typedef StateMultibodyTpl<Scalar> StateMultibody;
@@ -44,7 +45,8 @@ class DifferentialActionModelFreeFwdDynamicsTpl : public DifferentialActionModel
                     const Eigen::Ref<const VectorXs>& u);
   virtual void calcDiff(const boost::shared_ptr<DifferentialActionDataAbstract>& data,
                         const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u);
-  boost::shared_ptr<DifferentialActionDataAbstract> createData();
+  virtual boost::shared_ptr<DifferentialActionDataAbstract> createData();
+  virtual bool checkData(const boost::shared_ptr<DifferentialActionDataAbstract>& data);
 
   const boost::shared_ptr<ActuationModelAbstract>& get_actuation() const;
   const boost::shared_ptr<CostModelSum>& get_costs() const;

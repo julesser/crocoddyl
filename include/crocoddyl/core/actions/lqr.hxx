@@ -44,7 +44,8 @@ void ActionModelLQRTpl<Scalar>::calc(const boost::shared_ptr<ActionDataAbstract>
   } else {
     data->xnext.noalias() = Fx_ * x + Fu_ * u + f0_;
   }
-  data->cost = 0.5 * x.dot(Lxx_ * x) + 0.5 * u.dot(Luu_ * u) + x.dot(Lxu_ * u) + lx_.dot(x) + lu_.dot(u);
+  data->cost =
+      Scalar(0.5) * x.dot(Lxx_ * x) + Scalar(0.5) * u.dot(Luu_ * u) + x.dot(Lxu_ * u) + lx_.dot(x) + lu_.dot(u);
 }
 
 template <typename Scalar>
@@ -70,7 +71,17 @@ void ActionModelLQRTpl<Scalar>::calcDiff(const boost::shared_ptr<ActionDataAbstr
 
 template <typename Scalar>
 boost::shared_ptr<ActionDataAbstractTpl<Scalar> > ActionModelLQRTpl<Scalar>::createData() {
-  return boost::make_shared<ActionDataLQRTpl<Scalar> >(this);
+  return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+}
+
+template <typename Scalar>
+bool ActionModelLQRTpl<Scalar>::checkData(const boost::shared_ptr<ActionDataAbstract>& data) {
+  boost::shared_ptr<Data> d = boost::dynamic_pointer_cast<Data>(data);
+  if (d != NULL) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 template <typename Scalar>
