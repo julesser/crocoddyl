@@ -21,6 +21,7 @@ class SimpleBipedGaitProblem:
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
                         0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg """
         q0 = np.matrix([0,0,0.8793,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Stable init pose from long-time gait
+                        0,0,0,
                         0,0,-0.33,0.63,0,-0.30,     #q8-13:  Left Leg     
                         0,0,-0.33,0.63,0,-0.30]).T  #q14-19: Right Leg
         """ q0 = np.matrix([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file

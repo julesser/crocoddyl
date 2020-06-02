@@ -14,24 +14,45 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
 
     # Plotting the joint Space: positions, velocities and torques
     plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
-    legJointNames = ['Hip1', 'Hip2', 'Hip3', 'Knee', 'AnkleRoll', 'AnklePitch'] # Hip 1-3: Yaw, Roll, Pitch 
-    # left foot
-    plt.subplot(2, 3, 1)
+    torsoJointNames = ['BodyPitch','BodyRoll','BodyYaw']
+    legJointNames = ['HipYaw', 'HipRoll', 'HipPitch', 'Knee', 'AnkleRoll', 'AnklePitch'] # Hip 1-3: Yaw, Roll, Pitch 
+    # torso
+    plt.subplot(3, 3, 1)
     plt.title('Joint Position [rad]')
+    [plt.plot(X[k], label=torsoJointNames[i]) for i, k in enumerate(range(7, 10))]
+    if bounds:
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(7, 10))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(7, 10))]
+    plt.ylabel('Torso')
+    plt.subplot(3, 3, 2)
+    plt.title('Joint Velocity [rad/s]')
+    [plt.plot(X[k], label=torsoJointNames[i]) for i, k in enumerate(range(nq + 6, nq + 9))]
+    if bounds:
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 9))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 9))]
+    plt.ylabel('Torso')
+    plt.subplot(3, 3, 3)
+    plt.title('Joint Torque [Nm]')
+    [plt.plot(U[k], label=torsoJointNames[i]) for i, k in enumerate(range(0, 3))]
+    if bounds:
+        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(0, 3))]
+        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(0, 3))]
+    plt.ylabel('Torso')
+    plt.legend()
+    # left foot
+    plt.subplot(3, 3, 4)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(7, 13))]
     if bounds:
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(7, 13))]
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(7, 13))]
     plt.ylabel('LF')
-    plt.subplot(2, 3, 2)
-    plt.title('Joint Velocity [rad/s]')
+    plt.subplot(3, 3, 5)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 6, nq + 12))]
     if bounds:
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 12))]
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 12))]
     plt.ylabel('LF')
-    plt.subplot(2, 3, 3)
-    plt.title('Joint Torque [Nm]')
+    plt.subplot(3, 3, 6)
     [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(0, 6))]
     if bounds:
         [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(0, 6))]
@@ -39,27 +60,28 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     plt.ylabel('LF')
     plt.legend()
     # right foot
-    plt.subplot(2, 3, 4)
+    plt.subplot(3, 3, 7)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(13, 19))]
     if bounds:
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(13, 19))]
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(13, 19))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
-    plt.subplot(2, 3, 5)
+    plt.subplot(3, 3, 8)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 12, nq + 18))]
     if bounds:
         [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 12, nq + 18))]
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 12, nq + 18))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
-    plt.subplot(2, 3, 6)
+    plt.subplot(3, 3, 9)
     [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(6, 12))]
     if bounds:
         [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(6, 12))]
         [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(6, 12))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
+    plt.legend()
     plt.savefig(dirName + 'JointSpace.png', dpi = 300)
 
     # Backup plot to show that CoM height nearly is constant
