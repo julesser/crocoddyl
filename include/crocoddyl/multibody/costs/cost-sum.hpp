@@ -44,7 +44,6 @@ class CostModelSumTpl {
 
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
-  typedef CostDataSumTpl<Scalar> CostDataSum;
   typedef StateMultibodyTpl<Scalar> StateMultibody;
   typedef CostModelAbstractTpl<Scalar> CostModelAbstract;
   typedef CostDataAbstractTpl<Scalar> CostDataAbstract;
@@ -79,9 +78,6 @@ class CostModelSumTpl {
   const std::size_t& get_nu() const;
   const std::size_t& get_nr() const;
   const std::size_t& get_nr_total() const;
-  const std::vector<std::string>& get_active() const;
-  const std::vector<std::string>& get_inactive() const;
-  bool getCostStatus(const std::string& name) const;
 
  private:
   boost::shared_ptr<StateMultibody> state_;
@@ -89,8 +85,6 @@ class CostModelSumTpl {
   std::size_t nu_;
   std::size_t nr_;
   std::size_t nr_total_;
-  std::vector<std::string> active_;
-  std::vector<std::string> inactive_;
   VectorXs unone_;
 };
 
@@ -113,7 +107,7 @@ struct CostDataSumTpl {
         Lxu_internal(model->get_state()->get_ndx(), model->get_nu()),
         Luu_internal(model->get_nu(), model->get_nu()),
         shared(data),
-        cost(Scalar(0.)),
+        cost(0.),
         Lx(Lx_internal.data(), model->get_state()->get_ndx()),
         Lu(Lu_internal.data(), model->get_nu()),
         Lxx(Lxx_internal.data(), model->get_state()->get_ndx(), model->get_state()->get_ndx()),

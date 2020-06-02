@@ -7,7 +7,6 @@ RH5/results/old/*
 *.orig
 *.ipynb_checkpoints
 build*/*
-_build*
 *.aux
 *.log
 *.pdf

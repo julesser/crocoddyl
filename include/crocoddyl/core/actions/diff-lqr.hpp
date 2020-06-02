@@ -23,9 +23,9 @@ class DifferentialActionModelLQRTpl : public DifferentialActionModelAbstractTpl<
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef DifferentialActionModelAbstractTpl<Scalar> Base;
-  typedef DifferentialActionDataLQRTpl<Scalar> Data;
   typedef StateVectorTpl<Scalar> StateVector;
   typedef DifferentialActionDataAbstractTpl<Scalar> DifferentialActionDataAbstract;
+  typedef DifferentialActionDataLQRTpl<Scalar> DifferentialActionDataLQR;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
 
@@ -37,7 +37,6 @@ class DifferentialActionModelLQRTpl : public DifferentialActionModelAbstractTpl<
   virtual void calcDiff(const boost::shared_ptr<DifferentialActionDataAbstract>& data,
                         const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u);
   virtual boost::shared_ptr<DifferentialActionDataAbstract> createData();
-  virtual bool checkData(const boost::shared_ptr<DifferentialActionDataAbstract>& data);
 
   const MatrixXs& get_Fq() const;
   const MatrixXs& get_Fv() const;

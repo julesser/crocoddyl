@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2018-2020, University of Edinburgh, LAAS-CNRS
+// Copyright (C) 2018-2020, University of Edinburgh
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -18,13 +18,11 @@ namespace crocoddyl {
 template <typename _Scalar>
 class ActivationModelWeightedQuadraticBarrierTpl : public ActivationModelAbstractTpl<_Scalar> {
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef ActivationModelAbstractTpl<Scalar> Base;
   typedef ActivationDataAbstractTpl<Scalar> ActivationDataAbstract;
-  typedef ActivationDataQuadraticBarrierTpl<Scalar> Data;
+  typedef ActivationDataQuadraticBarrierTpl<Scalar> ActivationDataQuadraticBarrier;
   typedef ActivationBoundsTpl<Scalar> ActivationBounds;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
@@ -38,14 +36,14 @@ class ActivationModelWeightedQuadraticBarrierTpl : public ActivationModelAbstrac
       throw_pretty("Invalid argument: "
                    << "r has wrong dimension (it should be " + std::to_string(nr_) + ")");
     }
-    boost::shared_ptr<Data> d = boost::static_pointer_cast<Data>(data);
+    boost::shared_ptr<ActivationDataQuadraticBarrier> d =
+        boost::static_pointer_cast<ActivationDataQuadraticBarrier>(data);
 
-    d->rlb_min_ = (r - bounds_.lb).array().min(Scalar(0.));
-    d->rub_max_ = (r - bounds_.ub).array().max(Scalar(0.));
+    d->rlb_min_ = (r - bounds_.lb).array().min(0.);
+    d->rub_max_ = (r - bounds_.ub).array().max(0.);
     d->rlb_min_.array() *= weights_.array();
     d->rub_max_.array() *= weights_.array();
-    data->a_value =
-        Scalar(0.5) * d->rlb_min_.matrix().squaredNorm() + Scalar(0.5) * d->rub_max_.matrix().squaredNorm();
+    data->a_value = 0.5 * d->rlb_min_.matrix().squaredNorm() + 0.5 * d->rub_max_.matrix().squaredNorm();
   };
 
   virtual void calcDiff(const boost::shared_ptr<ActivationDataAbstract>& data, const Eigen::Ref<const VectorXs>& r) {
@@ -53,16 +51,17 @@ class ActivationModelWeightedQuadraticBarrierTpl : public ActivationModelAbstrac
       throw_pretty("Invalid argument: "
                    << "r has wrong dimension (it should be " + std::to_string(nr_) + ")");
     }
-    boost::shared_ptr<Data> d = boost::static_pointer_cast<Data>(data);
+    boost::shared_ptr<ActivationDataQuadraticBarrier> d =
+        boost::static_pointer_cast<ActivationDataQuadraticBarrier>(data);
     data->Ar = (d->rlb_min_ + d->rub_max_).matrix();
     data->Ar.array() *= weights_.array();
     data->Arr.diagonal() =
-        (((r - bounds_.lb).array() <= Scalar(0.)) + ((r - bounds_.ub).array() >= 0.)).matrix().template cast<Scalar>();
+        (((r - bounds_.lb).array() <= 0.) + ((r - bounds_.ub).array() >= 0.)).matrix().template cast<Scalar>();
     data->Arr.diagonal().array() *= weights_.array();
   };
 
   virtual boost::shared_ptr<ActivationDataAbstract> createData() {
-    return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+    return boost::make_shared<ActivationDataQuadraticBarrier>(this);
   };
 
   const ActivationBounds& get_bounds() const { return bounds_; };

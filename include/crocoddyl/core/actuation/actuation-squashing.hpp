@@ -23,9 +23,9 @@ class ActuationSquashingModelTpl : public ActuationModelAbstractTpl<_Scalar> {
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef ActuationModelAbstractTpl<Scalar> Base;
-  typedef ActuationSquashingDataTpl<Scalar> Data;
   typedef ActuationModelAbstractTpl<Scalar> ActuationModelAbstract;
   typedef ActuationDataAbstractTpl<Scalar> ActuationDataAbstract;
+  typedef ActuationSquashingDataTpl<Scalar> ActuationSquashingData;
   typedef SquashingModelAbstractTpl<Scalar> SquashingModelAbstract;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
@@ -38,7 +38,8 @@ class ActuationSquashingModelTpl : public ActuationModelAbstractTpl<_Scalar> {
 
   virtual void calc(const boost::shared_ptr<ActuationDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
                     const Eigen::Ref<const VectorXs>& u) {
-    boost::shared_ptr<Data> data_squashing = boost::static_pointer_cast<Data>(data);
+    boost::shared_ptr<ActuationSquashingData> data_squashing =
+        boost::static_pointer_cast<ActuationSquashingData>(data);
 
     squashing_->calc(data_squashing->squashing, u);
     actuation_->calc(data_squashing->actuation, x, data_squashing->squashing->u);
@@ -47,16 +48,15 @@ class ActuationSquashingModelTpl : public ActuationModelAbstractTpl<_Scalar> {
 
   virtual void calcDiff(const boost::shared_ptr<ActuationDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
                         const Eigen::Ref<const VectorXs>& u) {
-    boost::shared_ptr<Data> data_squashing = boost::static_pointer_cast<Data>(data);
+    boost::shared_ptr<ActuationSquashingData> data_squashing =
+        boost::static_pointer_cast<ActuationSquashingData>(data);
 
     squashing_->calcDiff(data_squashing->squashing, u);
     actuation_->calcDiff(data_squashing->actuation, x, data_squashing->squashing->u);
     data->dtau_du.noalias() = data_squashing->actuation->dtau_du * data_squashing->squashing->du_ds;
   };
 
-  boost::shared_ptr<ActuationDataAbstract> createData() {
-    return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
-  };
+  boost::shared_ptr<ActuationDataAbstract> createData() { return boost::make_shared<ActuationSquashingData>(this); };
 
   const boost::shared_ptr<SquashingModelAbstract>& get_squashing() const { return squashing_; };
   const boost::shared_ptr<ActuationModelAbstract>& get_actuation() const { return actuation_; };
@@ -72,7 +72,6 @@ struct ActuationSquashingDataTpl : public ActuationDataAbstractTpl<_Scalar> {
 
   typedef _Scalar Scalar;
   typedef ActuationDataAbstractTpl<Scalar> Base;
-  typedef SquashingDataAbstractTpl<Scalar> SquashingDataAbstract;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;

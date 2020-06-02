@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2018-2020, University of Edinburgh, LAAS-CNRS
+// Copyright (C) 2018-2020, University of Edinburgh
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,8 @@ ContactModelNumDiffTpl<Scalar>::~ContactModelNumDiffTpl() {}
 template <typename Scalar>
 void ContactModelNumDiffTpl<Scalar>::calc(const boost::shared_ptr<ContactDataAbstract>& data,
                                           const Eigen::Ref<const VectorXs>& x) {
-  boost::shared_ptr<Data> data_nd = boost::static_pointer_cast<Data>(data);
+  boost::shared_ptr<ContactDataNumDiffTpl<Scalar> > data_nd =
+      boost::static_pointer_cast<ContactDataNumDiffTpl<Scalar> >(data);
   model_->calc(data_nd->data_0, x);
   data_nd->a0 = data_nd->data_0->a0;
 }
@@ -31,7 +32,8 @@ void ContactModelNumDiffTpl<Scalar>::calc(const boost::shared_ptr<ContactDataAbs
 template <typename Scalar>
 void ContactModelNumDiffTpl<Scalar>::calcDiff(const boost::shared_ptr<ContactDataAbstract>& data,
                                               const Eigen::Ref<const VectorXs>& x) {
-  boost::shared_ptr<Data> data_nd = boost::static_pointer_cast<Data>(data);
+  boost::shared_ptr<ContactDataNumDiffTpl<Scalar> > data_nd =
+      boost::static_pointer_cast<ContactDataNumDiffTpl<Scalar> >(data);
 
   const VectorXs& a0 = data_nd->a0;
 
@@ -62,7 +64,8 @@ void ContactModelNumDiffTpl<Scalar>::updateForce(const boost::shared_ptr<Contact
                  << "lambda has wrong dimension (it should be " << model_->get_nc() << ")");
   }
 
-  boost::shared_ptr<Data> data_nd = boost::static_pointer_cast<Data>(data);
+  boost::shared_ptr<ContactDataNumDiffTpl<Scalar> > data_nd =
+      boost::static_pointer_cast<ContactDataNumDiffTpl<Scalar> >(data);
 
   model_->updateForce(data_nd->data_0, force);
 }
@@ -70,7 +73,7 @@ void ContactModelNumDiffTpl<Scalar>::updateForce(const boost::shared_ptr<Contact
 template <typename Scalar>
 boost::shared_ptr<ContactDataAbstractTpl<Scalar> > ContactModelNumDiffTpl<Scalar>::createData(
     pinocchio::DataTpl<Scalar>* const data) {
-  return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this, data);
+  return boost::make_shared<ContactDataNumDiffTpl<Scalar> >(this, data);
 }
 
 template <typename Scalar>

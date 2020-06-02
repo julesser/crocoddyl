@@ -24,7 +24,6 @@ class CostModelCoMPositionTpl : public CostModelAbstractTpl<_Scalar> {
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef CostModelAbstractTpl<Scalar> Base;
-  typedef CostDataCoMPositionTpl<Scalar> Data;
   typedef StateMultibodyTpl<Scalar> StateMultibody;
   typedef CostDataAbstractTpl<Scalar> CostDataAbstract;
   typedef ActivationModelAbstractTpl<Scalar> ActivationModelAbstract;

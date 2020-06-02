@@ -34,8 +34,6 @@ std::ostream& operator<<(std::ostream& os, ActionModelTypes::Type type);
 
 class ActionModelFactory {
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   explicit ActionModelFactory();
   ~ActionModelFactory();
 

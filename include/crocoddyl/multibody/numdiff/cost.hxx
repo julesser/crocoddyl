@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 // BSD 3-Clause License
 //
-// Copyright (C) 2018-2020, University of Edinburgh, LAAS-CNRS
+// Copyright (C) 2018-2020, University of Edinburgh
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -23,7 +23,8 @@ CostModelNumDiffTpl<Scalar>::~CostModelNumDiffTpl() {}
 template <typename Scalar>
 void CostModelNumDiffTpl<Scalar>::calc(const boost::shared_ptr<CostDataAbstract>& data,
                                        const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u) {
-  boost::shared_ptr<Data> data_nd = boost::static_pointer_cast<Data>(data);
+  boost::shared_ptr<CostDataNumDiffTpl<Scalar> > data_nd =
+      boost::static_pointer_cast<CostDataNumDiffTpl<Scalar> >(data);
   data_nd->data_0->cost = 0.0;
   model_->calc(data_nd->data_0, x, u);
   data_nd->cost = data_nd->data_0->cost;
@@ -33,7 +34,8 @@ void CostModelNumDiffTpl<Scalar>::calc(const boost::shared_ptr<CostDataAbstract>
 template <typename Scalar>
 void CostModelNumDiffTpl<Scalar>::calcDiff(const boost::shared_ptr<CostDataAbstract>& data,
                                            const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u) {
-  boost::shared_ptr<Data> data_nd = boost::static_pointer_cast<Data>(data);
+  boost::shared_ptr<CostDataNumDiffTpl<Scalar> > data_nd =
+      boost::static_pointer_cast<CostDataNumDiffTpl<Scalar> >(data);
 
   const Scalar& c0 = data_nd->cost;
   const VectorXs& r0 = data_nd->r;
@@ -100,7 +102,7 @@ void CostModelNumDiffTpl<Scalar>::calcDiff(const boost::shared_ptr<CostDataAbstr
 template <typename Scalar>
 boost::shared_ptr<CostDataAbstractTpl<Scalar> > CostModelNumDiffTpl<Scalar>::createData(
     DataCollectorAbstract* const data) {
-  return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this, data);
+  return boost::make_shared<CostDataNumDiffTpl<Scalar> >(this, data);
 }
 
 template <typename Scalar>

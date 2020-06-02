@@ -11,6 +11,8 @@ from crocoddyl.utils.quadruped import SimpleQuadrupedalGaitProblem, plotSolution
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
 WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 
+crocoddyl.switchToNumpyMatrix()
+
 # Loading the anymal model
 anymal = example_robot_data.loadANYmal()
 
@@ -138,7 +140,7 @@ if WITHPLOT:
     plotSolution(ddp, figIndex=1, show=False)
 
     for i, phase in enumerate(GAITPHASES):
-        title = list(phase.keys())[0] + " (phase " + str(i) + ")"
+        title = phase.keys()[0] + " (phase " + str(i) + ")"
         log = ddp[i].getCallbacks()[0]
         crocoddyl.plotConvergence(log.costs,
                                   log.u_regs,

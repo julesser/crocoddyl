@@ -27,7 +27,8 @@ void ActivationModelNumDiffTpl<Scalar>::calc(const boost::shared_ptr<ActivationD
     throw_pretty("Invalid argument: "
                  << "r has wrong dimension (it should be " + std::to_string(model_->get_nr()) + ")");
   }
-  boost::shared_ptr<Data> data_nd = boost::static_pointer_cast<Data>(data);
+  boost::shared_ptr<ActivationDataNumDiffTpl<Scalar> > data_nd =
+      boost::static_pointer_cast<ActivationDataNumDiffTpl<Scalar> >(data);
   model_->calc(data_nd->data_0, r);
   data->a_value = data_nd->data_0->a_value;
 }
@@ -39,7 +40,8 @@ void ActivationModelNumDiffTpl<Scalar>::calcDiff(const boost::shared_ptr<Activat
     throw_pretty("Invalid argument: "
                  << "r has wrong dimension (it should be " + std::to_string(model_->get_nr()) + ")");
   }
-  boost::shared_ptr<Data> data_nd = boost::static_pointer_cast<Data>(data);
+  boost::shared_ptr<ActivationDataNumDiffTpl<Scalar> > data_nd =
+      boost::static_pointer_cast<ActivationDataNumDiffTpl<Scalar> >(data);
 
   const Scalar& a_value0 = data_nd->data_0->a_value;
   data->a_value = data_nd->data_0->a_value;
@@ -55,13 +57,12 @@ void ActivationModelNumDiffTpl<Scalar>::calcDiff(const boost::shared_ptr<Activat
   }
 
   // Computing the d^2 action(r) / dr^2
-  data_nd->Arr_.noalias() = data->Ar * data->Ar.transpose();
-  data->Arr.diagonal() = data_nd->Arr_.diagonal();
+  data->Arr.noalias() = data->Ar * data->Ar.transpose();
 }
 
 template <typename Scalar>
 boost::shared_ptr<ActivationDataAbstractTpl<Scalar> > ActivationModelNumDiffTpl<Scalar>::createData() {
-  return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+  return boost::make_shared<ActivationDataNumDiffTpl<Scalar> >(this);
 }
 
 template <typename Scalar>

@@ -23,14 +23,14 @@ class IntegratedActionModelEulerTpl : public ActionModelAbstractTpl<_Scalar> {
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef ActionModelAbstractTpl<Scalar> Base;
-  typedef IntegratedActionDataEulerTpl<Scalar> Data;
   typedef ActionDataAbstractTpl<Scalar> ActionDataAbstract;
   typedef DifferentialActionModelAbstractTpl<Scalar> DifferentialActionModelAbstract;
+  typedef IntegratedActionDataEulerTpl<Scalar> IntegratedActionDataEuler;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
 
   IntegratedActionModelEulerTpl(boost::shared_ptr<DifferentialActionModelAbstract> model,
-                                const Scalar& time_step = Scalar(1e-3), const bool& with_cost_residual = true);
+                                const Scalar& time_step = 1e-3, const bool& with_cost_residual = true);
   virtual ~IntegratedActionModelEulerTpl();
 
   virtual void calc(const boost::shared_ptr<ActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
@@ -38,7 +38,6 @@ class IntegratedActionModelEulerTpl : public ActionModelAbstractTpl<_Scalar> {
   virtual void calcDiff(const boost::shared_ptr<ActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
                         const Eigen::Ref<const VectorXs>& u);
   virtual boost::shared_ptr<ActionDataAbstract> createData();
-  virtual bool checkData(const boost::shared_ptr<ActionDataAbstract>& data);
 
   const boost::shared_ptr<DifferentialActionModelAbstract>& get_differential() const;
   const Scalar& get_dt() const;
@@ -77,12 +76,21 @@ struct IntegratedActionDataEulerTpl : public ActionDataAbstractTpl<_Scalar> {
   explicit IntegratedActionDataEulerTpl(Model<Scalar>* const model) : Base(model) {
     differential = model->get_differential()->createData();
     const std::size_t& ndx = model->get_state()->get_ndx();
+    const std::size_t& nu = model->get_nu();
     dx = VectorXs::Zero(ndx);
+    ddx_dx = MatrixXs::Zero(ndx, ndx);
+    ddx_du = MatrixXs::Zero(ndx, nu);
+    dxnext_dx = MatrixXs::Zero(ndx, ndx);
+    dxnext_ddx = MatrixXs::Zero(ndx, ndx);
   }
   ~IntegratedActionDataEulerTpl() {}
 
   boost::shared_ptr<DifferentialActionDataAbstractTpl<Scalar> > differential;
   VectorXs dx;
+  MatrixXs ddx_dx;
+  MatrixXs ddx_du;
+  MatrixXs dxnext_dx;
+  MatrixXs dxnext_ddx;
 
   using Base::cost;
   using Base::Fu;

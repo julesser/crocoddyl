@@ -46,8 +46,8 @@ class DifferentialActionModelAbstractTpl {
 
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
-  typedef DifferentialActionDataAbstractTpl<Scalar> DifferentialActionDataAbstract;
   typedef StateAbstractTpl<Scalar> StateAbstract;
+  typedef DifferentialActionDataAbstractTpl<Scalar> DifferentialActionDataAbstract;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
 
@@ -60,7 +60,6 @@ class DifferentialActionModelAbstractTpl {
   virtual void calcDiff(const boost::shared_ptr<DifferentialActionDataAbstract>& data,
                         const Eigen::Ref<const VectorXs>& x, const Eigen::Ref<const VectorXs>& u) = 0;
   virtual boost::shared_ptr<DifferentialActionDataAbstract> createData();
-  virtual bool checkData(const boost::shared_ptr<DifferentialActionDataAbstract>& data);
 
   void calc(const boost::shared_ptr<DifferentialActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);
   void calcDiff(const boost::shared_ptr<DifferentialActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x);

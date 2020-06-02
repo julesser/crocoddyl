@@ -20,8 +20,6 @@ namespace crocoddyl {
 
 template <typename _Scalar>
 struct ActivationBoundsTpl {
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef typename MathBase::VectorXs VectorXs;
@@ -67,13 +65,11 @@ struct ActivationBoundsTpl {
 template <typename _Scalar>
 class ActivationModelQuadraticBarrierTpl : public ActivationModelAbstractTpl<_Scalar> {
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   typedef _Scalar Scalar;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef ActivationModelAbstractTpl<Scalar> Base;
   typedef ActivationDataAbstractTpl<Scalar> ActivationDataAbstract;
-  typedef ActivationDataQuadraticBarrierTpl<Scalar> Data;
+  typedef ActivationDataQuadraticBarrierTpl<Scalar> ActivationDataQuadraticBarrier;
   typedef ActivationBoundsTpl<Scalar> ActivationBounds;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
@@ -88,7 +84,8 @@ class ActivationModelQuadraticBarrierTpl : public ActivationModelAbstractTpl<_Sc
                    << "r has wrong dimension (it should be " + std::to_string(nr_) + ")");
     }
 
-    boost::shared_ptr<Data> d = boost::static_pointer_cast<Data>(data);
+    boost::shared_ptr<ActivationDataQuadraticBarrier> d =
+        boost::static_pointer_cast<ActivationDataQuadraticBarrier>(data);
 
     d->rlb_min_ = (r - bounds_.lb).array().min(0.);
     d->rub_max_ = (r - bounds_.ub).array().max(0.);
@@ -102,14 +99,15 @@ class ActivationModelQuadraticBarrierTpl : public ActivationModelAbstractTpl<_Sc
                    << "r has wrong dimension (it should be " + std::to_string(nr_) + ")");
     }
 
-    boost::shared_ptr<Data> d = boost::static_pointer_cast<Data>(data);
+    boost::shared_ptr<ActivationDataQuadraticBarrier> d =
+        boost::static_pointer_cast<ActivationDataQuadraticBarrier>(data);
     data->Ar = (d->rlb_min_ + d->rub_max_).matrix();
     data->Arr.diagonal() =
         (((r - bounds_.lb).array() <= 0.) + ((r - bounds_.ub).array() >= 0.)).matrix().template cast<Scalar>();
   };
 
   virtual boost::shared_ptr<ActivationDataAbstract> createData() {
-    return boost::allocate_shared<Data>(Eigen::aligned_allocator<Data>(), this);
+    return boost::make_shared<ActivationDataQuadraticBarrier>(this);
   };
 
   const ActivationBounds& get_bounds() const { return bounds_; };

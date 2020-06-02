@@ -23,7 +23,6 @@ class ActionModelLQRTpl : public ActionModelAbstractTpl<_Scalar> {
   typedef _Scalar Scalar;
   typedef ActionDataAbstractTpl<Scalar> ActionDataAbstract;
   typedef ActionModelAbstractTpl<Scalar> Base;
-  typedef ActionDataLQRTpl<Scalar> Data;
   typedef StateVectorTpl<Scalar> StateVector;
   typedef MathBaseTpl<Scalar> MathBase;
   typedef typename MathBase::VectorXs VectorXs;
@@ -37,7 +36,6 @@ class ActionModelLQRTpl : public ActionModelAbstractTpl<_Scalar> {
   virtual void calcDiff(const boost::shared_ptr<ActionDataAbstract>& data, const Eigen::Ref<const VectorXs>& x,
                         const Eigen::Ref<const VectorXs>& u);
   virtual boost::shared_ptr<ActionDataAbstract> createData();
-  virtual bool checkData(const boost::shared_ptr<ActionDataAbstract>& data);
 
   const MatrixXs& get_Fx() const;
   const MatrixXs& get_Fu() const;
