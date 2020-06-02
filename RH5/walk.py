@@ -18,7 +18,8 @@ crocoddyl.switchToNumpyMatrix()
 
 # Loading the RH5 Model
 modelPath = os.path.join(os.environ.get('HOME'), "Dev/rh5-models")
-URDF_FILENAME = "RH5Legs_PkgPath_PtContact.urdf"
+# URDF_FILENAME = "RH5Torso_PkgPath.urdf"
+URDF_FILENAME = "RH5Humanoid_PkgPath_FixedArmsNHead.urdf"
 URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
 
 rh5_legs = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
@@ -39,26 +40,24 @@ leftFoot = 'FL_SupportCenter'
 gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)     
 
 # Defining the initial state of the robot
-q0 = gait.q0
-v0 = pinocchio.utils.zero(rmodel.nv)
-x0 = np.concatenate([q0, v0])
+x0 = gait.rmodel.defaultState
 
 # display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, frameNames=[rightFoot, leftFoot])
 # display.display(xs=[x0])
 
-# simName = 'results/' # Used when just testing
+simName = 'results/TorsoTest/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
 # simName = 'results/2Steps_30cmStride/'
-simName = 'results/LongGait/'
+# simName = 'results/LongGait/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform 2 Steps
-""" GAITPHASES = \
-    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
-# Perform 10 Steps
 GAITPHASES = \
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+# Perform 10 Steps
+""" GAITPHASES = \
     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
      {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
@@ -68,7 +67,7 @@ GAITPHASES = \
     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
 cameraTF = [3., 3.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 
 ddp = [None] * len(GAITPHASES)
@@ -129,11 +128,11 @@ for i, phase in enumerate(GAITPHASES):
         for f in fs[j]: # iter over all contacts (LF, RF)
             key = f["key"]
             wrench = f["f"]
-            if key == "7": # left foot
+            if key == "10": # left foot
                 for k in range(3):
                     fsRel[i*len(fs)+j,k] = wrench.linear[k]
                     fsRel[i*len(fs)+j,k+3] = wrench.angular[k]
-            elif key == "13": # right foot
+            elif key == "16": # right foot
                 for k in range(3):
                     fsRel[i*len(fs)+j,k+6] = wrench.linear[k]
                     fsRel[i*len(fs)+j,k+9] = wrench.angular[k]
