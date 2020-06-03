@@ -73,9 +73,6 @@ class SimpleBipedGaitProblem:
         # print(comRef)
         if isLastPhase is True: 
             lStep = self.createFootstepModels(comRef, [lfPos0], 0.5* stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
-            # rearrangeKnots = 10
-            # rearrangePose = [self.createRearrangeModel(timeStep, [self.rfId, self.lfId]) for k in range(rearrangeKnots)]
-            # lStep += rearrangePose # TODO: Right now it has now effect on final joint pose -> right default state set?
         else: 
             lStep = self.createFootstepModels(comRef, [lfPos0], stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
 
@@ -83,7 +80,6 @@ class SimpleBipedGaitProblem:
         # We defined the problem as:
         loco3dModel += doubleSupport + rStep
         loco3dModel += doubleSupport + lStep
-        # loco3dModel += rearrangePose
 
         problem = crocoddyl.ShootingProblem(x0, loco3dModel, loco3dModel[-1])
         return problem
@@ -208,50 +204,6 @@ class SimpleBipedGaitProblem:
                                             self.rmodel.defaultState, self.actuation.nu)
         ctrlReg = crocoddyl.CostModelControl(self.state, self.actuation.nu)
         costModel.addCost("stateReg", stateReg, 1e1)
-        costModel.addCost("ctrlReg", ctrlReg, 1e-1)
-
-        # Creating the action model for the KKT dynamics with simpletic Euler
-        # integration scheme
-        dmodel = crocoddyl.DifferentialActionModelContactFwdDynamics(self.state, self.actuation, contactModel,
-                                                                     costModel, 0., True)
-        model = crocoddyl.IntegratedActionModelEuler(dmodel, timeStep)
-        return model
-
-    def createRearrangeModel(self, timeStep, supportFootIds):
-        """ Action model for a swing foot phase.
-
-        :param timeStep: step duration of the action model
-        :param supportFootIds: Ids of the constrained feet
-        :param comTask: CoM task
-        :param swingFootTask: swinging foot task
-        :return action model for a swing foot phase
-        """
-        # Creating a 6D multi-contact model, and then including the supporting
-        # foot
-        contactModel = crocoddyl.ContactModelMultiple(self.state, self.actuation.nu)
-        for i in supportFootIds:
-            Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
-            supportContactModel = \
-                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.matrix([0., 0.]).T)
-            contactModel.addContact(self.rmodel.frames[i].name + "_contact", supportContactModel)
-
-        # Creating the cost model for a contact phase
-        costModel = crocoddyl.CostModelSum(self.state, self.actuation.nu)
-        # if isinstance(comTask, np.ndarray):
-        #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
-        #     costModel.addCost("comTrack", comTrack, 1e6)
-        # for i in supportFootIds:
-        #     cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
-        #     frictionCone = crocoddyl.CostModelContactFrictionCone(
-        #         self.state, crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(cone.lb, cone.ub)),
-        #         crocoddyl.FrameFrictionCone(i, cone), self.actuation.nu)
-        #     costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e1)
-        stateWeights = np.array([0] * 3 + [500.] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv)
-        stateReg = crocoddyl.CostModelState(self.state,
-                                            crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
-                                            self.rmodel.defaultState, self.actuation.nu)
-        ctrlReg = crocoddyl.CostModelControl(self.state, self.actuation.nu)
-        costModel.addCost("stateReg", stateReg, 1e6)
         costModel.addCost("ctrlReg", ctrlReg, 1e-1)
 
         # Creating the action model for the KKT dynamics with simpletic Euler
