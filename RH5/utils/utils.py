@@ -231,7 +231,7 @@ def logSolution(ddp, fs, timeStep, logPath):
         time.append(round(timeStep * t, 2))
 
     filename = logPath + 'logJointSpace.csv'
-    rangeRelJoints = list(range(7, nq)) + list(range(nq + 6, nq + 18))  # Ignore floating base (fixed joints)
+    rangeRelJoints = list(range(7, nq)) + list(range(nq + 6, nq + nx-nq))  # Ignore floating base (fixed joints)
     rangeRelAccs = list(range(6, na)) # Acceleration is 6-dim
     XRel = []
     ARel = []
@@ -250,12 +250,16 @@ def logSolution(ddp, fs, timeStep, logPath):
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['t[s]',
+                         'q_BodyPitch', 'q_BodyRoll', 'q_BodyYaw',
                          'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
                          'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
+                         'qd_BodyPitch', 'qd_BodyRoll', 'qd_BodyYaw',
                          'qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch',
                          'qd_LRHip1', 'qd_LRHip2', 'qd_LRHip3', 'qd_LRKnee', 'qd_LRAnkleRoll', 'qd_LRAnklePitch',
+                         'qdd_BodyPitch', 'qdd_BodyRoll', 'qdd_BodyYaw',
                          'qdd_LLHip1', 'qdd_LLHip2', 'qdd_LLHip3', 'qdd_LLKnee', 'qdd_LLAnkleRoll', 'qdd_LLAnklePitch',
                          'qdd_LRHip1', 'qdd_LRHip2', 'qdd_LRHip3', 'qdd_LRKnee', 'qdd_LRAnkleRoll', 'qdd_LRAnklePitch',
+                         'Tau_BodyPitch', 'Tau_BodyRoll', 'Tau_BodyYaw',
                          'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch',
                          'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch'])
         writer.writerows(sol)
