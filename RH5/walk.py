@@ -28,7 +28,6 @@ setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.03
-# stepKnots = 25
 stepKnots = 50
 supportKnots = 1
 impulseKnots = 1
@@ -45,10 +44,11 @@ x0 = gait.rmodel.defaultState
 # display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, frameNames=[rightFoot, leftFoot])
 # display.display(xs=[x0])
 
-simName = 'results/TorsoTest/' # Used when just testing
+# simName = 'results/Test/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
 # simName = 'results/2Steps_30cmStride/'
 # simName = 'results/LongGait/'
+simName = 'results/HumanoidFixedArms/LongGait_10cm/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
@@ -78,7 +78,7 @@ for i, phase in enumerate(GAITPHASES):
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
                                           value['stepKnots'], value['supportKnots'], value['isLastPhase']))
-            # ddp[i].th_stop = 1e-8                                          
+            ddp[i].th_stop = 1e-7                                          
 
     # Add the callback functions
     print('*** SOLVE ' + key + ' ***')

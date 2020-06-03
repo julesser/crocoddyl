@@ -196,7 +196,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     plt.xlabel('Knots')
     plt.ylabel('RF')
     plt.legend()
-    plt.savefig(dirName + 'ContactWrenches.png', bbox_inches = 'tight', dpi = 300)
+    plt.savefig(dirName + 'ContactWrenches.png', dpi = 300)
 
 
     # Plotting the Acceleration
@@ -218,7 +218,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     plt.xlabel('Knots')
     plt.ylabel('RF')
     plt.legend()
-    plt.savefig(dirName + 'Acceleration.png', bbox_inches = 'tight', dpi = 300)
+    plt.savefig(dirName + 'Acceleration.png', dpi = 300)
 
 
 def logSolution(ddp, fs, timeStep, logPath):
