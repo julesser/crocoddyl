@@ -6,6 +6,7 @@ import csv
 
 def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
     if bounds: 
         rmodel, xs, us, accs, X, U, F, A, X_LB, X_UB, U_LB, U_UB = mergeDataFromSolvers(ddp, fs, bounds)
     else: 
@@ -124,8 +125,43 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
 
     knots = list(range(0,len(Cz)))
 
-    # Plotting the Task Space: Center of Mass and Feet (x,y,z over knots)
+    # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
+    feetLength = 0.2
+    feetHight = 0.08
+    # relTimePoints = [0,52,104]
+    relTimePoints = [0,40,100]
+    numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
+    plt.xlabel('X [m]')
+    plt.ylabel('Y [m]')
+    # (1) Variant with subplots
+    for i, t in zip(numPlots, relTimePoints):
+        plt.subplot(1, len(relTimePoints), i)
+        plt.plot(Cx[t], Cy[t], marker='x', markersize = '10', label='CoM')
+        [plt.plot(lfPose[0][t], lfPose[1][t], marker='x', markersize = '10', label='LF'), plt.plot(rfPose[0][t], rfPose[1][t], marker='x', markersize = '10', label='RF')]
+        plt.legend()
+        plt.axis('scaled')
+        plt.xlim(0, .4)
+        plt.ylim(-.2, .2)
+        currentAxis = plt.gca()
+        currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
+        currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
+    # # (2) Variant with just one plot
+    # for i, t in zip(numPlots, relTimePoints):
+    #     plt.plot(Cx[t], Cy[t], marker='x', markersize = '10', label='CoM')
+    #     [plt.plot(lfPose[0][t], lfPose[1][t], marker='x', markersize = '10', label='LF'), plt.plot(rfPose[0][t], rfPose[1][t], marker='x', markersize = '10', label='RF')]
+    #     plt.legend()
+    #     plt.axis('scaled')
+    #     plt.xlim(0, .4)
+    #     plt.ylim(-.2, .2)
+    #     currentAxis = plt.gca()
+    #     currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
+    #     currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
+
+    plt.savefig(dirName + 'StabilityAnalysis.png', dpi = 300)
+
+    # Plotting the Task Space: Center of Mass and Feet (x,y,z over knots)
+    plt.figure(figIndex + 3, figsize=(16,9))
     plt.subplot(3, 3, 1)
     plt.plot(knots, X[0])
     plt.xlabel('Knots')
@@ -170,7 +206,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     # Plotting the Contact Wrenches
     contactForceNames = ['Fx','Fy','Fz'] 
     contactMomentNames = ['Tx','Ty','Tz']
-    plt.figure(figIndex + 3, figsize=(16,9))
+    plt.figure(figIndex + 4, figsize=(16,9))
 
     plt.subplot(2,2,1)
     plt.title('Contact Forces [N]')
@@ -201,7 +237,7 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
 
     # Plotting the Acceleration
     AccFBNames = ['vxd', 'vyd', 'vzd', 'wxd', 'wyd', 'wzd']
-    plt.figure(figIndex + 4, figsize=(16,9))
+    plt.figure(figIndex + 5, figsize=(16,9))
 
     plt.subplot(3,1,1)
     [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(0, 6))]
