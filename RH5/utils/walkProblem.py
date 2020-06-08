@@ -85,6 +85,35 @@ class SimpleBipedGaitProblem:
         problem = crocoddyl.ShootingProblem(x0, loco3dModel, loco3dModel[-1])
         return problem
 
+    def createSquadProblem(self, x0, heightChange, numKnots, timeStep):
+        """ Create a shooting problem for a simple squad in order to verify our framework
+        """
+        # Compute the current foot positions
+        q0 = x0[:self.state.nq]
+        pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
+        pinocchio.updateFramePlacements(self.rmodel, self.rdata)
+        rfPos0 = self.rdata.oMf[self.rfId].translation
+        lfPos0 = self.rdata.oMf[self.lfId].translation
+        rfPos0[2], lfPos0[2] = self.heightRef, self.heightRef # Set global target height of feet to initial height from q0
+        comRef = (rfPos0 + lfPos0) / 2
+        comRef[2] = self.comRefY
+        print('comRef:' + str(comRef[2]))
+        squadModels = []
+        for k in range(numKnots):
+            phKnots = (numKnots / 2)
+            if k < phKnots:
+                comTask = np.matrix([0., 0., -heightChange * (k + 1) / phKnots]).T + comRef
+            elif k == phKnots:
+                comTask = np.matrix([0., 0., -heightChange]).T + comRef
+            else:
+                comTask = np.matrix([0., 0., -heightChange * (1 - float(k - phKnots) / phKnots)]).T + comRef
+            print(comTask[2])
+            squadModels += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comTask)]
+        squadModels += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comRef) for k in range(20)] # Enshure last CoM equals reference
+        
+        problem = crocoddyl.ShootingProblem(x0, squadModels, squadModels[-1])
+        return problem
+
     def createFootstepModels(self, comPos0, feetPos0, stepLength, stepHeight, timeStep, numKnots, supportFootIds,
                              swingFootIds):
         """ Action models for a footstep phase.
