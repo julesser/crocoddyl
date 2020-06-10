@@ -128,28 +128,17 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     feetLength = 0.2
     feetHight = 0.08
-    # relTimePoints = [0,52,104]
-    relTimePoints = [0,40,100]
+    relTimePoints = [0,52,103]
+    # relTimePoints = [0,40,100]
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
-    plt.xlabel('X [m]')
-    plt.ylabel('Y [m]')
     # (1) Variant with subplots
-    for i, t in zip(numPlots, relTimePoints):
-        plt.subplot(1, len(relTimePoints), i)
-        plt.plot(Cx[t], Cy[t], marker='x', markersize = '10', label='CoM')
-        [plt.plot(lfPose[0][t], lfPose[1][t], marker='x', markersize = '10', label='LF'), plt.plot(rfPose[0][t], rfPose[1][t], marker='x', markersize = '10', label='RF')]
-        plt.legend()
-        plt.axis('scaled')
-        plt.xlim(0, .4)
-        plt.ylim(-.2, .2)
-        currentAxis = plt.gca()
-        currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
-        currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
-    # # (2) Variant with just one plot
     # for i, t in zip(numPlots, relTimePoints):
+    #     plt.subplot(1, len(relTimePoints), i)
     #     plt.plot(Cx[t], Cy[t], marker='x', markersize = '10', label='CoM')
     #     [plt.plot(lfPose[0][t], lfPose[1][t], marker='x', markersize = '10', label='LF'), plt.plot(rfPose[0][t], rfPose[1][t], marker='x', markersize = '10', label='RF')]
+    #     plt.xlabel('X [m]')
+    #     plt.ylabel('Y [m]')
     #     plt.legend()
     #     plt.axis('scaled')
     #     plt.xlim(0, .4)
@@ -157,6 +146,31 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     #     currentAxis = plt.gca()
     #     currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
     #     currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
+    # (2) Variant with just one plot
+    # plt.subplot(1,2,1)
+    [plt.plot(Cx[0], Cy[0], marker='x', markersize='10', label='CoMT1'), plt.plot(Cx[-1], Cy[-1], marker='x', markersize='10', label='CoMT2')]
+    plt.plot(Cx[1:-1], Cy[1:-1], markersize='10', label='CoM')
+    [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', label='LFT1'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', label='RFT1')]
+    [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', label='LFT2'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', label='RFT2')]
+    plt.legend()
+    plt.axis('scaled')
+    plt.xlim(0, .4)
+    plt.ylim(-.2, .2)
+    plt.xlabel('X [m]')
+    plt.ylabel('Y [m]')
+    currentAxis = plt.gca()
+    for t in relTimePoints:
+        if t != relTimePoints[-1]: 
+            currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor = 'k', fill=False))
+            currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor = 'k', fill=False))
+        else: 
+            currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor = 'r', fill=False))
+            currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor = 'r', fill=False))
+    # # Squats: Additionally plot CoM height
+    # plt.subplot(1, 2, 2)
+    # plt.plot(knots, Cz)
+    # plt.xlabel('Knots')
+    # plt.ylabel('CoM Z [m]')
 
     plt.savefig(dirName + 'StabilityAnalysis.png', dpi = 300)
 
