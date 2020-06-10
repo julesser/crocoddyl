@@ -112,6 +112,13 @@ GAITPHASES = \
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
+""" GAITPHASES = \
+    [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}] """
+""" GAITPHASES = \
+    [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
+     {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
+     {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}] """
+
 cameraTF = [3., 3.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 
 ddp = [None] * len(GAITPHASES)
@@ -123,6 +130,11 @@ for i, phase in enumerate(GAITPHASES):
                 gait.createWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
                                           value['stepKnots'], value['supportKnots'], value['isLastPhase']))
             ddp[i].th_stop = 1e-7                                          
+        if key == 'squat':
+            # Creating a squat problem
+            ddp[i] = crocoddyl.SolverBoxFDDP(
+                gait.createSquadProblem(x0, value['heightChange'], value['numKnots'], value['timeStep']))
+            ddp[i].th_stop = 1e-7                                         
 
     # Add the callback functions
     print('*** SOLVE ' + key + ' ***')
