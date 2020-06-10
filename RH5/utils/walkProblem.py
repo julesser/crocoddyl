@@ -15,17 +15,16 @@ class SimpleBipedGaitProblem:
         self.rfId = self.rmodel.getFrameId(rightFoot)
         self.lfId = self.rmodel.getFrameId(leftFoot)
         # Defining default state
-        # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init RH5 Full Body
-        # q0 = np.matrix([0,0,0.91,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0]).T # Init Zero Configuration
         """ q0 = np.matrix([0,0,0.9163,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
                         0,0,0,
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
                         0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg """
-        q0 = np.matrix([0,0,0.8793,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Stable init pose from long-time gait
-                        0,0,0,
-                        0,0,-0.33,0.63,0,-0.30,     #q8-13:  Left Leg     
-                        0,0,-0.33,0.63,0,-0.30]).T  #q14-19: Right Leg
+        q0 = np.matrix([0,0,0.8793,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+                        0.2,0,0,                    # Torso
+                        0,0,-0.33,0.63,0,-0.30,     # Left Leg     
+                        0,0,-0.33,0.63,0,-0.30]).T  # Right Leg
         """ q0 = np.matrix([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file
+                        0.2,0,0,
                         0,0,-0.353,0.642,0,-0.289,     #q8-13:  Left Leg     
                         0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg """
         self.q0 = q0
@@ -63,7 +62,7 @@ class SimpleBipedGaitProblem:
         # Defining the action models along the time instances
         loco3dModel = []
         doubleSupport = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId]) for k in range(supportKnots)]
-
+       
         # Creating the action models for three steps
         # print(comRef)
         if self.firstStep is True:
@@ -77,7 +76,6 @@ class SimpleBipedGaitProblem:
         else: 
             lStep = self.createFootstepModels(comRef, [lfPos0], stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
 
-        
         # We defined the problem as:
         loco3dModel += doubleSupport + rStep
         loco3dModel += doubleSupport + lStep
@@ -192,14 +190,14 @@ class SimpleBipedGaitProblem:
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
             supportContactModel = \
-                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.matrix([0., 30.]).T)
+                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.matrix([0., 50.]).T)
             contactModel.addContact(self.rmodel.frames[i].name + "_contact", supportContactModel)
 
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, self.actuation.nu)
         # if isinstance(comTask, np.ndarray):
         #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
-        #     costModel.addCost("comTrack", comTrack, 1e6)
+        #     costModel.addCost("comTrack", comTrack, 1e7)
         for i in supportFootIds:
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
             frictionCone = crocoddyl.CostModelContactFrictionCone(
@@ -210,6 +208,7 @@ class SimpleBipedGaitProblem:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
                 costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6)
+                # costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6) # TODO: ActivationModelWeightedQuad 6 components: Focus on [3:6] = z-component, angular
         # Add cost for self-collision (joint limits) TODO: Right now no joint limits violated - Joint inperiodicity has other reason!
         # maxfloat = sys.float_info.max
         # xlb = np.vstack([

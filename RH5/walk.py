@@ -19,11 +19,55 @@ crocoddyl.switchToNumpyMatrix()
 # Loading the RH5 Model
 modelPath = os.path.join(os.environ.get('HOME'), "Dev/rh5-models")
 # URDF_FILENAME = "RH5Torso_PkgPath.urdf"
-URDF_FILENAME = "RH5Humanoid_PkgPath_FixedArmsNHead.urdf"
+# URDF_FILENAME = "RH5Humanoid_PkgPath_FixedArmsNHead.urdf"
+URDF_FILENAME = "RH5Humanoid_PkgPath.urdf"
 URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
 
-rh5_legs = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
-rmodel = rh5_legs.model
+# Load the full model 
+rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
+# print('standard model: dim=' + str(len(rh5_robot.model.joints)))
+# Create a list of joints to lock
+jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+                'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+                'HeadPitch', 'HeadRoll', 'HeadYaw']
+# Get the existing joint IDs
+jointsToLockIDs = []
+for jn in range(len(jointsToLock)):
+    if rh5_robot.model.existJointName(jointsToLock[jn]):
+        jointsToLockIDs.append(rh5_robot.model.getJointId(jointsToLock[jn]))
+    else:
+        print('Warning: joint ' + str(jointsToLock[jn]) + ' does not belong to the model!')
+# Set initial position of fixed joints
+# Option 1: Like in smurf file
+# initialJointConfig = np.matrix([0,0,0,0,0,0,0, # Floating Base
+#                         0,0,0,                 # Torso
+#                         -0.5,0.5,0,-0.3,0,0,0, # Left Arm
+#                         0.5,-0.5,0,0.3,0,0,0,  # Right Arm
+#                         0,0,0,                 # Head
+#                         0,0,0,0,0,0,           # Left Leg     
+#                         0,0,0,0,0,0]).T        # Right Leg)
+# Option 2: Empirically from Shiveshs real robot observation
+# initialJointConfig = np.matrix([0,0,0,0,0,0,0, # Floating Base
+#                         0,0,0,                 # Torso
+#                         -0.5,0.1,0,0,0,0,0, # Left Arm
+#                         0.5,-0.1,0,0,0,0,0,  # Right Arm
+#                         0,0,0,                 # Head
+#                         0,0,0,0,0,0,           # Left Leg     
+#                         0,0,0,0,0,0]).T        # Right Leg)
+# Option 3: Theoretically CoM perfect at feet center line
+initialJointConfig = np.matrix([0,0,0,0,0,0,0, # Floating Base
+                        0,0,0,                 # Torso
+                        -0.25,0.1,0,0,0,0,0, # Left Arm
+                        0.25,-0.1,0,0,0,0,0,  # Right Arm
+                        0,0,0,                 # Head
+                        0,0,0,0,0,0,           # Left Leg     
+                        0,0,0,0,0,0]).T        # Right Leg)
+# Build the reduced model
+# rh5_robot.model = pinocchio.buildReducedModel(rh5_robot.model, jointsToLockIDs, initialJointConfig) # If no displaying needed
+rh5_robot.model, rh5_robot.visual_model = pinocchio.buildReducedModel(rh5_robot.model, rh5_robot.visual_model, jointsToLockIDs, initialJointConfig)
+rmodel = rh5_robot.model
+# print('reduced model: dim=' + str(len(rh5_robot.model.joints)))
+# Add joint limits
 setLimits(rmodel)
 
 # Setting up the 3d walking problem
@@ -41,14 +85,14 @@ gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)
 # Defining the initial state of the robot
 x0 = gait.rmodel.defaultState
 
-# display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, frameNames=[rightFoot, leftFoot])
+# display = crocoddyl.GepettoDisplay(rh5_robot, 4, 4, frameNames=[rightFoot, leftFoot])
 # display.display(xs=[x0])
 
 # simName = 'results/Test/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
 # simName = 'results/2Steps_30cmStride/'
 # simName = 'results/LongGait/'
-simName = 'results/HumanoidFixedArms/LongGait_10cm/'
+simName = 'results/HumanoidFixedArms/Test/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
@@ -82,7 +126,7 @@ for i, phase in enumerate(GAITPHASES):
 
     # Add the callback functions
     print('*** SOLVE ' + key + ' ***')
-    display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
+    display = crocoddyl.GepettoDisplay(rh5_robot, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
     ddp[i].setCallbacks(
         [crocoddyl.CallbackLogger(),
          crocoddyl.CallbackVerbose(),
@@ -119,7 +163,7 @@ print('Step Length:  ' + str(distance / len(GAITPHASES)).strip('[]') + ' m')
 print('CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
 
 # Get contact wrenches f=[f,tau]
-display = crocoddyl.GepettoDisplay(rh5_legs, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
+display = crocoddyl.GepettoDisplay(rh5_robot, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
 fsRel = np.zeros((len(GAITPHASES)*(len(ddp[i].problem.runningModels)),12)) # e.g. for 3 gaitphases = [3*nKnots,12]
 for i, phase in enumerate(GAITPHASES):
     fs = display.getForceTrajectoryFromSolver(ddp[i])
@@ -145,7 +189,7 @@ if WITHLOG:
 
 # Display the entire motion
 if WITHDISPLAY:
-    display = crocoddyl.GepettoDisplay(rh5_legs, frameNames=[rightFoot, leftFoot])
+    display = crocoddyl.GepettoDisplay(rh5_robot, frameNames=[rightFoot, leftFoot])
     for i, phase in enumerate(GAITPHASES):
         display.displayFromSolver(ddp[i])
 
