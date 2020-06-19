@@ -130,6 +130,10 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     if isinstance(ddp, list):
         for i in range(len(ddp)-1):
             forces.append(getCartesianForcesLocalCS(ddp[i+1]))
+    # Calc CoP traejctory
+    CoPs = calcCoPs(forces)
+    # for CoP in CoPs:
+    #     print(CoP)
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     feetLength = 0.2
     feetHight = 0.08
@@ -489,3 +493,27 @@ def getCartesianForcesLocalCS(solver):
     
     return forces
 
+def calcCoPs(forces):
+    CoPs = []
+    for force in forces:
+        if len(force) > 1:  # In case two forces are passed, calc two CoPs
+            print('Double support: ')
+            CoP_k = []
+            for i in range(len(force)):
+                f = force[i]["f"]
+                key = force[i]["key"]
+                CoP_k_i = [np.asscalar(-f.angular[1] / f.linear[2]),  # CoPX = tauY / fZ
+                            np.asscalar(f.angular[0] / f.linear[2]),  # CoPY = tauX / fZ
+                            0.0]
+                CoP_k.append({"key": key, "f": f, "CoP": CoP_k_i})
+                print(CoP_k)
+                # TODO: Verify this passing is working for DS case
+            CoPs.append(CoP_k)
+        else:
+            f = force[0]["f"]
+            key = force[0]["key"]
+            CoP_k = [np.asscalar(-f.angular[1] / f.linear[2]),  # CoPX = tauY / fZ
+                    np.asscalar(f.angular[0] / f.linear[2]),  # CoPY = tauX / fZ
+                    0.0] 
+            CoPs.append({"key": key, "CoP": CoP_k})
+    return CoPs 
