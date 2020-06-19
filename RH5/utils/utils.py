@@ -3,6 +3,8 @@ import pinocchio
 import numpy as np
 import csv
 
+# from libcrocoddyl_pywrap import *
+# from libcrocoddyl_pywrap import __version__
 
 def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
@@ -134,9 +136,22 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     CoPs = calcCoPs(forces)
     # for CoP in CoPs:
     #     print(CoP)
+    # Transform CoP to image plane (world CS)
+    for k in range(len(CoPs)):
+        if CoPs[k]["key"] == "10":  # LF
+            CoPs[k] = [CoPs[k]["CoP"][i] + lfPose[i][k] for i in range(len(CoPs[k]["CoP"]))]
+        elif CoPs[k]["key"] == "16":  # RF
+            CoPs[k] = [CoPs[k]["CoP"][i] + rfPose[i][k] for i in range(len(CoPs[k]["CoP"]))]
+        else:
+            CoPs[k] = CoPs[k]["CoP"]
+    # Reorganize CoP for plotting    
+    CoP = [0.] * len(CoPs[0])
+    for i in range(len(CoPs[0])):
+        CoP[i] = [k[i] for k in CoPs]
+    
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     feetLength = 0.2
-    feetHight = 0.08
+    feetHeight = 0.08
     relTimePoints = [0,52,103]
     # relTimePoints = [0,40,100]
     numPlots = list(range(1,len(relTimePoints)+1))
@@ -153,14 +168,17 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     #     plt.xlim(0, .4)
     #     plt.ylim(-.2, .2)
     #     currentAxis = plt.gca()
-    #     currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
-    #     currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor='k', fill=False))
+    #     currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHeight/2), feetLength, feetHeight, edgecolor='k', fill=False))
+    #     currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHeight/2), feetLength, feetHeight, edgecolor='k', fill=False))
     # (2) Variant with just one plot
     # plt.subplot(1,2,1)
-    [plt.plot(Cx[0], Cy[0], marker='x', markersize='10', label='CoMT1'), plt.plot(Cx[-1], Cy[-1], marker='x', markersize='10', label='CoMT2')]
-    plt.plot(Cx[1:-1], Cy[1:-1], markersize='10', label='CoM')
+    [plt.plot(Cx[0], Cy[0], label='CoMStart'), plt.plot(Cx[-1], Cy[-1], label='CoMEnd')]
+    plt.plot(Cx[1:-1], Cy[1:-1], label='CoM')
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', label='LFT1'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', label='RFT1')]
     [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', label='LFT2'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', label='RFT2')]
+    plt.plot(CoP[0][0], CoP[1][0], marker='x', markersize='10', label='*CoPStart') 
+    plt.plot(CoP[0][-1], CoP[1][-1], marker='x', markersize='10', label='*CoPEnd') 
+    plt.plot(CoP[0][1:-2], CoP[1][1:-2], marker='x', markersize='10', label='*CoP')
     plt.legend()
     plt.axis('scaled')
     plt.xlim(0, .4)
@@ -170,11 +188,11 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     currentAxis = plt.gca()
     for t in relTimePoints:
         if t != relTimePoints[-1]: 
-            currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor = 'k', fill=False))
-            currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor = 'k', fill=False))
+            currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHeight/2), feetLength, feetHeight, edgecolor = 'k', fill=False))
+            currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHeight/2), feetLength, feetHeight, edgecolor = 'k', fill=False))
         else: 
-            currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor = 'r', fill=False))
-            currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHight/2), feetLength, feetHight, edgecolor = 'r', fill=False))
+            currentAxis.add_patch(Rectangle((lfPose[0][t] - feetLength/2, lfPose[1][t] - feetHeight/2), feetLength, feetHeight, edgecolor = 'r', fill=False))
+            currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHeight/2), feetLength, feetHeight, edgecolor = 'r', fill=False))
     # # Squats: Additionally plot CoM height
     # plt.subplot(1, 2, 2)
     # plt.plot(knots, Cz)
