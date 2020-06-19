@@ -125,6 +125,11 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
 
     knots = list(range(0,len(Cz)))
 
+    # Get forces from solver(s)
+    forces = getCartesianForcesLocalCS(ddp[0])
+    if isinstance(ddp, list):
+        for i in range(len(ddp)-1):
+            forces.append(getCartesianForcesLocalCS(ddp[i+1]))
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     feetLength = 0.2
     feetHight = 0.08
@@ -459,3 +464,28 @@ def mergeDataFromSolvers(ddp, fs, bounds):
         return rmodel, xs, us, accs, X, U, F, A, X_LB, X_UB, U_LB, U_UB
     else: 
         return rmodel, xs, us, accs, X, U, F, A
+
+
+def getCartesianForcesLocalCS(solver):
+    # Idea: Calc individual CoP for each foot and merge geometrically via Fz weight
+    # TODO: Include impulse/contact switch
+    forces = []
+    models = solver.problem.runningModels
+    datas = solver.problem.runningDatas
+    # m_externalForces = m_robotData->liMi[1].act(m_robotData->f[1]);
+    for i, data in enumerate(datas):
+        model = models[i]
+        force_k = []
+        # 1) Compute cartesian forces expressed in world frame
+        for key, contact in data.differential.multibody.contacts.contacts.items():  # Iterate all available contacts (2 for DS)
+            if model.differential.contacts.contacts[key].active:
+                # Old Approach from getForceTrajectoryFromSolver()
+                # force = contact.jMf.actInv(contact.f)
+                # New Approach: Transform contact forces (in local contact frame) to cartesian forces (in world frame)
+                fiMo = pinocchio.SE3(contact.pinocchio.oMi[contact.joint].rotation.T, contact.jMf.translation)
+                force = fiMo.actInv(contact.f)
+                force_k.append({"key": str(contact.joint), "f": force})
+        forces.append(force_k)
+    
+    return forces
+
