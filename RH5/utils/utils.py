@@ -134,21 +134,29 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
             forces.append(getCartesianForcesLocalCS(ddp[i+1]))
     # Calc CoP traejctory
     CoPs = calcCoPs(forces)
-    # for CoP in CoPs:
-    #     print(CoP)
     # Transform CoP to image plane (world CS)
-    for k in range(len(CoPs)):
-        if CoPs[k]["key"] == "10":  # LF
-            CoPs[k] = [CoPs[k]["CoP"][i] + lfPose[i][k] for i in range(len(CoPs[k]["CoP"]))]
-        elif CoPs[k]["key"] == "16":  # RF
-            CoPs[k] = [CoPs[k]["CoP"][i] + rfPose[i][k] for i in range(len(CoPs[k]["CoP"]))]
-        else:
-            CoPs[k] = CoPs[k]["CoP"]
-    # Reorganize CoP for plotting    
-    CoP = [0.] * len(CoPs[0])
-    for i in range(len(CoPs[0])):
-        CoP[i] = [k[i] for k in CoPs]
-    
+    # CoPLF = [[0,0] for i in range(len(CoPs))]
+    # CoPRF = [[0,0] for i in range(len(CoPs))]
+    CoPLF = np.zeros((2, len(CoPs)))
+    CoPRF = np.zeros((2, len(CoPs)))
+    CoPLFx, CoPLFy, CoPRFx, CoPRFy = [], [], [], []
+    for k in range(len(CoPs)): 
+        for CoP in CoPs[k]: # Iterate if DS
+            # if len(CoPs[k]) > 1: # TODO: Don't plot DS (ERASE!)
+            #     pass
+            # else: 
+            if CoP["key"] == "10":  # LF
+                CoPLF[0][k] = CoP["CoP"][0] + lfPose[0][k]
+                CoPLF[1][k] = CoP["CoP"][1] + lfPose[1][k]
+                CoPLFx.append(CoP["CoP"][0] + lfPose[0][k])
+                CoPLFy.append(CoP["CoP"][1] + lfPose[1][k])
+            elif CoP["key"] == "16":  # RF
+                CoPRF[k] = [CoP["CoP"][i] + rfPose[i][k] for i in range(len(CoP["CoP"]) - 1)]
+                CoPRF[0][k] = CoP["CoP"][0] + rfPose[0][k]
+                CoPRF[1][k] = CoP["CoP"][1] + rfPose[1][k]
+                CoPRFx.append(CoP["CoP"][0] + rfPose[0][k])
+                CoPRFy.append(CoP["CoP"][1] + rfPose[1][k])
+
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     feetLength = 0.2
     feetHeight = 0.08
@@ -176,9 +184,8 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     plt.plot(Cx[1:-1], Cy[1:-1], label='CoM')
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', label='LFT1'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', label='RFT1')]
     [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', label='LFT2'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', label='RFT2')]
-    plt.plot(CoP[0][0], CoP[1][0], marker='x', markersize='10', label='*CoPStart') 
-    plt.plot(CoP[0][-1], CoP[1][-1], marker='x', markersize='10', label='*CoPEnd') 
-    plt.plot(CoP[0][1:-2], CoP[1][1:-2], marker='x', markersize='10', label='*CoP')
+    [plt.plot(CoPLFx, CoPLFy, marker='x', markersize='10', label='*CoPLF')]
+    [plt.plot(CoPRFx, CoPRFy, marker='x', markersize='10', label='*CoPRF')]
     plt.legend()
     plt.axis('scaled')
     plt.xlim(0, .4)
@@ -198,23 +205,18 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     # plt.plot(knots, Cz)
     # plt.xlabel('Knots')
     # plt.ylabel('CoM Z [m]')
-
     plt.savefig(dirName + 'StabilityAnalysis.png', dpi = 300)
 
     # Plotting the Task Space: Center of Mass and Feet (x,y,z over knots)
     plt.figure(figIndex + 3, figsize=(16,9))
     plt.subplot(3, 3, 1)
-    plt.plot(knots, X[0])
-    plt.xlabel('Knots')
-    plt.ylabel('Base X [m]')
+    plt.plot(CoPLF[0], CoPLF[1])
+    plt.xlabel('CoPLFx [m]')
+    plt.ylabel('CoPLFy [m]')
     plt.subplot(3, 3, 2)
-    plt.plot(knots, X[1])
-    plt.xlabel('Knots')
-    plt.ylabel('Base Y [m]')
-    plt.subplot(3, 3, 3)
-    plt.plot(knots, X[2])
-    plt.xlabel('Knots')
-    plt.ylabel('Base Z [m]')
+    plt.plot(CoPRF[0], CoPRF[1])
+    plt.xlabel('CoPRFx [m]')
+    plt.ylabel('CoPRFy [m]')
     plt.subplot(3, 3, 4)
     plt.plot(knots, Cx)
     plt.xlabel('Knots')
@@ -514,24 +516,29 @@ def getCartesianForcesLocalCS(solver):
 def calcCoPs(forces):
     CoPs = []
     for force in forces:
-        if len(force) > 1:  # In case two forces are passed, calc two CoPs
-            print('Double support: ')
-            CoP_k = []
-            for i in range(len(force)):
-                f = force[i]["f"]
-                key = force[i]["key"]
-                CoP_k_i = [np.asscalar(-f.angular[1] / f.linear[2]),  # CoPX = tauY / fZ
-                            np.asscalar(f.angular[0] / f.linear[2]),  # CoPY = tauX / fZ
-                            0.0]
-                CoP_k.append({"key": key, "f": f, "CoP": CoP_k_i})
-                print(CoP_k)
-                # TODO: Verify this passing is working for DS case
-            CoPs.append(CoP_k)
-        else:
-            f = force[0]["f"]
-            key = force[0]["key"]
-            CoP_k = [np.asscalar(-f.angular[1] / f.linear[2]),  # CoPX = tauY / fZ
-                    np.asscalar(f.angular[0] / f.linear[2]),  # CoPY = tauX / fZ
-                    0.0] 
-            CoPs.append({"key": key, "CoP": CoP_k})
+        CoP_k = []
+        for i in range(len(force)):
+            f = force[i]["f"]
+            key = force[i]["key"]
+            CoP_k_i = [np.asscalar(-f.angular[1] / f.linear[2]),  # CoPX = tauY / fZ
+                       np.asscalar(f.angular[0] / f.linear[2]),  # CoPY = tauX / fZ
+                       0.0]
+            CoP_k.append({"key": key, "f": f, "CoP": CoP_k_i})
+        CoPs.append(CoP_k)
     return CoPs 
+
+# TODO: Input: One CoP, Output: Boolean -> Use information to change plot color of CoP
+def checkIfCoPInConvexHull(CoP):
+    pass
+
+# TODO: ZMP calculation for cross-checking (should equal CoP results for flat floor)
+def calcZMPs(ma_G, H_G):
+    pass
+    # eq.(20): OD = (n x M_o^gi) / (R^gi x n)       (zero moment point)
+    # eq.(8):  RGi = mg - ma_G                      (gravity plus inertia forces, ma_g acceleration of G)
+    # eq.(9):  M_Q^gi = QG x mg - QG x ma_G - H_G   (gravity plus inertia moments, H_G rate of angular momentum at G)
+
+    # Input from Justin
+    # CoM acceleration: computeCenterOfMass(model,data,q,v,a) access via data.acom[0]
+    # Gravity field:    model.gravity.linear
+    # Rate of angular momentum: computeCentroidalMomentumTimeVariation() access via data.dhg.angular

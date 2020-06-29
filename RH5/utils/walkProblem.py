@@ -197,7 +197,8 @@ class SimpleBipedGaitProblem:
         costModel = crocoddyl.CostModelSum(self.state, self.actuation.nu)
         # if isinstance(comTask, np.ndarray):
         #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
-        #     costModel.addCost("comTrack", comTrack, 1e7)
+        #     costModel.addCost("comTrack", comTrack, 1e6)
+        #     # costModel.addCost("comTrack", comTrack, 1e7)
         for i in supportFootIds:
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
             frictionCone = crocoddyl.CostModelContactFrictionCone(
