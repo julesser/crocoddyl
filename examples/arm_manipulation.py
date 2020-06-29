@@ -17,6 +17,9 @@ WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 # First, let's load the Pinocchio model for the Talos arm.
 talos_arm = example_robot_data.loadTalosArm()
 robot_model = talos_arm.model
+""" lims = robot_model.effortLimit
+lims *= 0.5  # reduced artificially the torque limits defined in URDF
+robot_model.effortLimit = lims """
 
 # Create a cost model per the running and terminal action model.
 state = crocoddyl.StateMultibody(robot_model)

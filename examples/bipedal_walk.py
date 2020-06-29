@@ -13,6 +13,9 @@ WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 
 # Creating the lower-body part of Talos
 talos_legs = example_robot_data.loadTalosLegs()
+""" lims = talos_legs.model.effortLimit
+lims *= 0.5  # reduced artificially the torque limits defined in URDF
+talos_legs.model.effortLimit = lims """
 
 # Defining the initial state of the robot
 q0 = talos_legs.model.referenceConfigurations['half_sitting'].copy()
@@ -22,9 +25,10 @@ x0 = np.concatenate([q0, v0])
 # Setting up the 3d walking problem
 rightFoot = 'right_sole_link'
 leftFoot = 'left_sole_link'
-gait = SimpleBipedGaitProblem(talos_legs.model, rightFoot, leftFoot)
+gait = SimpleBipedGaitProblem(talos_legs.model, rightFoot, leftFoot) #Init problem; Class defined in python3.6/site-packages/utils/biped.py
 
 # Setting up all tasks
+# Define multiple phases for a full gait: One phase = One defined shooting problem, consisting of multiple DAMs depending on the number of knots
 GAITPHASES = \
     [{'walking': {'stepLength': 0.6, 'stepHeight': 0.1,
                   'timeStep': 0.03, 'stepKnots': 25, 'supportKnots': 1}},
@@ -84,7 +88,6 @@ if WITHDISPLAY:
 # Plotting the entire motion
 if WITHPLOT:
     plotSolution(ddp, bounds=False, figIndex=1, show=False)
-
     for i, phase in enumerate(GAITPHASES):
         title = list(phase.keys())[0] + " (phase " + str(i) + ")"
         log = ddp[i].getCallbacks()[0]

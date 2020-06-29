@@ -1,3 +1,5 @@
+RH5/results/old/*
+
 *.pyc
 *.pyd
 *.pyo
