@@ -18,9 +18,9 @@ class SimpleBipedGaitProblem:
         """ q0 = np.matrix([0,0,0.90,0,0,0,1,        #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
                         0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg """
-        q0 = np.matrix([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file
-                        0,0,-0.353,0.642,0,-0.289,     #q8-13:  Left Leg     
-                        0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg
+        q0 = np.matrix([0,0,0.8793,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Stable init pose from long-time gait
+                        0,0,-0.33,0.63,0,-0.30,     #q8-13:  Left Leg     
+                        0,0,-0.33,0.63,0,-0.30]).T  #q14-19: Right Leg
         self.q0 = q0
         self.rmodel.defaultState = np.concatenate([q0, np.zeros((self.rmodel.nv, 1))])
         self.firstStep = True
@@ -28,7 +28,7 @@ class SimpleBipedGaitProblem:
         self.mu = 0.7
         self.nsurf = np.matrix([0., 0., 1.]).T
 
-    def createJumpingProblem(self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots, final=False):
+    def createJumpingProblem(self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots):
         q0 = x0[:self.rmodel.nq]
         pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
         pinocchio.updateFramePlacements(self.rmodel, self.rdata)
@@ -41,36 +41,50 @@ class SimpleBipedGaitProblem:
         comRef = (rfFootPos0 + lfFootPos0) / 2
         comRef[2] = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2])
         print('comRef: ' + str(comRef))
-        self.rWeight = 1e1
         loco3dModel = []
-        takeOff = [self.createSwingFootModel(timeStep,[self.lfId, self.rfId],) for k in range(groundKnots)] # 1. Gain momentum (flex knees) 
-        flyingUpPhase = [
-            self.createSwingFootModel(timeStep, [], # 2. ComTask towards jumpHeight in direction jumpLength
-            np.matrix([jumpLength[0], jumpLength[1], jumpLength[2] + jumpHeight]).T * (k + 1) / flyingKnots + comRef) 
-            for k in range(flyingKnots)]
+
+        # Take off phase
+        takeOff = [self.createSwingFootModel(timeStep,[self.lfId, self.rfId]) for k in range(groundKnots)] # 1. Gain momentum (flex knees) 
+        
+        # Fly up phase
+        flyingUpPhase = []
+        for k in range(flyingKnots):
+            comTask = np.matrix([jumpLength[0], jumpLength[1], jumpLength[2] + jumpHeight]).T * (k + 1) / flyingKnots + comRef
+            print(comTask)
+            flyingUpPhase += [self.createSwingFootModel(timeStep, [], comTask=comTask)] # 2. ComTask towards jumpHeight
+        
+        # Fly down phase
         flyingDownPhase = []
         for k in range(flyingKnots): 
+            comTask = np.matrix([jumpLength[0], jumpLength[1], jumpLength[2] + jumpHeight]).T * (flyingKnots - k -1) / flyingKnots + comRef
+            print(comTask)
             flyingDownPhase += [self.createSwingFootModel(timeStep, [])] # 3. Let gravity pull robot down
+        
+        # Impulse switch 
         f0 = np.matrix(jumpLength).T
-        print('f0: ' + str(f0))
-        footTask = [
-            crocoddyl.FramePlacement(self.lfId, pinocchio.SE3(np.eye(3), self.lfId + f0)),
-            crocoddyl.FramePlacement(self.rfId, pinocchio.SE3(np.eye(3), self.rfId + f0))
-        ]
+        lfPlacement = crocoddyl.FramePlacement(self.lfId, pinocchio.SE3(np.eye(3), f0 + self.rdata.oMf[self.lfId].translation))
+        rfPlacement = crocoddyl.FramePlacement(self.rfId, pinocchio.SE3(np.eye(3), f0 + self.rdata.oMf[self.rfId].translation))
+        # footTask = [ //FIXED: The position argument (self.lfId) should be passed as a frame (e.g. 17) directly but the acoording POSITION of the frame
+        #     crocoddyl.FramePlacement(self.lfId, pinocchio.SE3(np.eye(3), self.lfId + f0)),
+        #     crocoddyl.FramePlacement(self.rfId, pinocchio.SE3(np.eye(3), self.rfId + f0))
+        # ]
+        footTask = [lfPlacement, rfPlacement]
         # landingPhase = [self.createFootSwitchModel([self.lfId, self.rfId], footTask, False)]
         landingPhase = [self.createFootSwitchModel([self.lfId, self.rfId], footTask, True)]
+        
+        # CoM correction phase 
+        landed = []
         f0[2] = df
-        if final is True:
-            self.rWeight = 1e4
-        landed = [
-            self.createSwingFootModel(timeStep, [self.lfId, self.rfId], comTask=comRef + f0)
-            for k in range(groundKnots)
-        ]
+        for k in range(groundKnots*4): 
+            comTask = comRef + f0
+            print(comTask)
+            landed += [self.createSwingFootModel(timeStep, [self.lfId, self.rfId], comTask=comTask)] # 3. Let gravity pull robot down
+
         loco3dModel += takeOff
         loco3dModel += flyingUpPhase
-        # loco3dModel += flyingDownPhase
-        # loco3dModel += landingPhase
-        # loco3dModel += landed
+        loco3dModel += flyingDownPhase
+        loco3dModel += landingPhase 
+        loco3dModel += landed
 
         problem = crocoddyl.ShootingProblem(x0, loco3dModel, loco3dModel[-1])
         return problem

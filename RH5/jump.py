@@ -18,7 +18,7 @@ crocoddyl.switchToNumpyMatrix()
 
 # Loading the RH5 Model
 modelPath = os.path.join(os.environ.get('HOME'), "Dev/rh5-models")
-URDF_FILENAME = "RH5Legs_PkgPath_PtContact.urdf"
+URDF_FILENAME = "RH5Biped_PkgPath.urdf"
 URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
 
 rh5_legs = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
@@ -26,7 +26,7 @@ rmodel = rh5_legs.model
 setLimits(rmodel)
 
 # Setting up the 3d walking problem
-timeStep = 0.03
+timeStep = 0.01
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
 gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)     
@@ -36,10 +36,14 @@ q0 = gait.q0
 v0 = pinocchio.utils.zero(rmodel.nv)
 x0 = np.concatenate([q0, v0])
 
+simName = 'results/Jump/Test/'
+if not os.path.exists(simName):
+    os.makedirs(simName)
+
 # Setting up all tasks
 GAITPHASES = \
-    [{'jumping': {'jumpHeight': 0.15, 'jumpLength': [0, 0.3, 0], 
-                  'timeStep': timeStep, 'groundKnots': 5, 'flyingKnots': 10}}] # jumpLength is direction vector
+    [{'jumping': {'jumpHeight': 0.1, 'jumpLength': [0, 0, 0], 
+                  'timeStep': timeStep, 'groundKnots': 10, 'flyingKnots': 25}}]
 cameraTF = [3., 3.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 
 ddp = [None] * len(GAITPHASES)
@@ -48,6 +52,7 @@ for i, phase in enumerate(GAITPHASES):
         if key == 'jumping':
             # Creating a walking problem
             ddp[i] = crocoddyl.SolverBoxFDDP(
+            # ddp[i] = crocoddyl.SolverFDDP(
                 gait.createJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
                                           value['groundKnots'], value['flyingKnots']))
             ddp[i].th_stop = 1e-6                            
@@ -66,7 +71,7 @@ for i, phase in enumerate(GAITPHASES):
         m.quasiStatic(d, rmodel.defaultState)
         for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
     ]
-    ddp[i].solve(xs, us, 100, False, 0.1)
+    ddp[i].solve(xs, us, 500, False, 0.1)
     
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
@@ -95,7 +100,7 @@ fs = fsRel
 
 # Export solution to .csv file
 if WITHLOG:
-    logSolution(xs, us, fs, rmodel, GAITPHASES, ddp, timeStep)
+    logSolution(ddp, fs, timeStep, simName)
 
 # Display the entire motion
 if WITHDISPLAY:
@@ -105,7 +110,7 @@ if WITHDISPLAY:
 
 # Plotting the entire motion
 if WITHPLOT:
-    plotSolution(ddp, fs, bounds=False, figIndex=1, show=False)
+    plotSolution(ddp, fs, simName, bounds=False, figIndex=1, show=False)
 
     for i, phase in enumerate(GAITPHASES):
         # title = phase.keys()[0] + " (phase " + str(i) + ")"
