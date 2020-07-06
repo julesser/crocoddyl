@@ -27,6 +27,8 @@ class SimpleBipedGaitProblem:
         # Defining the friction coefficient and normal
         self.mu = 0.7
         self.nsurf = np.matrix([0., 0., 1.]).T
+        self.baumgarteGains = np.matrix([0., 30.]).T
+        # self.baumgarteGains = np.matrix([0., 0]).T
 
     def createJumpingProblem(self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots):
         q0 = x0[:self.rmodel.nq]
@@ -56,8 +58,8 @@ class SimpleBipedGaitProblem:
         # Fly down phase
         flyingDownPhase = []
         for k in range(flyingKnots): 
-            comTask = np.matrix([jumpLength[0], jumpLength[1], jumpLength[2] + jumpHeight]).T * (flyingKnots - k -1) / flyingKnots + comRef
-            print(comTask)
+            # comTask = np.matrix([jumpLength[0], jumpLength[1], jumpLength[2] + jumpHeight]).T * (flyingKnots - k -1) / flyingKnots + comRef
+            # print(comTask)
             flyingDownPhase += [self.createSwingFootModel(timeStep, [])] # 3. Let gravity pull robot down
         
         # Impulse switch 
@@ -75,9 +77,9 @@ class SimpleBipedGaitProblem:
         # CoM correction phase 
         landed = []
         f0[2] = df
-        for k in range(groundKnots*4): 
-            comTask = comRef + f0
-            print(comTask)
+        comTask = comRef + f0
+        print(comTask)
+        for k in range(groundKnots*10): 
             landed += [self.createSwingFootModel(timeStep, [self.lfId, self.rfId], comTask=comTask)] # 3. Let gravity pull robot down
 
         loco3dModel += takeOff
@@ -104,7 +106,7 @@ class SimpleBipedGaitProblem:
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
             supportContactModel = \
-                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.matrix([0., 0.]).T)
+                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, self.baumgarteGains)
             contactModel.addContact(self.rmodel.frames[i].name + "_contact", supportContactModel)
 
         # Creating the cost model for a contact phase
@@ -166,7 +168,7 @@ class SimpleBipedGaitProblem:
         contactModel = crocoddyl.ContactModelMultiple(self.state, self.actuation.nu)
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
-            supportContactModel = crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.matrix([0., 0.]).T)
+            supportContactModel = crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, self.baumgarteGains)
             contactModel.addContact(self.rmodel.frames[i].name + "_contact", supportContactModel)
 
         # Creating the cost model for a contact phase
