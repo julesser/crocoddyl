@@ -18,7 +18,7 @@ crocoddyl.switchToNumpyMatrix()
 
 # Loading the RH5 Model
 modelPath = os.path.join(os.environ.get('HOME'), "Dev/rh5-models")
-URDF_FILENAME = "RH5Legs_PkgPath_PtContact.urdf"
+URDF_FILENAME = "RH5Biped_PkgPath.urdf"
 URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
 
 rh5_legs = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
@@ -27,13 +27,13 @@ setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.03
-# stepKnots = 25
-stepKnots = 50
+stepKnots = 15
+# stepKnots = 50
 supportKnots = 1
 impulseKnots = 1
 stepLength = 0.2
-# stepHeight = 0.1
-stepHeight = 0.05
+stepHeight = 0.1
+# stepHeight = 0.05
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
 gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)     
@@ -49,7 +49,8 @@ x0 = np.concatenate([q0, v0])
 # simName = 'results/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
 # simName = 'results/2Steps_30cmStride/'
-simName = 'results/LongGait/'
+# simName = 'results/LongGait/'
+simName = 'results/LongGaitFast/20cmStride/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
@@ -62,10 +63,6 @@ GAITPHASES = \
     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
      {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
