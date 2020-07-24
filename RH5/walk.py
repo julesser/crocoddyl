@@ -75,7 +75,7 @@ timeStep = 0.03
 stepKnots = 50
 supportKnots = 10
 impulseKnots = 1
-stepLength = 0.5
+stepLength = 0.2
 knots = [stepKnots, supportKnots, impulseKnots]
 # stepHeight = 0.1
 stepHeight = 0.05
@@ -93,7 +93,7 @@ x0 = gait.rmodel.defaultState
 # simName = 'results/2Steps_10cmStride/'
 # simName = 'results/2Steps_30cmStride/'
 # simName = 'results/LongGait/'
-simName = 'results/HumanoidFixedArms/Test/'
+simName = 'results/HumanoidFixedArms/2Steps_40cm_ExtendedDS_CoPCost/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
@@ -102,17 +102,13 @@ GAITPHASES = \
     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 # Perform 10 Steps
-""" GAITPHASES = \
-    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-    {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}] """
+# GAITPHASES = \
+#     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+#                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+#      {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+#                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
+#     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+#                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 """ GAITPHASES = \
     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}] """
 """ GAITPHASES = \
@@ -163,8 +159,7 @@ logFirst = ddp[0].getCallbacks()[0]
 logLast = ddp[-1].getCallbacks()[0]
 first_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logFirst.xs[1][:rmodel.nq]) # calc CoM for init pose
 final_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logLast.xs[-1][:rmodel.nq]) # calc CoM for final pose
-# n_knots = 2*len(GAITPHASES)*(stepKnots + supportKnots + impulseKnots) 
-n_knots = 2*len(GAITPHASES)*(stepKnots) # Don't consider: support knots -> pause; impulse knots -> dt=0
+n_knots = 2*len(GAITPHASES)*(stepKnots+supportKnots) # Don't consider impulse knots (dt=0)
 t_total = n_knots * timeStep # total time = f(knots, timeStep)
 distance = final_com[0] - first_com[0]
 v_com = distance / t_total

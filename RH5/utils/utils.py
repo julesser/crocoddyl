@@ -129,10 +129,9 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
 
     # Get forces from solver(s)
     forces = getCartesianForcesLocalCS(ddp[0])
-    if isinstance(ddp, list):
+    if isinstance(ddp, list): # TODO: Leads to error in force computation because this adds an additional list layer on top
         for i in range(len(ddp)-1):
             forces.append(getCartesianForcesLocalCS(ddp[i+1]))
-
     # Analyse CoP cost
     copCost, frictionConeCost = 0, 0
     if isinstance(ddp, list):
