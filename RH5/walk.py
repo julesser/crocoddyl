@@ -73,9 +73,10 @@ setLimits(rmodel)
 # Setting up the 3d walking problem
 timeStep = 0.03
 stepKnots = 50
-supportKnots = 1
+supportKnots = 10
 impulseKnots = 1
-stepLength = 0.2
+stepLength = 0.5
+knots = [stepKnots, supportKnots, impulseKnots]
 # stepHeight = 0.1
 stepHeight = 0.05
 rightFoot = 'FR_SupportCenter'
@@ -207,7 +208,7 @@ if WITHDISPLAY:
 
 # Plotting the entire motion
 if WITHPLOT:
-    plotSolution(ddp, fs, simName, bounds=False, figIndex=1, show=False)
+    plotSolution(ddp, fs, simName, knots, bounds=False, figIndex=1, show=False)
 
     # for i, phase in enumerate(GAITPHASES):
     #     # title = phase.keys()[0] + " (phase " + str(i) + ")"

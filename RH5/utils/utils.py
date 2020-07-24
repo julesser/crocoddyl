@@ -6,7 +6,7 @@ import csv
 # from libcrocoddyl_pywrap import *
 # from libcrocoddyl_pywrap import __version__
 
-def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=True):
+def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
     from matplotlib.patches import Rectangle
     if bounds: 
@@ -132,6 +132,35 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     if isinstance(ddp, list):
         for i in range(len(ddp)-1):
             forces.append(getCartesianForcesLocalCS(ddp[i+1]))
+
+    # Analyse CoP cost
+    copCost, frictionConeCost = 0, 0
+    if isinstance(ddp, list):
+        for s in ddp:
+            for j in range(s.problem.T):
+                # print(s.problem.runningModels[j].differential.costs.costs)
+                for costName in s.problem.runningModels[j].differential.costs.costs:
+                    costTerm = s.problem.runningDatas[j].differential.costs.costs[costName]
+                    if costName == "FR_SupportCenter_CoP" or costName == "FL_SupportCenter_CoP":
+                        print(costName)
+                        print("r: " + str(costTerm.r))
+                        print("cost: " + str(costTerm.cost))
+                        copCost += costTerm.cost
+                        print("----------------------------")
+                        if costTerm.cost != 0: 
+                            print("#####################################################")
+                    # if costName == "FR_SupportCenter_frictionCone" or costName == "FL_SupportCenter_frictionCone":
+                    #     print(costName)
+                    #     print("r: " + str(costTerm.r))
+                    #     print("cost: " + str(costTerm.cost))
+                    #     frictionConeCost += costTerm.cost
+                    #     print("----------------------------")
+                    #     if costTerm.cost != 0: 
+                    #         print("#####################################################")
+        print("total copCost: " + str(copCost))
+        print("total frictionConeCost: " + str(frictionConeCost))
+        print("..total costs then are multiplied with the assigned weight")
+    
     # Calc CoP traejctory
     CoPs = calcCoPs(forces)
     # Transform CoP to image plane (world CS)
@@ -140,18 +169,15 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     CoPLF = np.zeros((2, len(CoPs)))
     CoPRF = np.zeros((2, len(CoPs)))
     CoPLFx, CoPLFy, CoPRFx, CoPRFy = [], [], [], []
+    print("timepoints: " + str(len(CoPs)))
     for k in range(len(CoPs)): 
         for CoP in CoPs[k]: # Iterate if DS
-            # if len(CoPs[k]) > 1: # TODO: Don't plot DS (ERASE!)
-            #     pass
-            # else: 
             if CoP["key"] == "10":  # LF
                 CoPLF[0][k] = CoP["CoP"][0] + lfPose[0][k]
                 CoPLF[1][k] = CoP["CoP"][1] + lfPose[1][k]
                 CoPLFx.append(CoP["CoP"][0] + lfPose[0][k])
                 CoPLFy.append(CoP["CoP"][1] + lfPose[1][k])
             elif CoP["key"] == "16":  # RF
-                CoPRF[k] = [CoP["CoP"][i] + rfPose[i][k] for i in range(len(CoP["CoP"]) - 1)]
                 CoPRF[0][k] = CoP["CoP"][0] + rfPose[0][k]
                 CoPRF[1][k] = CoP["CoP"][1] + rfPose[1][k]
                 CoPRFx.append(CoP["CoP"][0] + rfPose[0][k])
@@ -160,7 +186,9 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     feetLength = 0.2
     feetHeight = 0.08
-    relTimePoints = [0,52,103]
+    total_knots = sum(num_knots)
+    relTimePoints = [0,(2*total_knots)-1]
+    print(relTimePoints)
     # relTimePoints = [0,40,100]
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
@@ -180,15 +208,15 @@ def plotSolution(ddp, fs, dirName, bounds=True, figIndex=1, figTitle="", show=Tr
     #     currentAxis.add_patch(Rectangle((rfPose[0][t] - feetLength/2, rfPose[1][t] - feetHeight/2), feetLength, feetHeight, edgecolor='k', fill=False))
     # (2) Variant with just one plot
     # plt.subplot(1,2,1)
-    [plt.plot(Cx[0], Cy[0], label='CoMStart'), plt.plot(Cx[-1], Cy[-1], label='CoMEnd')]
+    # [plt.plot(Cx[0], Cy[0], label='CoMStart'), plt.plot(Cx[-1], Cy[-1], label='CoMEnd')]
     plt.plot(Cx[1:-1], Cy[1:-1], label='CoM')
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', label='LFT1'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', label='RFT1')]
     [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', label='LFT2'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', label='RFT2')]
-    [plt.plot(CoPLFx, CoPLFy, marker='x', markersize='10', label='*CoPLF')]
-    [plt.plot(CoPRFx, CoPRFy, marker='x', markersize='10', label='*CoPRF')]
+    [plt.plot(CoPLFx, CoPLFy, marker='x', markersize='10', label='LFCoP')]
+    [plt.plot(CoPRFx, CoPRFy, marker='x', markersize='10', label='RFCoP')]
     plt.legend()
     plt.axis('scaled')
-    plt.xlim(0, .4)
+    plt.xlim(0, .55)
     plt.ylim(-.2, .2)
     plt.xlabel('X [m]')
     plt.ylabel('Y [m]')
@@ -504,10 +532,10 @@ def getCartesianForcesLocalCS(solver):
         for key, contact in data.differential.multibody.contacts.contacts.items():  # Iterate all available contacts (2 for DS)
             if model.differential.contacts.contacts[key].active:
                 # Old Approach from getForceTrajectoryFromSolver()
-                # force = contact.jMf.actInv(contact.f)
+                force = contact.jMf.actInv(contact.f)
                 # New Approach: Transform contact forces (in local contact frame) to cartesian forces (in world frame)
-                fiMo = pinocchio.SE3(contact.pinocchio.oMi[contact.joint].rotation.T, contact.jMf.translation)
-                force = fiMo.actInv(contact.f)
+                # fiMo = pinocchio.SE3(contact.pinocchio.oMi[contact.joint].rotation.T, contact.jMf.translation)
+                # force = fiMo.actInv(contact.f)
                 force_k.append({"key": str(contact.joint), "f": force})
         forces.append(force_k)
     
@@ -526,10 +554,6 @@ def calcCoPs(forces):
             CoP_k.append({"key": key, "f": f, "CoP": CoP_k_i})
         CoPs.append(CoP_k)
     return CoPs 
-
-# TODO: Input: One CoP, Output: Boolean -> Use information to change plot color of CoP
-def checkIfCoPInConvexHull(CoP):
-    pass
 
 # TODO: ZMP calculation for cross-checking (should equal CoP results for flat floor)
 def calcZMPs(ma_G, H_G):
