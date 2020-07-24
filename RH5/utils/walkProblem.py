@@ -210,8 +210,10 @@ class SimpleBipedGaitProblem:
             costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
             # center of pressure
             CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
-                crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04]), self.nsurf), self.actuation.nu)
-            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e3)
+                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.05, 0.02])), self.actuation.nu)
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
@@ -287,7 +289,13 @@ class SimpleBipedGaitProblem:
             frictionCone = crocoddyl.CostModelContactFrictionCone(
                 self.state, crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(cone.lb, cone.ub)),
                 crocoddyl.FrameFrictionCone(i, cone), self.actuation.nu)
-            costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e1)
+            costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
+            # center of pressure
+            CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
+                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.05, 0.02])), self.actuation.nu)
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
