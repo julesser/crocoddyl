@@ -134,6 +134,7 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
             forces.append(getCartesianForcesLocalCS(ddp[i+1]))
     # Analyse CoP cost
     copCost, frictionConeCost = 0, 0
+    com2DTrackCost, footTrackCost = 0, 0 
     if isinstance(ddp, list):
         for s in ddp:
             for j in range(s.problem.T):
@@ -156,8 +157,14 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
                         # print("----------------------------")
                         # if costTerm.cost != 0: 
                         #     print("#####################################################")
+                    if costName == "com2DTrack":
+                        com2DTrackCost += costTerm.cost
+                    if costName == "FR_SupportCenter_footTrack" or costName == "FL_SupportCenter_footTrack":
+                        footTrackCost += costTerm.cost
         print("total copCost: " + str(copCost))
         print("total frictionConeCost: " + str(frictionConeCost))
+        print("total com2DTrack: " + str(com2DTrackCost))
+        print("total footTrackCost: " + str(footTrackCost))
         print("..total costs then are multiplied with the assigned weight")
     
     # Calc CoP traejctory
@@ -187,8 +194,9 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
-    relTimePoints = [0,(2*total_knots)+num_knots[1]-1]
+    # relTimePoints = [0,(2*total_knots)+num_knots[1]-1]
     # relTimePoints = [0,40,100]
+    relTimePoints = [0]
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
     # (1) Variant with subplots

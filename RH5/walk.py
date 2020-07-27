@@ -30,6 +30,9 @@ rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pi
 jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
                 'HeadPitch', 'HeadRoll', 'HeadYaw']
+# jointsToLock = ['ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+#                 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+#                 'HeadPitch', 'HeadRoll', 'HeadYaw']
 # Get the existing joint IDs
 jointsToLockIDs = []
 for jn in range(len(jointsToLock)):
@@ -86,21 +89,28 @@ gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)
 # Defining the initial state of the robot
 x0 = gait.rmodel.defaultState
 
-# display = crocoddyl.GepettoDisplay(rh5_robot, 4, 4, frameNames=[rightFoot, leftFoot])
+# Set camera perspective
+# cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
+cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55] # front 
+# cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side 
+display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
 # display.display(xs=[x0])
+# while True: # Get desired view params
+#     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
 # simName = 'results/Test/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
 # simName = 'results/2Steps_30cmStride/'
 # simName = 'results/LongGait/'
-simName = 'results/HumanoidFixedArms/2Steps_40cm_ExtendedDS_CoPCost/'
+# simName = 'results/HumanoidFixedArms/2Steps_40cm_ExtendedDS_CoPCost/'
+simName = 'results/HumanoidFixedArms/Balancing_8s_5cm/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform 2 Steps
-GAITPHASES = \
-    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+# GAITPHASES = \
+#     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+#                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 # Perform 10 Steps
 # GAITPHASES = \
 #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
@@ -109,14 +119,14 @@ GAITPHASES = \
 #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
 #     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
 #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
-""" GAITPHASES = \
-    [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}] """
-""" GAITPHASES = \
-    [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
-     {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
-     {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}] """
-
-cameraTF = [3., 3.68, 0.84, 0.2, 0.62, 0.72, 0.22]
+# GAITPHASES = \
+#     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
+# GAITPHASES = \
+#     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
+#      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
+#      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
+GAITPHASES = \
+    [{'balancing': {'supportKnots': 10, 'shiftKnots': 60, 'balanceKnots': 120, 'timeStep': timeStep}}]
 
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
@@ -126,20 +136,24 @@ for i, phase in enumerate(GAITPHASES):
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
                                           value['stepKnots'], value['supportKnots'], value['isLastPhase']))
-            ddp[i].th_stop = 1e-7                                          
         if key == 'squat':
             # Creating a squat problem
             ddp[i] = crocoddyl.SolverBoxFDDP(
-                gait.createSquadProblem(x0, value['heightChange'], value['numKnots'], value['timeStep']))
-            ddp[i].th_stop = 1e-7                                         
+                gait.createSquatProblem(x0, value['heightChange'], value['numKnots'], value['timeStep']))
+        if key == 'balancing':
+            # Creating a squat problem
+            ddp[i] = crocoddyl.SolverBoxFDDP(
+                gait.createBalancingProblem(x0, value['supportKnots'], value['shiftKnots'], value['balanceKnots'], 
+                                            value['timeStep']))
+        ddp[i].th_stop = 1e-7                                      
 
     # Add the callback functions
     print('*** SOLVE ' + key + ' ***')
-    display = crocoddyl.GepettoDisplay(rh5_robot, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
+    display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
     ddp[i].setCallbacks(
         [crocoddyl.CallbackLogger(),
-         crocoddyl.CallbackVerbose(),
-         crocoddyl.CallbackDisplay(display)])
+         crocoddyl.CallbackVerbose()])
+        #  crocoddyl.CallbackDisplay(display)])
 
     # Solving the problem with the DDP solver
     xs = [rmodel.defaultState] * (ddp[i].problem.T + 1)
@@ -171,7 +185,7 @@ print('Step Length:  ' + str(distance / len(GAITPHASES)).strip('[]') + ' m')
 print('CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
 
 # Get contact wrenches f=[f,tau]
-display = crocoddyl.GepettoDisplay(rh5_robot, 4, 4, cameraTF, frameNames=[rightFoot, leftFoot])
+display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
 fsRel = np.zeros((len(GAITPHASES)*(len(ddp[i].problem.runningModels)),12)) # e.g. for 3 gaitphases = [3*nKnots,12]
 for i, phase in enumerate(GAITPHASES):
     fs = display.getForceTrajectoryFromSolver(ddp[i])
@@ -198,8 +212,10 @@ if WITHLOG:
 # Display the entire motion
 if WITHDISPLAY:
     display = crocoddyl.GepettoDisplay(rh5_robot, frameNames=[rightFoot, leftFoot])
+    # rh5_robot.viewer.gui.startCapture(rh5_robot.viz.windowID, 'test', '.mp4') # TODO: Automate video recording (check params, nothing happens now)
     for i, phase in enumerate(GAITPHASES):
         display.displayFromSolver(ddp[i])
+    # rh5_robot.viewer.gui.stopCapture(rh5_robot.viz.windowID)
 
 # Plotting the entire motion
 if WITHPLOT:
