@@ -74,6 +74,9 @@ struct FrameForceTpl;
 template <typename Scalar>
 struct FrameFrictionConeTpl;
 
+template <typename Scalar>
+struct FrameCoPSupportTpl;
+
 // cost
 template <typename Scalar>
 class CostModelAbstractTpl;
@@ -133,6 +136,11 @@ template <typename Scalar>
 struct CostDataContactForceTpl;
 
 template <typename Scalar>
+class CostModelContactImpulseTpl;
+template <typename Scalar>
+struct CostDataContactImpulseTpl;
+
+template <typename Scalar>
 class CostModelControlTpl;
 
 template <typename Scalar>
@@ -144,6 +152,11 @@ template <typename Scalar>
 class CostModelImpulseFrictionConeTpl;
 template <typename Scalar>
 struct CostDataImpulseFrictionConeTpl;
+
+template <typename Scalar>
+class CostModelContactCoPPositionTpl;
+template <typename Scalar>
+struct CostDataContactCoPPositionTpl;
 
 // impulse
 template <typename Scalar>
@@ -247,6 +260,7 @@ typedef FramePlacementTpl<double> FramePlacement;
 typedef FrameMotionTpl<double> FrameMotion;
 typedef FrameForceTpl<double> FrameForce;
 typedef FrameFrictionConeTpl<double> FrameFrictionCone;
+typedef FrameCoPSupportTpl<double> FrameCoPSupport;
 
 typedef CostModelAbstractTpl<double> CostModelAbstract;
 typedef CostDataAbstractTpl<double> CostDataAbstract;
@@ -267,10 +281,14 @@ typedef CostModelStateTpl<double> CostModelState;
 typedef CostDataStateTpl<double> CostDataState;
 typedef CostModelFrameVelocityTpl<double> CostModelFrameVelocity;
 typedef CostDataFrameVelocityTpl<double> CostDataFrameVelocity;
+typedef CostModelContactCoPPositionTpl<double> CostModelContactCoPPosition;
+typedef CostDataContactCoPPositionTpl<double> CostDataContactCoPPosition;
 typedef CostModelContactFrictionConeTpl<double> CostModelContactFrictionCone;
 typedef CostDataContactFrictionConeTpl<double> CostDataContactFrictionCone;
 typedef CostModelContactForceTpl<double> CostModelContactForce;
 typedef CostDataContactForceTpl<double> CostDataContactForce;
+typedef CostModelContactImpulseTpl<double> CostModelContactImpulse;
+typedef CostDataContactImpulseTpl<double> CostDataContactImpulse;
 typedef CostModelControlTpl<double> CostModelControl;
 typedef CostModelFrameRotationTpl<double> CostModelFrameRotation;
 typedef CostModelImpulseFrictionConeTpl<double> CostModelImpulseFrictionCone;
