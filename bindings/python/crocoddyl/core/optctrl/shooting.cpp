@@ -19,12 +19,8 @@ void exposeShootingProblem() {
   // Register custom converters between std::vector and Python list
   typedef boost::shared_ptr<ActionModelAbstract> ActionModelPtr;
   typedef boost::shared_ptr<ActionDataAbstract> ActionDataPtr;
-  bp::to_python_converter<std::vector<ActionModelPtr, std::allocator<ActionModelPtr> >,
-                          vector_to_list<ActionModelPtr, false> >();
-  bp::to_python_converter<std::vector<ActionDataPtr, std::allocator<ActionDataPtr> >,
-                          vector_to_list<ActionDataPtr, false> >();
-  list_to_vector().from_python<std::vector<ActionModelPtr, std::allocator<ActionModelPtr> > >();
-  list_to_vector().from_python<std::vector<ActionDataPtr, std::allocator<ActionDataPtr> > >();
+  StdVectorPythonVisitor<ActionModelPtr, std::allocator<ActionModelPtr>, true>::expose("StdVec_ActionModel");
+  StdVectorPythonVisitor<ActionDataPtr, std::allocator<ActionDataPtr>, true>::expose("StdVec_ActionData");
 
   bp::register_ptr_to_python<boost::shared_ptr<ShootingProblem> >();
 
@@ -116,8 +112,9 @@ void exposeShootingProblem() {
       .add_property("ndx",
                     bp::make_function(&ShootingProblem::get_ndx, bp::return_value_policy<bp::return_by_value>()),
                     "dimension of the tangent space of the state manifold")
-      .add_property("nu", bp::make_function(&ShootingProblem::get_nu, bp::return_value_policy<bp::return_by_value>()),
-                    "dimension of the control vector");
+      .add_property("nu_max",
+                    bp::make_function(&ShootingProblem::get_nu_max, bp::return_value_policy<bp::return_by_value>()),
+                    "dimension of the maximun control vector");
 }
 
 }  // namespace python
