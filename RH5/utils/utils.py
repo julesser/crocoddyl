@@ -114,14 +114,8 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     for i in range(nfeet):
         lfPose[i] = [np.asscalar(p[i]) for p in lfPoses]
         rfPose[i] = [np.asscalar(p[i]) for p in rfPoses]
-
     knots = list(range(0,len(Cz)))
 
-    # Get forces from solver(s)
-    forces = getCartesianForcesLocalCS(ddp[0])
-    if isinstance(ddp, list): # TODO: Leads to error in force computation because this adds an additional list layer on top
-        for i in range(len(ddp)-1):
-            forces.append(getCartesianForcesLocalCS(ddp[i+1]))
     # Analyse CoP cost
     copCost, frictionConeCost = 0, 0
     com2DTrackCost, footTrackCost = 0, 0 
@@ -170,15 +164,14 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
         print("total stateRecoveryCost: " + str(stateRecoveryCost))
         print("..total costs then are multiplied with the assigned weight")
     
+    # Get forces from solver(s)
+    forces = getCartesianForcesLocalCS(ddp)
     # Calc CoP traejctory
     CoPs = calcCoPs(forces)
     # Transform CoP to image plane (world CS)
-    # CoPLF = [[0,0] for i in range(len(CoPs))]
-    # CoPRF = [[0,0] for i in range(len(CoPs))]
     CoPLF = np.zeros((2, len(CoPs)))
     CoPRF = np.zeros((2, len(CoPs)))
     CoPLFx, CoPLFy, CoPRFx, CoPRFy = [], [], [], []
-    print("len CoP: " + str(len(CoPs)))
     print("timepoints: " + str(len(CoPs)))
     for k in range(len(CoPs)): 
         for CoP in CoPs[k]: # Iterate if DS
@@ -540,26 +533,39 @@ def mergeDataFromSolvers(ddp, fs, bounds):
         return rmodel, xs, us, accs, X, U, F, A
 
 
-def getCartesianForcesLocalCS(solver):
+def getCartesianForcesLocalCS(ddp):
     # Idea: Calc individual CoP for each foot and merge geometrically via Fz weight
     forces = []
-    models = solver.problem.runningModels
-    datas = solver.problem.runningDatas
-    # m_externalForces = m_robotData->liMi[1].act(m_robotData->f[1]);
-    for i, data in enumerate(datas):
-        model = models[i]
-        force_k = []
-        # 1) Compute cartesian forces expressed in world frame
-        for key, contact in data.differential.multibody.contacts.contacts.items():  # Iterate all available contacts (2 for DS)
-            if model.differential.contacts.contacts[key].active:
-                # Old Approach from getForceTrajectoryFromSolver()
-                force = contact.jMf.actInv(contact.f)
-                # New Approach: Transform contact forces (in local contact frame) to cartesian forces (in world frame)
-                # fiMo = pinocchio.SE3(contact.pinocchio.oMi[contact.joint].rotation.T, contact.jMf.translation)
-                # force = fiMo.actInv(contact.f)
-                force_k.append({"key": str(contact.joint), "f": force})
-        forces.append(force_k)
-    
+    if isinstance(ddp, list):
+        for s in ddp:
+            models = s.problem.runningModels
+            datas = s.problem.runningDatas
+            # m_externalForces = m_robotData->liMi[1].act(m_robotData->f[1]);
+            for i, data in enumerate(datas):
+                model = models[i]
+                force_k = []
+                # 1) Compute cartesian forces expressed in world frame
+                for key, contact in data.differential.multibody.contacts.contacts.items():  # Iterate all available contacts (2 for DS)
+                    if model.differential.contacts.contacts[key].active:
+                        # Old Approach from getForceTrajectoryFromSolver()
+                        force = contact.jMf.actInv(contact.f)
+                        # New Approach: Transform contact forces (in local contact frame) to cartesian forces (in world frame)
+                        # fiMo = pinocchio.SE3(contact.pinocchio.oMi[contact.joint].rotation.T, contact.jMf.translation)
+                        # force = fiMo.actInv(contact.f)
+                        force_k.append({"key": str(contact.joint), "f": force})
+                forces.append(force_k)
+    else: 
+        models = ddp.problem.runningModels
+        datas = ddp.problem.runningDatas
+        for i, data in enumerate(datas):
+            model = models[i]
+            force_k = []
+            for key, contact in data.differential.multibody.contacts.contacts.items():
+                if model.differential.contacts.contacts[key].active:
+                    force = contact.jMf.actInv(contact.f)
+                    force_k.append({"key": str(contact.joint), "f": force})
+            forces.append(force_k)
+
     return forces
 
 def calcCoPs(forces):
