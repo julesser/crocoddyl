@@ -14,7 +14,8 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     else: 
          rmodel, xs, us, accs, X, U, F, A = mergeDataFromSolvers(ddp, fs, bounds)
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
-
+    print('nx: ', nx)
+    print('nq: ', nq)
     # Plotting the joint Space: positions, velocities and torques
     plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
     torsoJointNames = ['BodyPitch','BodyRoll','BodyYaw']
@@ -86,7 +87,6 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     plt.xlabel('Knots')
     plt.legend()
     plt.savefig(dirName + 'JointSpace.png', dpi = 300)
-    
     # Get 3 dim CoM, get feet poses
     rdata = rmodel.createData()
     lfId = rmodel.getFrameId('FL_SupportCenter')
@@ -190,9 +190,11 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
-    # relTimePoints = [0,(2*total_knots)+num_knots[1]-1]
-    # relTimePoints = [0,40,100]
-    relTimePoints = [0]
+    # relTimePoints = [0,(2*total_knots)+num_knots[1]-1] # TaskSpecific: Walking 2 steps (stabilization)
+    # relTimePoints = [0,(2*total_knots)-1] # TaskSpecific: Walking 2 steps
+    # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific: Walking Long Gait
+    # relTimePoints = [0,40,100] # TaskSpecific: Squats
+    relTimePoints = [0] # TaskSpecific: Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
     # (1) Variant with subplots
@@ -212,29 +214,29 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     # (2) Variant with just one plot
     # plt.subplot(1,2,1)
     plt.plot(Cx[1:-1], Cy[1:-1], label='CoM')
-    plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
-    plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff')
-    plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
-    plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
-    plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
-    plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
+    # plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
+    # plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
+    # plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
+    # plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
+    # plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
+    # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFT1')]
     [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFT2')]
     [plt.plot(CoPLFx, CoPLFy, marker='x', linestyle='', label='LFCoP')]
     [plt.plot(CoPRFx, CoPRFy, marker='x', linestyle='', label='RFCoP')]
     plt.legend()
     plt.axis('scaled')
-    plt.xlim(0, 0.6)
-    plt.ylim(-0.2, 0.2)
+    plt.xlim(0, 0.9)
+    plt.ylim(-0.3, 0.3)
     plt.xlabel('X [m]')
     plt.ylabel('Y [m]')
     currentAxis = plt.gca()
     for t in relTimePoints:
         # if smaller region: draw dotted rectangle
-        # currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/4, lfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
-        # currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/4, rfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
-        currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/8, lfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
-        currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/8, rfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
+        currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/4, lfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
+        currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/4, rfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
+        # currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/8, lfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
+        # currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/8, rfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
         if t != relTimePoints[-1]:
             # black rectangles 
             currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/2, lfPose[1][t] - footWidth/2), footLength, footWidth, edgecolor = 'k', fill=False))
@@ -243,7 +245,7 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
             # red rectangles for last double support
             currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/2, lfPose[1][t] - footWidth/2), footLength, footWidth, edgecolor = 'r', fill=False))
             currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/2, rfPose[1][t] - footWidth/2), footLength, footWidth, edgecolor = 'r', fill=False))
-    # # Squats: Additionally plot CoM height
+    # # Additionally plot CoM height TaskSpecific: Squats
     # plt.subplot(1, 2, 2)
     # plt.plot(knots, Cz)
     # plt.xlabel('Knots')
@@ -253,13 +255,15 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     # Plotting the Task Space: Center of Mass and Feet (x,y,z over knots)
     plt.figure(figIndex + 3, figsize=(16,9))
     plt.subplot(3, 3, 1)
-    plt.plot(CoPLF[0], CoPLF[1])
-    plt.xlabel('CoPLFx [m]')
-    plt.ylabel('CoPLFy [m]')
+    [plt.plot(knots, CoPLF[0], label='LF'), plt.plot(knots, CoPRF[0], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('CoP X [m]')
+    plt.legend()
     plt.subplot(3, 3, 2)
-    plt.plot(CoPRF[0], CoPRF[1])
-    plt.xlabel('CoPRFx [m]')
-    plt.ylabel('CoPRFy [m]')
+    [plt.plot(knots, CoPLF[1], label='LF'), plt.plot(knots, CoPRF[1], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('CoP Y [m]')
+    plt.legend()
     plt.subplot(3, 3, 4)
     plt.plot(knots, Cx)
     plt.xlabel('Knots')
@@ -293,7 +297,6 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     contactForceNames = ['Fx','Fy','Fz'] 
     contactMomentNames = ['Tx','Ty','Tz']
     plt.figure(figIndex + 4, figsize=(16,9))
-
     plt.subplot(2,2,1)
     plt.title('Contact Forces [N]')
     [plt.plot(F[k], label=contactForceNames[i]) for i, k in enumerate(range(0, 3))]
@@ -484,7 +487,7 @@ def setLimits(rmodel):
     lb[:7] = -1
     rmodel.lowerPositionLimit = lb
 
-    # If desired: Artificially reduce the torque limits
+    # Artificially reduce the torque limits
     lims = rmodel.effortLimit
     # lims *= 0.5 
     # lims[11] = 70
