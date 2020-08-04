@@ -425,9 +425,9 @@ def logSolution(ddp, fs, timeStep, logPath):
 
     filename = logPath + 'logTaskSpace.csv'
     cs = []
-    lfPoses = []
-    rfPoses = []
-    sol = np.zeros([len(time), 17])
+    lfPoses, rfPoses = [], []
+    lfPosition, rfPosition = [], []
+    sol = np.zeros([len(time), 21])
     rdata = rmodel.createData()
     lfId = rmodel.getFrameId('FL_SupportCenter')
     rfId = rmodel.getFrameId('FR_SupportCenter')
@@ -442,12 +442,34 @@ def logSolution(ddp, fs, timeStep, logPath):
         # print(pinocchio.SE3ToXYZQUATtuple(rdata.oMf[lfId]))  # Pose specified via quaternion + translation vector
         lfPoses.append(pinocchio.SE3ToXYZQUATtuple(rdata.oMf[lfId]))
         rfPoses.append(pinocchio.SE3ToXYZQUATtuple(rdata.oMf[rfId]))
-        
+        lfPosition.append(rdata.oMf[lfId].translation) 
+        rfPosition.append(rdata.oMf[rfId].translation)
+    # Transform foot poses to image plane
+    nfeet = lfPosition[0].shape[0]
+    lfPosImg, rfPosImg = [0.] * nfeet, [0.] * nfeet       
+    for i in range(nfeet):
+        lfPosImg[i] = [np.asscalar(p[i]) for p in lfPosition]
+        rfPosImg[i] = [np.asscalar(p[i]) for p in rfPosition]
+    # Compute CoP
+    forces = getCartesianForcesLocalCS(ddp)
+    CoPs = calcCoPs(forces)
+    # Transform CoP to image plane
+    CoPLF = np.zeros((2, len(CoPs)))
+    CoPRF = np.zeros((2, len(CoPs)))
+    for k in range(len(CoPs)): 
+        for CoP in CoPs[k]: # Iterate if DS
+            if CoP["key"] == "10":  # LF
+                CoPLF[0][k] = CoP["CoP"][0] + lfPosImg[0][k]
+                CoPLF[1][k] = CoP["CoP"][1] + lfPosImg[1][k]
+            elif CoP["key"] == "16":  # RF
+                CoPRF[0][k] = CoP["CoP"][0] + rfPosImg[0][k]
+                CoPRF[1][k] = CoP["CoP"][1] + rfPosImg[1][k]
     for l in range(len(time)):
-        sol[l] = [*cs[l], *lfPoses[l], *rfPoses[l]]
+        sol[l] = [*cs[l], CoPLF[0][l], CoPLF[1][l], CoPRF[0][l], CoPRF[1][l], *lfPoses[l], *rfPoses[l]]
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['Cx', 'Cy', 'Cz', 
+        writer.writerow(['Cx', 'Cy', 'Cz',
+                         'CoPx_FL', 'CoPy_FL', 'CoPx_FR', 'CoPy_FR',  
                          'X_FL_SupportCenter', 'Y_FL_SupportCenter', 'Z_FL_SupportCenter', 'Qx_FL_SupportCenter', 'Qy_FL_SupportCenter', 'Qz_FL_SupportCenter', 'Qw_FL_SupportCenter',
                          'X_FR_SupportCenter', 'Y_FR_SupportCenter', 'Z_FR_SupportCenter', 'Qx_FR_SupportCenter', 'Qy_FR_SupportCenter', 'Qz_FR_SupportCenter', 'Qw_FR_SupportCenter',])
         writer.writerows(sol)
