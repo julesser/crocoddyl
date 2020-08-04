@@ -10,6 +10,7 @@ class SimpleBipedGaitProblem:
         self.rmodel = rmodel
         self.rdata = rmodel.createData()
         self.state = crocoddyl.StateMultibody(self.rmodel)
+        # self.state.lb[-self.state.nv:] *= 0.5 # Artificially reduce max joint velocity
         self.actuation = crocoddyl.ActuationModelFloatingBase(self.state)
         # Getting the frame id for all the legs
         self.rfId = self.rmodel.getFrameId(rightFoot)
@@ -66,7 +67,8 @@ class SimpleBipedGaitProblem:
         # Defining the action models along the time instances
         loco3dModel = []
         doubleSupport = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId]) for k in range(supportKnots)]
-       
+        # Append 1s of recovery 
+        stabilization = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], poseRecovery=True) for k in range(30)]
         # Creating the action models for three steps
         # print(comRef)
         if self.firstStep is True:
@@ -85,6 +87,7 @@ class SimpleBipedGaitProblem:
         loco3dModel += doubleSupport + lStep
         if isLastPhase is True: 
             loco3dModel += doubleSupport
+        #     loco3dModel += stabilization
 
         problem = crocoddyl.ShootingProblem(x0, loco3dModel, loco3dModel[-1])
         return problem
@@ -235,7 +238,7 @@ class SimpleBipedGaitProblem:
             p += np.matrix([[stepLength, 0., 0.]]).T
         return footSwingModel + [footSwitchModel]
 
-    def createSwingFootModel(self, timeStep, supportFootIds, comTask=None, swingFootTask=None):
+    def createSwingFootModel(self, timeStep, supportFootIds, comTask=None, swingFootTask=None, poseRecovery=None):
         """ Action model for a swing foot phase.
 
         :param timeStep: step duration of the action model
@@ -244,8 +247,7 @@ class SimpleBipedGaitProblem:
         :param swingFootTask: swinging foot task
         :return action model for a swing foot phase
         """
-        # Creating a 6D multi-contact model, and then including the supporting
-        # foot
+        # Creating a 6D multi-contact model, and then including the supporting foot
         contactModel = crocoddyl.ContactModelMultiple(self.state, self.actuation.nu)
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
@@ -264,40 +266,37 @@ class SimpleBipedGaitProblem:
                 crocoddyl.ActivationModelWeightedQuad(np.matrix(com2DWeights**2).T), comTask, self.actuation.nu)
             costModel.addCost("com2DTrack", com2DTrack, 1e6)
         for i in supportFootIds:
-            # friction cone
+            # friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
             frictionCone = crocoddyl.CostModelContactFrictionCone(
                 self.state, crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(cone.lb, cone.ub)),
                 crocoddyl.FrameFrictionCone(i, cone), self.actuation.nu)
             costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
-            # center of pressure
+            # center of pressure cost
             CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
-                crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
-                # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
                 # crocoddyl.FrameCoPSupport(i, np.array([0.05, 0.02])), self.actuation.nu)
-            # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
-                costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6) # TaskSpecific:Walking
+                costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6)
                 # costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6) # TODO: ActivationModelWeightedQuad 6 components: Focus on [3:6] = z-component, angular
-        # Add cost for self-collision (joint limits) TODO: Right now no joint limits violated - Joint inperiodicity has other reason!
-        # maxfloat = sys.float_info.max
-        # xlb = np.vstack([
-        #     -maxfloat * np.matrix(np.ones((6, 1))),  # dimension of the SE(3) manifold
-        #     self.rmodel.lowerPositionLimit[7:],
-        #     -maxfloat * np.matrix(np.ones((self.state.nv, 1)))
-        # ])
-        # xub = np.vstack([
-        #     maxfloat * np.matrix(np.ones((6, 1))),  # dimension of the SE(3) manifold
-        #     self.rmodel.upperPositionLimit[7:],
-        #     maxfloat * np.matrix(np.ones((self.state.nv, 1)))
-        # ])
-        # print(xub)
-        # bounds = crocoddyl.ActivationBounds(xlb, xub, 1.)
-        # limitCost = crocoddyl.CostModelState(self.state, crocoddyl.ActivationModelQuadraticBarrier(bounds), self.rmodel.defaultState,
-        #                                     self.actuation.nu)
-        # costModel.addCost("limitCost", limitCost, 1e3)
+        
+        # joint limits cost
+        x_lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])
+        x_ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
+        activation_xbounds = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(x_lb, x_ub))
+        joint_limits = crocoddyl.CostModelState(self.state, activation_xbounds, 0 * self.rmodel.defaultState, self.actuation.nu)
+        costModel.addCost("jointLim", joint_limits, 1e1)
+        
+        # if poseRecovery is True: # TODO: Invididual class for eliminating fight recovery vs Cop cost
+        #     poseWeights = np.array([0] * 6 + [1] * (self.state.nv - 6) + [0] * self.state.nv)
+        #     stateRecovery = crocoddyl.CostModelState(self.state,
+        #                                             crocoddyl.ActivationModelWeightedQuad(np.matrix(poseWeights**2).T),
+        #                                             self.rmodel.defaultState, self.actuation.nu)
+        #     costModel.addCost("stateRecovery", stateRecovery, 1e3)
         # stateWeights = np.array([0] * 3 + [500.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateWeights = np.array([0] * 3 + [10.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateReg = crocoddyl.CostModelState(self.state,
@@ -354,10 +353,10 @@ class SimpleBipedGaitProblem:
             costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
             # center of pressure
             CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
-                crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
-                # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
                 # crocoddyl.FrameCoPSupport(i, np.array([0.05, 0.02])), self.actuation.nu)
-            # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
