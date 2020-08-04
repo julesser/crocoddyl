@@ -125,6 +125,7 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     # Analyse CoP cost
     copCost, frictionConeCost = 0, 0
     com2DTrackCost, footTrackCost = 0, 0 
+    jointLimCost, stateRecoveryCost, stateRegCost, ctrlRegCost = 0, 0, 0, 0
     if isinstance(ddp, list):
         for s in ddp:
             for j in range(s.problem.T):
@@ -139,7 +140,7 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
                         # print("----------------------------")
                         # if costTerm.cost != 0: 
                         #     print("#####################################################")
-                    if costName == "FR_SupportCenter_frictionCone" or costName == "FL_SupportCenter_frictionCone":
+                    elif costName == "FR_SupportCenter_frictionCone" or costName == "FL_SupportCenter_frictionCone":
                         frictionConeCost += costTerm.cost
                         # print(costName)
                         # print("r: " + str(costTerm.r))
@@ -147,14 +148,26 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
                         # print("----------------------------")
                         # if costTerm.cost != 0: 
                         #     print("#####################################################")
-                    if costName == "com2DTrack":
+                    elif costName == "com2DTrack":
                         com2DTrackCost += costTerm.cost
-                    if costName == "FR_SupportCenter_footTrack" or costName == "FL_SupportCenter_footTrack":
+                    elif costName == "FR_SupportCenter_footTrack" or costName == "FL_SupportCenter_footTrack":
                         footTrackCost += costTerm.cost
+                    elif costName == "jointLim":
+                        jointLimCost += costTerm.cost
+                    elif costName == "stateReg":
+                        stateRegCost += costTerm.cost
+                    elif costName == "ctrlReg":
+                        ctrlRegCost += costTerm.cost
+                    elif costName == "stateRecovery":
+                        stateRecoveryCost += costTerm.cost
         print("total copCost: " + str(copCost))
         print("total frictionConeCost: " + str(frictionConeCost))
         print("total com2DTrack: " + str(com2DTrackCost))
         print("total footTrackCost: " + str(footTrackCost))
+        print("total jointLimCost: " + str(jointLimCost))
+        print("total stateRegCost: " + str(stateRegCost))
+        print("total ctrlRegCost: " + str(ctrlRegCost))
+        print("total stateRecoveryCost: " + str(stateRecoveryCost))
         print("..total costs then are multiplied with the assigned weight")
     
     # Calc CoP traejctory
