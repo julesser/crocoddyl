@@ -18,7 +18,7 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     # Plotting the joint Space: positions, velocities and torques
     plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
     torsoJointNames = ['BodyPitch','BodyRoll','BodyYaw']
-    legJointNames = ['HipYaw', 'HipRoll', 'HipPitch', 'Knee', 'AnkleRoll', 'AnklePitch'] # Hip 1-3: Yaw, Roll, Pitch 
+    legJointNames = ['Hip1', 'Hip2', 'Hip3', 'Knee', 'AnkleRoll', 'AnklePitch']
     # torso
     plt.subplot(3, 3, 1)
     plt.title('Joint Position [rad]')
@@ -44,59 +44,49 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     plt.legend()
     # left foot
     plt.subplot(3, 3, 4)
-    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(7, 13))]
+    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(10, 16))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(7, 13))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(7, 13))]
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(10, 16))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(10, 16))]
     plt.ylabel('LF')
     plt.subplot(3, 3, 5)
-    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 6, nq + 12))]
+    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 9, nq + 15))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 12))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 12))]
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 9, nq + 15))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 9, nq + 15))]
     plt.ylabel('LF')
     plt.subplot(3, 3, 6)
-    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(0, 6))]
+    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(3, 9))]
     if bounds:
-        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(0, 6))]
-        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(0, 6))]
+        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(3, 9))]
+        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(3, 9))]
     plt.ylabel('LF')
     plt.legend()
     # right foot
     plt.subplot(3, 3, 7)
-    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(13, 19))]
+    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(16, 22))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(13, 19))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(13, 19))]
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(16, 22))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(16, 22))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.subplot(3, 3, 8)
-    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 12, nq + 18))]
+    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 15, nq + 21))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 12, nq + 18))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 12, nq + 18))]
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 15, nq + 21))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 15, nq + 21))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.subplot(3, 3, 9)
-    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(6, 12))]
+    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(9, 15))]
     if bounds:
-        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(6, 12))]
-        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(6, 12))]
+        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(9, 15))]
+        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(9, 15))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.legend()
     plt.savefig(dirName + 'JointSpace.png', dpi = 300)
-
-    # Backup plot to show that CoM height nearly is constant
-    # # Plotting floating base coordinates
-    # plt.figure(figIndex + 1, figsize=(16,9))
-    # baseTranslationNames = ['X', 'Y', 'Z']
-    # [plt.plot(X[k], label=baseTranslationNames[i]) for i, k in enumerate(range(0, 3))]
-    # plt.xlabel('Knots')
-    # plt.ylabel('Translation [m]')
-    # plt.legend()
-    # plt.savefig(dirName + 'Base.png', bbox_inches = 'tight', dpi = 300)
-        
+    
     # Get 3 dim CoM, get feet poses
     rdata = rmodel.createData()
     lfId = rmodel.getFrameId('FL_SupportCenter')
