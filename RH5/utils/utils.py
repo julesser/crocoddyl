@@ -327,27 +327,27 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     plt.legend()
     plt.savefig(dirName + 'ContactWrenches.png', dpi = 300)
 
-
-    # Plotting the Acceleration
+    # Plotting the Floating Base Position, Velocity and Acceleration
+    PosFBNames = ['X', 'Y', 'Z']
+    VelFBNames = ['vx', 'vy', 'vz', 'wx', 'wy', 'wz']
     AccFBNames = ['vxd', 'vyd', 'vzd', 'wxd', 'wyd', 'wzd']
     plt.figure(figIndex + 5, figsize=(16,9))
-
-    plt.subplot(3,1,1)
-    [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(0, 6))]
-    plt.xlabel('Knots')
-    plt.ylabel('FB')
+    ax1 = plt.subplot(3,1,1)
+    [plt.plot(X[k], label=PosFBNames[i]) for i, k in enumerate(range(0, 3))]
+    plt.setp(ax1.get_xticklabels(), visible=False)
+    plt.ylabel('Position')
     plt.legend()
-    plt.subplot(3,1,2)
-    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(6, 12))]
-    plt.xlabel('Knots')
-    plt.ylabel('LF')
+    ax2 = plt.subplot(3,1,2)
+    [plt.plot(A[k], label=VelFBNames[i]) for i, k in enumerate(range(6, 12))]
+    plt.setp(ax2.get_xticklabels(), visible=False)
+    plt.ylabel('Velocity')
     plt.legend()
     plt.subplot(3,1,3)
-    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(12, 18))]
+    [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(12, 18))]
     plt.xlabel('Knots')
-    plt.ylabel('RF')
+    plt.ylabel('Acceleration')
     plt.legend()
-    plt.savefig(dirName + 'Acceleration.png', dpi = 300)
+    plt.savefig(dirName + 'Base.png', dpi = 300)
 
 
 def logSolution(ddp, fs, timeStep, logPath):
