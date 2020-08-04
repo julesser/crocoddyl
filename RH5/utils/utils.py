@@ -334,12 +334,12 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     plt.ylabel('Position')
     plt.legend()
     ax2 = plt.subplot(3,1,2)
-    [plt.plot(A[k], label=VelFBNames[i]) for i, k in enumerate(range(6, 12))]
+    [plt.plot(X[k], label=VelFBNames[i]) for i, k in enumerate(range(nq, nq+6))]
     plt.setp(ax2.get_xticklabels(), visible=False)
     plt.ylabel('Velocity')
     plt.legend()
     plt.subplot(3,1,3)
-    [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(12, 18))]
+    [plt.plot(A[k], label=AccFBNames[i]) for i, k in enumerate(range(0, 6))]
     plt.xlabel('Knots')
     plt.ylabel('Acceleration')
     plt.legend()
