@@ -75,8 +75,8 @@ setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.03
-stepKnots = 50
-supportKnots = 10
+stepKnots = 45
+supportKnots = 15
 impulseKnots = 1
 stepLength = 0.2
 knots = [stepKnots, supportKnots, impulseKnots]
@@ -108,10 +108,10 @@ if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform 2 Steps
-# GAITPHASES = \
-#     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-#                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
-# Perform 10 Steps
+GAITPHASES = \
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+# Perform 6 Steps
 # GAITPHASES = \
 #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
 #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
@@ -125,9 +125,9 @@ if not os.path.exists(simName):
 #     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
 #      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
 #      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
-GAITPHASES = \
-    [{'balancing': {'supportKnots': 10, 'shiftKnots': 60, 'balanceKnots': 120, 'timeStep': timeStep}}]
-
+# GAITPHASES = \
+#     [{'balancing': {'supportKnots': 10, 'shiftKnots': 60, 'balanceKnots': 120, 'timeStep': timeStep}}]
+    
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
     for key, value in phase.items():
@@ -141,7 +141,7 @@ for i, phase in enumerate(GAITPHASES):
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createSquatProblem(x0, value['heightChange'], value['numKnots'], value['timeStep']))
         if key == 'balancing':
-            # Creating a squat problem
+            # Creating a balancing problem
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createBalancingProblem(x0, value['supportKnots'], value['shiftKnots'], value['balanceKnots'], 
                                             value['timeStep']))
@@ -207,7 +207,7 @@ fs = fsRel
 
 # Export solution to .csv files
 if WITHLOG:
-    logSolution(ddp, fs, timeStep, simName)
+    logSolution(ddp, fs, timeStep, simName+'/logs/')
 
 # Display the entire motion
 if WITHDISPLAY:
