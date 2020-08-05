@@ -14,9 +14,11 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     else: 
          rmodel, xs, us, accs, X, U, F, A = mergeDataFromSolvers(ddp, fs, bounds)
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
-    print('nx: ', nx)
-    print('nq: ', nq)
-    # Plotting the joint Space: positions, velocities and torques
+    # print('nx: ', nx)
+    # print('nq: ', nq)
+    # print('na: ', na)
+
+    # Plotting the joint state: positions, velocities and torques
     plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
     torsoJointNames = ['BodyPitch','BodyRoll','BodyYaw']
     legJointNames = ['Hip1', 'Hip2', 'Hip3', 'Knee', 'AnkleRoll', 'AnklePitch']
@@ -36,11 +38,8 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 9))]
     plt.ylabel('Torso')
     plt.subplot(3, 3, 3)
-    plt.title('Joint Torque [Nm]')
-    [plt.plot(U[k], label=torsoJointNames[i]) for i, k in enumerate(range(0, 3))]
-    if bounds:
-        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(0, 3))]
-        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(0, 3))]
+    plt.title('Joint Acceleration [rad/s²]')
+    [plt.plot(A[k], label=torsoJointNames[i]) for i, k in enumerate(range(6, 9))]
     plt.ylabel('Torso')
     plt.legend()
     # left foot
@@ -57,10 +56,7 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
         [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 9, nq + 15))]
     plt.ylabel('LF')
     plt.subplot(3, 3, 6)
-    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(3, 9))]
-    if bounds:
-        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(3, 9))]
-        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(3, 9))]
+    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(9, 15))]
     plt.ylabel('LF')
     plt.legend()
     # right foot
@@ -79,6 +75,35 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.subplot(3, 3, 9)
+    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(15, 21))]
+    plt.ylabel('RF')
+    plt.xlabel('Knots')
+    plt.legend()
+    plt.savefig(dirName + 'JointState.png', dpi = 300)
+
+    # Plotting the joint torques
+    plt.figure(figIndex+1, figsize=(16,9))
+    # Torso
+    plt.subplot(3, 1, 1)
+    plt.title('Joint Torque [Nm]')
+    [plt.plot(U[k], label=torsoJointNames[i]) for i, k in enumerate(range(0, 3))]
+    if bounds:
+        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(0, 3))]
+        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(0, 3))]
+    plt.ylabel('Torso')
+    plt.xlabel('Knots')
+    plt.legend()
+    plt.subplot(3, 1, 2)
+    # Left foot
+    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(3, 9))]
+    if bounds:
+        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(3, 9))]
+        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(3, 9))]
+    plt.ylabel('LF')
+    plt.xlabel('Knots')
+    plt.legend()
+    # Right foot
+    plt.subplot(3, 1, 3)
     [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(9, 15))]
     if bounds:
         [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(9, 15))]
@@ -86,7 +111,8 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.legend()
-    plt.savefig(dirName + 'JointSpace.png', dpi = 300)
+    plt.savefig(dirName + 'JointTorques.png', dpi = 300)
+    
     # Get 3 dim CoM, get feet poses
     rdata = rmodel.createData()
     lfId = rmodel.getFrameId('FL_SupportCenter')

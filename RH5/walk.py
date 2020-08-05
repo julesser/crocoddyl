@@ -84,10 +84,10 @@ setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.03
-# stepKnots = 45
-# supportKnots = 15
 stepKnots = 90
-supportKnots = 90
+supportKnots = 30
+# stepKnots = 90
+# supportKnots = 90
 impulseKnots = 1
 stepLength = 0.2
 knots = [stepKnots, supportKnots, impulseKnots]
@@ -111,18 +111,18 @@ display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rig
 # simName = 'results/Test/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
 # simName = 'results/HumanoidFixedArms/Balancing_8s_5cm/'
-simName = 'results/HumanoidFixedArms/2Steps_10cm_CoP50_static_4s/'
+simName = 'results/HumanoidFixedArms/2Steps_10cm_CoP50_slow/'
 # simName = 'results/HumanoidFixedArms/Test/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform 2 Steps
-# GAITPHASES = \
-#     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
-#                   'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 GAITPHASES = \
-    [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
-                        'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
+                  'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+# GAITPHASES = \
+#     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
+#                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 # Perform 6 Steps
 # GAITPHASES = \
 #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,

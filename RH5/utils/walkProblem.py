@@ -319,11 +319,11 @@ class SimpleBipedGaitProblem:
         # if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting
         #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
         #     costModel.addCost("comTrack", comTrack, 1e6)
-        if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
-            com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
-            com2DTrack = crocoddyl.CostModelCoMPosition(self.state, 
-                crocoddyl.ActivationModelWeightedQuad(np.matrix(com2DWeights**2).T), comTask, self.actuation.nu)
-            costModel.addCost("com2DTrack", com2DTrack, 1e6)
+        # if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
+        #     com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
+        #     com2DTrack = crocoddyl.CostModelCoMPosition(self.state, 
+        #         crocoddyl.ActivationModelWeightedQuad(np.matrix(com2DWeights**2).T), comTask, self.actuation.nu)
+        #     costModel.addCost("com2DTrack", com2DTrack, 1e6)
         for i in supportFootIds:
             # friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
