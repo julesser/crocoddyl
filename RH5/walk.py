@@ -21,11 +21,15 @@ modelPath = os.path.join(os.environ.get('HOME'), "Dev/rh5-models")
 # URDF_FILENAME = "RH5Torso_PkgPath.urdf"
 # URDF_FILENAME = "RH5Humanoid_PkgPath_FixedArmsNHead.urdf"
 URDF_FILENAME = "RH5Humanoid_PkgPath.urdf"
-URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
+# URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
+URDF_SUBPATH = "/abstract-urdf-deprecated/urdf/" + URDF_FILENAME # TODO: Take new one!!!! The new gives problem with the reduced model, fixedArmsNHead works fine
 
 # Load the full model 
 rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
-# print('standard model: dim=' + str(len(rh5_robot.model.joints)))
+print('standard model: dim=' + str(len(rh5_robot.model.joints)))
+# print('standard model: names:')
+# for jn in rh5_robot.model.names:
+#     print(jn)
 # Create a list of joints to lock
 jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
@@ -69,18 +73,24 @@ initialJointConfig = np.matrix([0,0,0,0,0,0,0, # Floating Base
 # rh5_robot.model = pinocchio.buildReducedModel(rh5_robot.model, jointsToLockIDs, initialJointConfig) # If no displaying needed
 rh5_robot.model, rh5_robot.visual_model = pinocchio.buildReducedModel(rh5_robot.model, rh5_robot.visual_model, jointsToLockIDs, initialJointConfig)
 rmodel = rh5_robot.model
-# print('reduced model: dim=' + str(len(rh5_robot.model.joints)))
+print('reduced model: dim=' + str(len(rh5_robot.model.joints)))
+# print('standard model: names:')
+# for jn in rmodel.names:
+#     print(jn)
+# for jn in rmodel.joints:
+#     print(jn)
 # Add joint limits
 setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.03
-stepKnots = 45
-supportKnots = 15
+# stepKnots = 45
+# supportKnots = 15
+stepKnots = 90
+supportKnots = 90
 impulseKnots = 1
 stepLength = 0.2
 knots = [stepKnots, supportKnots, impulseKnots]
-# stepHeight = 0.1
 stepHeight = 0.05
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
@@ -100,17 +110,19 @@ display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rig
 
 # simName = 'results/Test/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
-# simName = 'results/2Steps_30cmStride/'
-# simName = 'results/LongGait/'
-# simName = 'results/HumanoidFixedArms/2Steps_40cm_ExtendedDS_CoPCost/'
-simName = 'results/HumanoidFixedArms/Balancing_8s_5cm/'
+# simName = 'results/HumanoidFixedArms/Balancing_8s_5cm/'
+simName = 'results/HumanoidFixedArms/2Steps_10cm_CoP50_static_4s/'
+# simName = 'results/HumanoidFixedArms/Test/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform 2 Steps
+# GAITPHASES = \
+#     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
+#                   'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 GAITPHASES = \
-    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
-                  'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+    [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
+                        'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 # Perform 6 Steps
 # GAITPHASES = \
 #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
@@ -136,6 +148,11 @@ for i, phase in enumerate(GAITPHASES):
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
                                           value['stepKnots'], value['supportKnots'], value['isLastPhase']))
+        if key == 'staticWalking':
+            # Creating a walking problem
+            ddp[i] = crocoddyl.SolverBoxFDDP(
+                gait.createStaticWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
+                                                value['stepKnots'], value['supportKnots'], value['isLastPhase']))
         if key == 'squat':
             # Creating a squat problem
             ddp[i] = crocoddyl.SolverBoxFDDP(
@@ -161,7 +178,7 @@ for i, phase in enumerate(GAITPHASES):
         m.quasiStatic(d, rmodel.defaultState)
         for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
     ]
-    ddp[i].solve(xs, us, 100, False, 0.1)
+    print(ddp[i].solve(xs, us, 200, False, 0.1))
     
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
@@ -169,20 +186,20 @@ for i, phase in enumerate(GAITPHASES):
 
 
 # Calc resulting CoM velocity (average) # TODO: Put in utils
-logFirst = ddp[0].getCallbacks()[0]
-logLast = ddp[-1].getCallbacks()[0]
-first_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logFirst.xs[1][:rmodel.nq]) # calc CoM for init pose
-final_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logLast.xs[-1][:rmodel.nq]) # calc CoM for final pose
-n_knots = 2*len(GAITPHASES)*(stepKnots+supportKnots) # Don't consider impulse knots (dt=0)
-t_total = n_knots * timeStep # total time = f(knots, timeStep)
-distance = final_com[0] - first_com[0]
-v_com = distance / t_total
-print('..................')
-print('Simulation Results')
-print('..................')
-print('Step Time:    ' + str(stepKnots * timeStep) + ' s')
-print('Step Length:  ' + str(distance / len(GAITPHASES)).strip('[]') + ' m')
-print('CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
+# logFirst = ddp[0].getCallbacks()[0]
+# logLast = ddp[-1].getCallbacks()[0]
+# first_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logFirst.xs[1][:rmodel.nq]) # calc CoM for init pose
+# final_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logLast.xs[-1][:rmodel.nq]) # calc CoM for final pose
+# n_knots = 2*len(GAITPHASES)*(stepKnots+supportKnots) # Don't consider impulse knots (dt=0)
+# t_total = n_knots * timeStep # total time = f(knots, timeStep)
+# distance = final_com[0] - first_com[0]
+# v_com = distance / t_total
+# print('..................')
+# print('Simulation Results')
+# print('..................')
+# print('Step Time:    ' + str(stepKnots * timeStep) + ' s')
+# print('Step Length:  ' + str(distance / len(GAITPHASES)).strip('[]') + ' m')
+# print('CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
 
 # Get contact wrenches f=[f,tau]
 display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
@@ -207,7 +224,10 @@ fs = fsRel
 
 # Export solution to .csv files
 if WITHLOG:
-    logSolution(ddp, fs, timeStep, simName+'/logs/')
+    logPath = simName+'/logs/'
+    if not os.path.exists(logPath):
+        os.makedirs(logPath)
+    logSolution(ddp, fs, timeStep,logPath)
 
 # Display the entire motion
 if WITHDISPLAY:

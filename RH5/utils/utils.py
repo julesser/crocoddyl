@@ -191,10 +191,10 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
     # relTimePoints = [0,(2*total_knots)+num_knots[1]-1] # TaskSpecific: Walking 2 steps (stabilization)
-    # relTimePoints = [0,(2*total_knots)-1] # TaskSpecific: Walking 2 steps
+    relTimePoints = [0,(2*total_knots)-1] # TaskSpecific: Walking 2 steps
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific: Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific: Squats
-    relTimePoints = [0] # TaskSpecific: Balancing
+    # relTimePoints = [0] # TaskSpecific: Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
     # (1) Variant with subplots
@@ -214,20 +214,22 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     # (2) Variant with just one plot
     # plt.subplot(1,2,1)
     plt.plot(Cx[1:-1], Cy[1:-1], label='CoM')
-    # plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
-    # plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
-    # plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
-    # plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
-    # plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
-    # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
+    plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
+    plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
+    plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
+    plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
+    plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
+    plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFT1')]
     [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFT2')]
     [plt.plot(CoPLFx, CoPLFy, marker='x', linestyle='', label='LFCoP')]
     [plt.plot(CoPRFx, CoPRFy, marker='x', linestyle='', label='RFCoP')]
     plt.legend()
     plt.axis('scaled')
-    plt.xlim(0, 0.9)
-    plt.ylim(-0.3, 0.3)
+    plt.xlim(0, 0.5)
+    plt.ylim(-0.2, 0.2)
+    # plt.xlim(0, 0.9) TaskSpecific: LongGait or large steps
+    # plt.ylim(-0.3, 0.3)
     plt.xlabel('X [m]')
     plt.ylabel('Y [m]')
     currentAxis = plt.gca()
