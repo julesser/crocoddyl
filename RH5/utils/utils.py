@@ -149,37 +149,39 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     if isinstance(ddp, list):
         for s in ddp:
             for j in range(s.problem.T):
-                # print(s.problem.runningModels[j].differential.costs.costs)
-                for costName in s.problem.runningModels[j].differential.costs.costs:
-                    costTerm = s.problem.runningDatas[j].differential.costs.costs[costName]
-                    if costName == "FR_SupportCenter_CoP" or costName == "FL_SupportCenter_CoP":
-                        copCost += costTerm.cost
-                        # print(costName)
-                        # print("r: " + str(costTerm.r))
-                        # print("cost: " + str(costTerm.cost))
-                        # print("----------------------------")
-                        # if costTerm.cost != 0: 
-                        #     print("#####################################################")
-                    elif costName == "FR_SupportCenter_frictionCone" or costName == "FL_SupportCenter_frictionCone":
-                        frictionConeCost += costTerm.cost
-                        # print(costName)
-                        # print("r: " + str(costTerm.r))
-                        # print("cost: " + str(costTerm.cost))
-                        # print("----------------------------")
-                        # if costTerm.cost != 0: 
-                        #     print("#####################################################")
-                    elif costName == "com2DTrack":
-                        com2DTrackCost += costTerm.cost
-                    elif costName == "FR_SupportCenter_footTrack" or costName == "FL_SupportCenter_footTrack":
-                        footTrackCost += costTerm.cost
-                    elif costName == "jointLim":
-                        jointLimCost += costTerm.cost
-                    elif costName == "stateReg":
-                        stateRegCost += costTerm.cost
-                    elif costName == "ctrlReg":
-                        ctrlRegCost += costTerm.cost
-                    elif costName == "stateRecovery":
-                        stateRecoveryCost += costTerm.cost
+                try: 
+                    for costName in s.problem.runningModels[j].differential.costs.costs:
+                        costTerm = s.problem.runningDatas[j].differential.costs.costs[costName]
+                        if costName == "FR_SupportCenter_CoP" or costName == "FL_SupportCenter_CoP":
+                            copCost += costTerm.cost
+                            # print(costName)
+                            # print("r: " + str(costTerm.r))
+                            # print("cost: " + str(costTerm.cost))
+                            # print("----------------------------")
+                            # if costTerm.cost != 0: 
+                            #     print("#####################################################")
+                        elif costName == "FR_SupportCenter_frictionCone" or costName == "FL_SupportCenter_frictionCone":
+                            frictionConeCost += costTerm.cost
+                            # print(costName)
+                            # print("r: " + str(costTerm.r))
+                            # print("cost: " + str(costTerm.cost))
+                            # print("----------------------------")
+                            # if costTerm.cost != 0: 
+                            #     print("#####################################################")
+                        elif costName == "com2DTrack":
+                            com2DTrackCost += costTerm.cost
+                        elif costName == "FR_SupportCenter_footTrack" or costName == "FL_SupportCenter_footTrack":
+                            footTrackCost += costTerm.cost
+                        elif costName == "jointLim":
+                            jointLimCost += costTerm.cost
+                        elif costName == "stateReg":
+                            stateRegCost += costTerm.cost
+                        elif costName == "ctrlReg":
+                            ctrlRegCost += costTerm.cost
+                        elif costName == "stateRecovery":
+                            stateRecoveryCost += costTerm.cost
+                except: # Don't consider costs during impulse knot TODO: Find way to access these
+                    pass
         print("total copCost: " + str(copCost))
         print("total frictionConeCost: " + str(frictionConeCost))
         print("total com2DTrack: " + str(com2DTrackCost))
@@ -533,7 +535,11 @@ def mergeDataFromSolvers(ddp, fs, bounds):
             xs.extend(s.xs[:-1])
             us.extend(s.us)
             for j in range(s.problem.T):
-                accs.append(s.problem.runningDatas[j].differential.xout)
+                try:
+                    accs.append(s.problem.runningDatas[j].differential.xout)
+                except: # if impulse knot
+                    # print('Exception catched: Get acceleration for impulse (list)')
+                    accs.append(s.problem.runningDatas[j].pinocchio.ddq) 
             if bounds:
                 models = s.problem.runningModels + [s.problem.terminalModel]
                 for m in models:
@@ -545,7 +551,12 @@ def mergeDataFromSolvers(ddp, fs, bounds):
         rmodel = ddp.problem.runningModels[0].state.pinocchio
         xs, us = ddp.xs, ddp.us
         for j in range(ddp.problem.T):
-                accs.extend(s.problem.runningDatas[j].differential.xout)
+                try:
+                    accs.extend(s.problem.runningDatas[j].differential.xout)
+                except: # if impulse knot
+                    # print('Exception catched: Get acceleration for impulse (noList)')
+                    accs.extend(s.problem.runningDatas[j].pinocchio.ddq)
+
         if bounds:
             models = s.problem.runningModels + [s.problem.terminalModel]
             for m in models:
@@ -598,14 +609,22 @@ def getCartesianForcesLocalCS(ddp):
                 model = models[i]
                 force_k = []
                 # 1) Compute cartesian forces expressed in world frame
-                for key, contact in data.differential.multibody.contacts.contacts.items():  # Iterate all available contacts (2 for DS)
-                    if model.differential.contacts.contacts[key].active:
-                        # Old Approach from getForceTrajectoryFromSolver()
-                        force = contact.jMf.actInv(contact.f)
-                        # New Approach: Transform contact forces (in local contact frame) to cartesian forces (in world frame)
-                        # fiMo = pinocchio.SE3(contact.pinocchio.oMi[contact.joint].rotation.T, contact.jMf.translation)
-                        # force = fiMo.actInv(contact.f)
-                        force_k.append({"key": str(contact.joint), "f": force})
+                try: 
+                    Items = data.differential.multibody.contacts.contacts.items()
+                except: 
+                    # print('Exception catched')
+                    Items = data.multibody.impulses.impulses.items()
+                try: 
+                    for key, contact in Items:  # Iterate all available contacts (2 for DS)
+                        if model.differential.contacts.contacts[key].active:
+                            force = contact.jMf.actInv(contact.f)
+                            force_k.append({"key": str(contact.joint), "f": force})
+                except: 
+                    # print('Exception catched')
+                    for key, impulse in Items:  # Iterate all available contacts (2 for DS)
+                        if model.impulses.impulses[key].active:
+                            force = impulse.jMf.actInv(impulse.f)
+                            force_k.append({"key": str(impulse.joint), "f": force})
                 forces.append(force_k)
     else: 
         models = ddp.problem.runningModels

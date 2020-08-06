@@ -183,8 +183,6 @@ class SimpleBipedGaitProblem:
         comRef[2] = self.comRefY
         
         balancingModels = []
-        # (Double Support)
-        # doubleSupport = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId]) for k in range(supportKnots)]
         # Shift CoM over LF
         shiftingToLF = []
         print('shiftKnots: ' + str(shiftKnots))
@@ -212,13 +210,16 @@ class SimpleBipedGaitProblem:
         # Impact RF
         swingFootTask = [crocoddyl.FramePlacement(self.rfId, pinocchio.SE3(np.eye(3), rfPos0))]
         impact = [self.createFootSwitchModel([self.rfId, self.lfId], swingFootTask, pseudoImpulse=True)]
+        # impact = [self.createFootSwitchModel([self.rfId, self.lfId], swingFootTask, pseudoImpulse=False)]
         # Shift CoM back to center
         shiftingToCenter = []
         for k in range(shiftKnots):
             comTask = np.matrix([0, np.asscalar(comYDiff) * (1 - (k / shiftKnots)), 0.]).T + comRef
             shiftingToCenter += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comTask)]
-
-        balancingModels += shiftingToLF + balancing + impact + shiftingToCenter
+        # Recover to initial pose
+        stabilization = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], poseRecovery=True) for k in range(60)]
+        
+        balancingModels += shiftingToLF + balancing + impact + shiftingToCenter + stabilization
         
         problem = crocoddyl.ShootingProblem(x0, balancingModels, balancingModels[-1])
         return problem
@@ -284,13 +285,14 @@ class SimpleBipedGaitProblem:
                 # print(tref)
                 swingFootTask += [crocoddyl.FramePlacement(i, pinocchio.SE3(np.eye(3), tref))]
             # comTask = np.matrix([stepLength * (k + 1) / numKnots, 0., 0.]).T * comPercentage + comPos0
-            comTask = comPos0 #TaskSpecific:StaticWalking
+            comTask = comPos0
             footSwingModel += [
                 self.createSwingFootModel(timeStep, supportFootIds, comTask=comTask, swingFootTask=swingFootTask)
             ]
 
         # Action model for the foot switch
-        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=True) #TODO: Temporaily use PseudoImpulse because impulseModel does not contain acceleration information
+        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=True)
+        # footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=False)
 
         # Updating the current foot position for next step
         for p in feetPos0:
