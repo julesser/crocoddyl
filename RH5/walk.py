@@ -83,11 +83,12 @@ print('reduced model: dim=' + str(len(rh5_robot.model.joints)))
 setLimits(rmodel)
 
 # Setting up the 3d walking problem
-timeStep = 0.03
-stepKnots = 90
-supportKnots = 30
-# stepKnots = 90
-# supportKnots = 90
+# timeStep = 0.03
+timeStep = 0.01
+# stepKnots = 45
+# supportKnots = 15
+stepKnots = 90 #TaskSpecific:StaticWalking
+supportKnots = 90
 impulseKnots = 1
 stepLength = 0.2
 knots = [stepKnots, supportKnots, impulseKnots]
@@ -100,8 +101,8 @@ gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot)
 x0 = gait.rmodel.defaultState
 
 # Set camera perspective
-# cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
-cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55] # front 
+cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
+# cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55] # front 
 # cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side 
 display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
 # display.display(xs=[x0])
@@ -110,16 +111,16 @@ display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rig
 
 # simName = 'results/Test/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
-# simName = 'results/HumanoidFixedArms/Balancing_8s_5cm/'
-simName = 'results/HumanoidFixedArms/2Steps_10cm_CoP50_slow/'
-# simName = 'results/HumanoidFixedArms/Test/'
+# simName = 'results/HumanoidFixedArms/Balancing_16s_5cm/'
+# simName = 'results/HumanoidFixedArms/2Steps_10cm_StaticWalking_6sSteps_CoP50/'
+simName = 'results/HumanoidFixedArms/Test/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform 2 Steps
-GAITPHASES = \
-    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
-                  'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+# GAITPHASES = \
+#     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
+#                   'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 # GAITPHASES = \
 #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
 #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
@@ -138,7 +139,10 @@ GAITPHASES = \
 #      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
 #      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
 # GAITPHASES = \
-#     [{'balancing': {'supportKnots': 10, 'shiftKnots': 60, 'balanceKnots': 120, 'timeStep': timeStep}}]
+#     [{'balancing': {'supportKnots': 10, 'shiftKnots': 120, 'balanceKnots': 240, 'timeStep': timeStep}}]
+GAITPHASES = \
+    [{'jumping': {'jumpHeight': 0.15, 'jumpLength': [0.5, 0, 0], 
+                  'timeStep': timeStep, 'groundKnots': 30, 'flyingKnots': 15}}] # jumpLength is direction vector
     
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
@@ -162,6 +166,11 @@ for i, phase in enumerate(GAITPHASES):
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createBalancingProblem(x0, value['supportKnots'], value['shiftKnots'], value['balanceKnots'], 
                                             value['timeStep']))
+        if key == 'jumping':
+            # Creating a walking problem
+            ddp[i] = crocoddyl.SolverBoxFDDP(
+                gait.createJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
+                                          value['groundKnots'], value['flyingKnots']))
         ddp[i].th_stop = 1e-7                                      
 
     # Add the callback functions

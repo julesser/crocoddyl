@@ -209,8 +209,8 @@ class SimpleBipedGaitProblem:
             balancing += [self.createSwingFootModel(timeStep, [self.lfId], comTask=lfPos0, swingFootTask=swingFootTask)]
         # Impact RF
         swingFootTask = [crocoddyl.FramePlacement(self.rfId, pinocchio.SE3(np.eye(3), rfPos0))]
-        impact = [self.createFootSwitchModel([self.rfId, self.lfId], swingFootTask, pseudoImpulse=True)]
-        # impact = [self.createFootSwitchModel([self.rfId, self.lfId], swingFootTask, pseudoImpulse=False)]
+        # impact = [self.createFootSwitchModel([self.rfId, self.lfId], swingFootTask, pseudoImpulse=True)]
+        impact = [self.createFootSwitchModel([self.rfId, self.lfId], swingFootTask, pseudoImpulse=False)]
         # Shift CoM back to center
         shiftingToCenter = []
         for k in range(shiftKnots):
@@ -222,6 +222,59 @@ class SimpleBipedGaitProblem:
         balancingModels += shiftingToLF + balancing + impact + shiftingToCenter + stabilization
         
         problem = crocoddyl.ShootingProblem(x0, balancingModels, balancingModels[-1])
+        return problem
+
+    def createJumpingProblem(self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots, final=False):
+        # Compute the current foot positions
+        q0 = x0[:self.state.nq]
+        pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
+        pinocchio.updateFramePlacements(self.rmodel, self.rdata)
+        rfPos0 = self.rdata.oMf[self.rfId].translation
+        lfPos0 = self.rdata.oMf[self.lfId].translation
+        rfPos0[2], lfPos0[2] = self.heightRef, self.heightRef # Set global target height of feet to initial height from q0
+        comRef = (rfPos0 + lfPos0) / 2
+        comRef[2] = self.comRefY
+        # print('comRef: ' + str(comRef))
+        # print('lfPos0: ' + str(lfPos0))
+        # print('rfPos0: ' + str(rfPos0))
+        f0 = np.matrix(jumpLength).T
+
+        jumpingModels = []
+        # Gain momentum
+        takeOff = [self.createSwingFootModel(timeStep,[self.lfId, self.rfId],) for k in range(groundKnots)]
+        # Fly up
+        flyingUpPhase = []
+        for k in range(flyingKnots):
+            comTask = np.matrix([jumpLength[0], jumpLength[1], jumpLength[2] + jumpHeight]).T * (k + 1) / flyingKnots + comRef
+            # lfPosK = np.matrix([0.5*jumpLength[0], 0.5*jumpLength[1], 0.5*jumpLength[2] + jumpHeight]).T * (k + 1) / flyingKnots + lfPos0
+            # rfPosK = np.matrix([0.5*jumpLength[0], 0.5*jumpLength[1], 0.5*jumpLength[2] + jumpHeight]).T * (k + 1) / flyingKnots + rfPos0
+            # lfTrack = crocoddyl.FramePlacement(self.lfId, pinocchio.SE3(np.eye(3), lfPosK))
+            # rfTrack = crocoddyl.FramePlacement(self.lfId, pinocchio.SE3(np.eye(3), rfPosK))
+            flyingUpPhase += [self.createSwingFootModel(timeStep, [], comTask=comTask)]
+            #TODO: Investigate Jumping based on Foot Trajectory + Stability Criteria (no CoMTask)
+            # flyingUpPhase += [self.createSwingFootModel(timeStep, [], swingFootTask=[lfTrack, rfTrack])] 
+        # Fly down
+        lfGoal = crocoddyl.FramePlacement(self.lfId, pinocchio.SE3(np.eye(3), lfPos0 + f0))
+        rfGoal = crocoddyl.FramePlacement(self.rfId, pinocchio.SE3(np.eye(3), rfPos0 + f0))
+        # print('lfGoal: ' + str(lfGoal))
+        # print('rfGoal: ' + str(rfGoal))
+        flyingDownPhase = []
+        for k in range(flyingKnots): 
+            flyingDownPhase += [self.createSwingFootModel(timeStep, [])]
+        # Impact
+        impact = [self.createFootSwitchModel([self.lfId, self.rfId], [lfGoal, rfGoal], False)]
+        # DS
+        landed = [
+            self.createSwingFootModel(timeStep, [self.lfId, self.rfId], swingFootTask=[lfGoal, rfGoal])
+            for k in range(groundKnots)
+        ]
+        # Recover to initial pose
+        stabilization = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comRef+f0, poseRecovery=True) for k in range(50)]
+        
+        jumpingModels += takeOff + flyingUpPhase + flyingDownPhase 
+        jumpingModels += impact + landed + stabilization
+
+        problem = crocoddyl.ShootingProblem(x0, jumpingModels, jumpingModels[-1])
         return problem
 
     def createCoMShiftModels(self, shiftKnots, comRef, comTarget, timeStep):
@@ -291,8 +344,8 @@ class SimpleBipedGaitProblem:
             ]
 
         # Action model for the foot switch
-        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=True)
-        # footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=False)
+        # footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=True)
+        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=False)
 
         # Updating the current foot position for next step
         for p in feetPos0:
@@ -318,9 +371,10 @@ class SimpleBipedGaitProblem:
 
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, self.actuation.nu)
-        # if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting
-        #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
-        #     costModel.addCost("comTrack", comTrack, 1e6)
+        if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting&Jumping
+            comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
+            # costModel.addCost("comTrack", comTrack, 1e6)
+            costModel.addCost("comTrack", comTrack, 1e7) #TaskSpecific:Jumping
         # if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
         #     com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
         #     com2DTrack = crocoddyl.CostModelCoMPosition(self.state, 
@@ -338,7 +392,7 @@ class SimpleBipedGaitProblem:
                 # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
                 crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
                 # crocoddyl.FrameCoPSupport(i, np.array([0.05, 0.02])), self.actuation.nu)
-            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
@@ -357,7 +411,8 @@ class SimpleBipedGaitProblem:
             stateRecovery = crocoddyl.CostModelState(self.state,
                                                     crocoddyl.ActivationModelWeightedQuad(np.matrix(poseWeights**2).T),
                                                     self.rmodel.defaultState, self.actuation.nu)
-            costModel.addCost("stateRecovery", stateRecovery, 1e3)
+            # costModel.addCost("stateRecovery", stateRecovery, 1e3)
+            costModel.addCost("stateRecovery", stateRecovery, 1e4) # TaskSpecific:Jumping
         # stateWeights = np.array([0] * 3 + [500.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateWeights = np.array([0] * 3 + [10.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateReg = crocoddyl.CostModelState(self.state,
@@ -417,7 +472,7 @@ class SimpleBipedGaitProblem:
                 # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
                 crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
                 # crocoddyl.FrameCoPSupport(i, np.array([0.05, 0.02])), self.actuation.nu)
-            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
@@ -457,12 +512,13 @@ class SimpleBipedGaitProblem:
             impulseModel.addImpulse(self.rmodel.frames[i].name + "_impulse", supportContactModel)
 
         # Creating the cost model for a contact phase
-        costModel = crocoddyl.CostModelSum(self.state, 0)
+        costModel = crocoddyl.CostModelSum(self.state, 0) # TODO: Add CoP cost here and test effect 
         if swingFootTask is not None:
             for i in swingFootTask:
                 xref = crocoddyl.FrameTranslation(i.frame, i.oMf.translation)
                 footTrack = crocoddyl.CostModelFrameTranslation(self.state, xref, 0)
-                costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e8)
+                # costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e8)
+                costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e5)
         stateWeights = np.array([1.] * 6 + [0.1] * (self.rmodel.nv - 6) + [10] * self.rmodel.nv)
         stateReg = crocoddyl.CostModelState(self.state,
                                             crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
