@@ -56,8 +56,8 @@ class CostModelImpulseFrictionConeTpl : public CostModelAbstractTpl<_Scalar> {
                         const Eigen::Ref<const VectorXs>& u);
   virtual boost::shared_ptr<CostDataAbstract> createData(DataCollectorAbstract* const data);
 
-  DEPRECATED("Use set_reference<FrameFrictionConeTpl<Scalar> >()", void set_fref(const FrameFrictionCone& fref);)
-  DEPRECATED("Use get_reference<FrameFrictionConeTpl<Scalar> >()", const FrameFrictionCone& get_fref() const;)
+  DEPRECATED("Use set_reference<FrameFrictionConeTpl<Scalar> >()", void set_fref(const FrameFrictionCone& fref));
+  DEPRECATED("Use get_reference<FrameFrictionConeTpl<Scalar> >()", const FrameFrictionCone& get_fref() const);
 
  protected:
   virtual void set_referenceImpl(const std::type_info& ti, const void* pv);
@@ -96,11 +96,11 @@ struct CostDataImpulseFrictionConeTpl : public CostDataAbstractTpl<_Scalar> {
 
     // Avoids data casting at runtime
     FrameFrictionCone fref = model->template get_reference<FrameFrictionCone>();
-    std::string frame_name = model->get_state()->get_pinocchio()->frames[fref.frame].name;
+    std::string frame_name = model->get_state()->get_pinocchio()->frames[fref.id].name;
     bool found_impulse = false;
     for (typename ImpulseModelMultiple::ImpulseDataContainer::iterator it = d->impulses->impulses.begin();
          it != d->impulses->impulses.end(); ++it) {
-      if (it->second->frame == fref.frame) {
+      if (it->second->frame == fref.id) {
         ImpulseData3DTpl<Scalar>* d3d = dynamic_cast<ImpulseData3DTpl<Scalar>*>(it->second.get());
         if (d3d != NULL) {
           found_impulse = true;
