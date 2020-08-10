@@ -21,8 +21,6 @@
 
 namespace crocoddyl {
 
-enum ImpulseType { Impulse3D, Impulse6D, Undefined };
-
 /**
  * @brief Define a contact impulse cost function
  *
@@ -135,8 +133,8 @@ class CostModelContactImpulseTpl : public CostModelAbstractTpl<_Scalar> {
    */
   virtual boost::shared_ptr<CostDataAbstract> createData(DataCollectorAbstract* const data);
 
-  DEPRECATED("Used set_reference<FrameForceTpl<Scalar> >()", void set_fref(const FrameForce& fref);)
-  DEPRECATED("Used get_reference<FrameForceTpl<Scalar> >()", const FrameForce& get_fref() const;)
+  DEPRECATED("Used set_reference<FrameForceTpl<Scalar> >()", void set_fref(const FrameForce& fref));
+  DEPRECATED("Used get_reference<FrameForceTpl<Scalar> >()", const FrameForce& get_fref() const);
 
  protected:
   /**
@@ -177,7 +175,7 @@ struct CostDataContactImpulseTpl : public CostDataAbstractTpl<_Scalar> {
 
   template <template <typename Scalar> class Model>
   CostDataContactImpulseTpl(Model<Scalar>* const model, DataCollectorAbstract* const data) : Base(model, data) {
-    impulse_type = Undefined;
+    impulse_type = ImpulseUndefined;
 
     // Check that proper shared data has been passed
     DataCollectorImpulseTpl<Scalar>* d = dynamic_cast<DataCollectorImpulseTpl<Scalar>*>(shared);
@@ -187,11 +185,11 @@ struct CostDataContactImpulseTpl : public CostDataAbstractTpl<_Scalar> {
 
     // Avoids data casting at runtime
     FrameForce fref = model->template get_reference<FrameForce>();
-    std::string frame_name = model->get_state()->get_pinocchio()->frames[fref.frame].name;
+    std::string frame_name = model->get_state()->get_pinocchio()->frames[fref.id].name;
     bool found_impulse = false;
     for (typename ImpulseModelMultiple::ImpulseDataContainer::iterator it = d->impulses->impulses.begin();
          it != d->impulses->impulses.end(); ++it) {
-      if (it->second->frame == fref.frame) {
+      if (it->second->frame == fref.id) {
         ImpulseData3DTpl<Scalar>* d3d = dynamic_cast<ImpulseData3DTpl<Scalar>*>(it->second.get());
         if (d3d != NULL) {
           impulse_type = Impulse3D;
