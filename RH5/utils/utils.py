@@ -609,8 +609,9 @@ def getCartesianForcesLocalCS(ddp):
             for i, data in enumerate(datas):
                 model = models[i]
                 force_k = []
+                print(i)
                 # 1) Compute cartesian forces expressed in world frame
-                try: 
+                try: # TODO: Fix error: Update structure to new croccoddyl version
                     Items = data.differential.multibody.contacts.contacts.items()
                 except: 
                     # print('Exception catched')

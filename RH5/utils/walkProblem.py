@@ -584,10 +584,18 @@ class SimpleBipedGaitProblem:
                 xref = crocoddyl.FrameTranslation(i.frame, i.oMf.translation)
                 footTrack = crocoddyl.CostModelFrameTranslation(self.state, xref, 0)
                 costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e8)
-                # Add ImpulseCoPCost
-                CoP = crocoddyl.CostModelImpulseCoPPosition(self.state, 
-                crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
-                costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e3) # TaskSpecific:Walking(Dynamic)
+        for i in supportFootIds:
+            # Impulse center of pressure cost
+            CoP = crocoddyl.CostModelImpulseCoPPosition(self.state, 
+            crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            # Impulse friction cone cost
+            cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
+            frictionCone = crocoddyl.CostModelImpulseFrictionCone(
+                self.state, crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(cone.lb, cone.ub)),
+                crocoddyl.FrameFrictionCone(i, cone))
+            costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
+    
         stateWeights = np.array([1.] * 6 + [0.1] * (self.rmodel.nv - 6) + [10] * self.rmodel.nv)
         stateReg = crocoddyl.CostModelState(self.state,
                                             crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
