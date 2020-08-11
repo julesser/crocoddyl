@@ -111,9 +111,8 @@ display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rig
 
 # simName = 'results/Test/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
-# simName = 'results/HumanoidFixedArms/Balancing_16s_5cm/'
-# simName = 'results/HumanoidFixedArms/2Steps_10cm_StaticWalking_6sSteps_CoP50/'
-simName = 'results/HumanoidFixedArms/Test/'
+simName = 'results/HumanoidFixedArms/Jump_FootForward_50cm_CoP100/'
+# simName = 'results/HumanoidFixedArms/Test/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
@@ -142,7 +141,7 @@ if not os.path.exists(simName):
 #     [{'balancing': {'supportKnots': 10, 'shiftKnots': 120, 'balanceKnots': 240, 'timeStep': timeStep}}]
 GAITPHASES = \
     [{'jumping': {'jumpHeight': 0.15, 'jumpLength': [0.5, 0, 0], 
-                  'timeStep': timeStep, 'groundKnots': 30, 'flyingKnots': 15}}] # jumpLength is direction vector
+                  'timeStep': timeStep, 'groundKnots': 50, 'flyingKnots': 15}}] # jumpLength is direction vector
     
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
@@ -169,7 +168,7 @@ for i, phase in enumerate(GAITPHASES):
         if key == 'jumping':
             # Creating a walking problem
             ddp[i] = crocoddyl.SolverBoxFDDP(
-                gait.createJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
+                gait.createFootTrajJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
                                           value['groundKnots'], value['flyingKnots']))
         ddp[i].th_stop = 1e-7                                      
 
@@ -187,7 +186,7 @@ for i, phase in enumerate(GAITPHASES):
         m.quasiStatic(d, rmodel.defaultState)
         for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
     ]
-    print(ddp[i].solve(xs, us, 200, False, 0.1))
+    print(ddp[i].solve(xs, us, 500, False, 0.1))
     
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
