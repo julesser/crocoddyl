@@ -111,15 +111,15 @@ display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rig
 
 # simName = 'results/Test/' # Used when just testing
 # simName = 'results/2Steps_10cmStride/'
-simName = 'results/HumanoidFixedArms/Jump_FootForward_50cm_CoP100/'
-# simName = 'results/HumanoidFixedArms/Test/'
+# simName = 'results/HumanoidFixedArms/Jump_FootForward_50cm_CoP100/'
+simName = 'results/HumanoidFixedArms/Test/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform 2 Steps
-# GAITPHASES = \
-#     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
-#                   'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+GAITPHASES = \
+    [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
+                  'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
 # GAITPHASES = \
 #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
 #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
@@ -139,9 +139,9 @@ if not os.path.exists(simName):
 #      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
 # GAITPHASES = \
 #     [{'balancing': {'supportKnots': 10, 'shiftKnots': 120, 'balanceKnots': 240, 'timeStep': timeStep}}]
-GAITPHASES = \
-    [{'jumping': {'jumpHeight': 0.15, 'jumpLength': [0.5, 0, 0], 
-                  'timeStep': timeStep, 'groundKnots': 50, 'flyingKnots': 15}}] # jumpLength is direction vector
+# GAITPHASES = \
+#     [{'jumping': {'jumpHeight': 0.15, 'jumpLength': [0.5, 0, 0], 
+#                   'timeStep': timeStep, 'groundKnots': 50, 'flyingKnots': 15}}] # jumpLength is direction vector
     
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
