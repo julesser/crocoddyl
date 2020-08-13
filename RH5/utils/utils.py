@@ -143,6 +143,9 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     knots = list(range(0,len(Cz)))
 
     # Analyse CoP cost
+    print('....................')
+    print('Constraints Analysis')
+    print('....................')
     copCost, frictionConeCost = 0, 0
     com2DTrackCost, footTrackCost = 0, 0 
     jointLimCost, stateRecoveryCost, stateRegCost, ctrlRegCost = 0, 0, 0, 0
@@ -150,7 +153,7 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
         for s in ddp:
             for j in range(s.problem.T):
                 try: 
-                    for costName in s.problem.runningModels[j].differential.costs.costs:
+                    for costName in s.problem.runningModels[j].differential.costs.costs.todict():
                         costTerm = s.problem.runningDatas[j].differential.costs.costs[costName]
                         if costName == "FR_SupportCenter_CoP" or costName == "FL_SupportCenter_CoP":
                             copCost += costTerm.cost
@@ -180,7 +183,7 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
                             ctrlRegCost += costTerm.cost
                         elif costName == "stateRecovery":
                             stateRecoveryCost += costTerm.cost
-                except: # Don't consider costs during impulse knot TODO: Find way to access these
+                except: # Don't consider costs during impulse knot TODO: Find appropriate way to access these
                     pass
         print("total copCost: " + str(copCost))
         print("total frictionConeCost: " + str(frictionConeCost))
@@ -219,10 +222,10 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
     # relTimePoints = [0,(2*total_knots)+num_knots[1]-1] # TaskSpecific:Walking 2 steps (stabilization)
-    # relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
+    relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
-    relTimePoints = [0, 100] # TaskSpecific:Jumping
+    # relTimePoints = [0, 100] # TaskSpecific:Jumping
     # relTimePoints = [0] # TaskSpecific:Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
@@ -243,22 +246,22 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     # (2) Variant with just one plot
     # plt.subplot(1,2,1)
     plt.plot(Cx[1:-1], Cy[1:-1], label='CoM')
-    # plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
-    # plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
-    # plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
-    # plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
-    # plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
-    # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
+    plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
+    plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
+    plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
+    plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
+    plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
+    plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFStart')]
     [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFEnd')]
     [plt.plot(CoPLFx, CoPLFy, marker='x', linestyle='', label='LFCoP')]
     [plt.plot(CoPRFx, CoPRFy, marker='x', linestyle='', label='RFCoP')]
     plt.legend()
     plt.axis('scaled')
-    # plt.xlim(0, 0.5)
-    # plt.ylim(-0.2, 0.2)
-    plt.xlim(-0.05, 0.9) # TaskSpecific: LongGait or large steps
-    plt.ylim(-0.3, 0.3)
+    plt.xlim(0, 0.5)
+    plt.ylim(-0.2, 0.2)
+    # plt.xlim(-0.05, 0.9) # TaskSpecific: LongGait or large steps
+    # plt.ylim(-0.3, 0.3)
     plt.xlabel('X [m]')
     plt.ylabel('Y [m]')
     currentAxis = plt.gca()
@@ -542,7 +545,7 @@ def mergeDataFromSolvers(ddp, fs, bounds):
                     # print('Exception catched: Get acceleration for impulse (list)')
                     accs.append(s.problem.runningDatas[j].pinocchio.ddq) 
             if bounds:
-                models = s.problem.runningModels + [s.problem.terminalModel]
+                models = s.problem.runningModels.tolist() + [s.problem.terminalModel]
                 for m in models:
                     us_lb += [m.u_lb]
                     us_ub += [m.u_ub]
@@ -559,7 +562,7 @@ def mergeDataFromSolvers(ddp, fs, bounds):
                     accs.extend(s.problem.runningDatas[j].pinocchio.ddq)
 
         if bounds:
-            models = s.problem.runningModels + [s.problem.terminalModel]
+            models = s.problem.runningModels.tolist() + [s.problem.terminalModel]
             for m in models:
                 us_lb += [m.u_lb]
                 us_ub += [m.u_ub]
@@ -603,19 +606,18 @@ def getCartesianForcesLocalCS(ddp):
     forces = []
     if isinstance(ddp, list):
         for s in ddp:
-            models = s.problem.runningModels
-            datas = s.problem.runningDatas
+            models = s.problem.runningModels.tolist()
+            datas = s.problem.runningDatas.tolist()
             # m_externalForces = m_robotData->liMi[1].act(m_robotData->f[1]);
             for i, data in enumerate(datas):
                 model = models[i]
                 force_k = []
-                print(i)
                 # 1) Compute cartesian forces expressed in world frame
                 try: # TODO: Fix error: Update structure to new croccoddyl version
-                    Items = data.differential.multibody.contacts.contacts.items()
+                    Items = data.differential.multibody.contacts.contacts.todict().items()
                 except: 
                     # print('Exception catched')
-                    Items = data.multibody.impulses.impulses.items()
+                    Items = data.multibody.impulses.impulses.todict().items()
                 try: 
                     for key, contact in Items:  # Iterate all available contacts (2 for DS)
                         if model.differential.contacts.contacts[key].active:
@@ -629,12 +631,12 @@ def getCartesianForcesLocalCS(ddp):
                             force_k.append({"key": str(impulse.joint), "f": force})
                 forces.append(force_k)
     else: 
-        models = ddp.problem.runningModels
-        datas = ddp.problem.runningDatas
+        models = ddp.problem.runningModels.tolist()
+        datas = ddp.problem.runningDatas.tolist()
         for i, data in enumerate(datas):
             model = models[i]
             force_k = []
-            for key, contact in data.differential.multibody.contacts.contacts.items():
+            for key, contact in data.differential.multibody.contacts.contacts.todict().items():
                 if model.differential.contacts.contacts[key].active:
                     force = contact.jMf.actInv(contact.f)
                     force_k.append({"key": str(contact.joint), "f": force})
