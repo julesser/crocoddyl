@@ -91,7 +91,7 @@ stepKnots = 90 #TaskSpecific:StaticWalking
 supportKnots = 90
 impulseKnots = 1
 stepLength = 0.2
-knots = [stepKnots, supportKnots, impulseKnots]
+knots = [stepKnots, supportKnots]
 stepHeight = 0.05
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
@@ -192,8 +192,7 @@ for i, phase in enumerate(GAITPHASES):
     x0 = ddp[i].xs[-1]
     # print(x0[:rmodel.nq]) # print last state of long gait as reference for two steps experiments
 
-
-# Calc resulting CoM velocity (average) # TODO: Put in utils
+# Calc resulting CoM velocity (average)
 logFirst = ddp[0].getCallbacks()[0]
 logLast = ddp[-1].getCallbacks()[0]
 first_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logFirst.xs[1][:rmodel.nq]) # calc CoM for init pose
@@ -209,33 +208,12 @@ print('Step Time:    ' + str(stepKnots * timeStep) + ' s')
 print('Step Length:  ' + str(distance / len(GAITPHASES)).strip('[]') + ' m')
 print('CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
 
-# Get contact wrenches f=[f,tau]
-display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
-fsRel = np.zeros((len(GAITPHASES)*(len(ddp[i].problem.runningModels)),12)) # e.g. for 3 gaitphases = [3*nKnots,12]
-for i, phase in enumerate(GAITPHASES):
-    fs = display.getForceTrajectoryFromSolver(ddp[i])
-    fs = fs[:-1] # Last element doubled
-    for j, x in enumerate(fs): # iter over all knots
-        for f in fs[j]: # iter over all contacts (LF, RF)
-            key = f["key"]
-            wrench = f["f"]
-            if key == "10": # left foot
-                for k in range(3):
-                    fsRel[i*len(fs)+j,k] = wrench.linear[k]
-                    fsRel[i*len(fs)+j,k+3] = wrench.angular[k]
-            elif key == "16": # right foot
-                for k in range(3):
-                    fsRel[i*len(fs)+j,k+6] = wrench.linear[k]
-                    fsRel[i*len(fs)+j,k+9] = wrench.angular[k]
-            # print('Foot: ' + str(key), wrench) # Check key-foot mapping
-fs = fsRel
-
 # Export solution to .csv files
 if WITHLOG:
     logPath = simName+'/logs/'
     if not os.path.exists(logPath):
         os.makedirs(logPath)
-    logSolution(ddp, fs, timeStep,logPath)
+    logSolution(ddp, timeStep,logPath)
 
 # Display the entire motion
 if WITHDISPLAY:
@@ -247,7 +225,7 @@ if WITHDISPLAY:
 
 # Plotting the entire motion
 if WITHPLOT:
-    plotSolution(ddp, fs, simName, knots, bounds=False, figIndex=1, show=False)
+    plotSolution(ddp, simName, knots, bounds=False, figIndex=1, show=False)
 
     # for i, phase in enumerate(GAITPHASES):
     #     # title = phase.keys()[0] + " (phase " + str(i) + ")"

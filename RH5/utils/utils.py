@@ -3,17 +3,15 @@ import pinocchio
 import numpy as np
 import csv
 
-# from libcrocoddyl_pywrap import *
-# from libcrocoddyl_pywrap import __version__
 
-def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle="", show=True):
+def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
     from matplotlib.patches import Rectangle
     if bounds: 
-        rmodel, xs, us, accs, X, U, F, A, X_LB, X_UB, U_LB, U_UB = mergeDataFromSolvers(ddp, fs, bounds)
+        rmodel, xs, us, accs, fs, fsArranged, X, U, F, A, X_LB, X_UB, U_LB, U_UB = mergeDataFromSolvers(ddp, bounds)
     else: 
-         rmodel, xs, us, accs, X, U, F, A = mergeDataFromSolvers(ddp, fs, bounds)
-    nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
+         rmodel, xs, us, accs, fs, fsArranged, X, U, F, A = mergeDataFromSolvers(ddp, bounds)
+    nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
     # print('nx: ', nx)
     # print('nq: ', nq)
     # print('na: ', na)
@@ -195,15 +193,12 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
         print("total stateRecoveryCost: " + str(stateRecoveryCost))
         print("..total costs then are multiplied with the assigned weight")
     
-    # Get forces from solver(s)
-    forces = getCartesianForcesLocalCS(ddp)
     # Calc CoP traejctory
-    CoPs = calcCoPs(forces)
+    CoPs = calcCoPs(fs)
     # Transform CoP to image plane (world CS)
     CoPLF = np.zeros((2, len(CoPs)))
     CoPRF = np.zeros((2, len(CoPs)))
     CoPLFx, CoPLFy, CoPRFx, CoPRFy = [], [], [], []
-    print("timepoints: " + str(len(CoPs)))
     for k in range(len(CoPs)): 
         for CoP in CoPs[k]: # Iterate if DS
             if CoP["key"] == "10":  # LF
@@ -221,6 +216,7 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
+    print("timepoints: " + str(total_knots))
     # relTimePoints = [0,(2*total_knots)+num_knots[1]-1] # TaskSpecific:Walking 2 steps (stabilization)
     relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
@@ -380,10 +376,10 @@ def plotSolution(ddp, fs, dirName, num_knots, bounds=True, figIndex=1, figTitle=
     plt.savefig(dirName + 'Base.png', dpi = 300)
 
 
-def logSolution(ddp, fs, timeStep, logPath):
+def logSolution(ddp, timeStep, logPath):
     # Stack together all data contained in multiple solvers
-    rmodel, xs, us, accs, X, U, F, A = mergeDataFromSolvers(ddp, fs, bounds=False)
-    nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
+    rmodel, xs, us, accs, fs, fsArranged, X, U, F, A = mergeDataFromSolvers(ddp, bounds=False)
+    nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
     # Collect time steps
     time = []
     for t in range(len(xs)):
@@ -452,7 +448,7 @@ def logSolution(ddp, fs, timeStep, logPath):
     sol = np.zeros([len(time), 13])
     # Include time column
     for l in range(len(time)):
-        sol[l] = [*[time[l]],*fs[l]] 
+        sol[l] = [*[time[l]],*fsArranged[l]] 
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['t[s]',
@@ -488,8 +484,7 @@ def logSolution(ddp, fs, timeStep, logPath):
         lfPosImg[i] = [np.asscalar(p[i]) for p in lfPosition]
         rfPosImg[i] = [np.asscalar(p[i]) for p in rfPosition]
     # Compute CoP
-    forces = getCartesianForcesLocalCS(ddp)
-    CoPs = calcCoPs(forces)
+    CoPs = calcCoPs(fs)
     # Transform CoP to image plane
     CoPLF = np.zeros((2, len(CoPs)))
     CoPRF = np.zeros((2, len(CoPs)))
@@ -528,49 +523,57 @@ def setLimits(rmodel):
     rmodel.effortLimit = lims
 
 
-def mergeDataFromSolvers(ddp, fs, bounds):
-    xs, us, accs = [], [], []
+def mergeDataFromSolvers(ddp, bounds):
+    xs, us, accs, fs = [], [], [], []
+    print('len(ddp): ' + str(len(ddp)))
+    print('len(ddo[0]): ' + str(len(ddp[0].problem.runningModels)))
+    knots = len(ddp[0].problem.runningModels)
+    fsArranged = np.zeros((len(ddp)*(len(ddp[0].problem.runningModels)),12))
+    impulse_count = 0
     if bounds:
         us_lb, us_ub = [], []
         xs_lb, xs_ub = [], []
     if isinstance(ddp, list):
         rmodel = ddp[0].problem.runningModels[0].state.pinocchio
-        for s in ddp:
-            xs.extend(s.xs[:-1])
-            us.extend(s.us)
-            for j in range(s.problem.T):
-                try:
-                    accs.append(s.problem.runningDatas[j].differential.xout)
-                except: # if impulse knot
-                    # print('Exception catched: Get acceleration for impulse (list)')
-                    accs.append(s.problem.runningDatas[j].pinocchio.ddq) 
-            if bounds:
-                models = s.problem.runningModels.tolist() + [s.problem.terminalModel]
-                for m in models:
-                    us_lb += [m.u_lb]
-                    us_ub += [m.u_ub]
-                    xs_lb += [m.state.lb]
-                    xs_ub += [m.state.ub]
-    else:
-        rmodel = ddp.problem.runningModels[0].state.pinocchio
-        xs, us = ddp.xs, ddp.us
-        for j in range(ddp.problem.T):
-                try:
-                    accs.extend(s.problem.runningDatas[j].differential.xout)
-                except: # if impulse knot
-                    # print('Exception catched: Get acceleration for impulse (noList)')
-                    accs.extend(s.problem.runningDatas[j].pinocchio.ddq)
-
-        if bounds:
-            models = s.problem.runningModels.tolist() + [s.problem.terminalModel]
-            for m in models:
-                us_lb += [m.u_lb]
-                us_ub += [m.u_ub]
-                xs_lb += [m.state.lb]
-                xs_ub += [m.state.ub]
+        print('Collect data from ddp list: ...')
+        for p, s in enumerate(ddp):
+            models = s.problem.runningModels.tolist()
+            datas = s.problem.runningDatas.tolist()
+            print('len(data) ' + str(len(datas)))
+            for i, data in enumerate(datas):
+                model = models[i]
+                force_k = []
+                if hasattr(data, "differential"):
+                    xs.append(s.xs[i]) # state
+                    us.append(s.us[i]) # control
+                    accs.append(data.differential.xout) # acceleration
+                    # Contact forces
+                    for key, contact in data.differential.multibody.contacts.contacts.todict().items():
+                        if model.differential.contacts.contacts[key].active:
+                            force = contact.jMf.actInv(contact.f)
+                            force_k.append({"key": str(contact.joint), "f": force})
+                            # Additionally create the aligned forces
+                            if str(contact.joint) == "10": # left foot
+                                for k in range(3):
+                                    fsArranged[p*knots+i-impulse_count,k] = force.linear[k]
+                                    fsArranged[p*knots+i-impulse_count,k+3] = force.angular[k]
+                            elif str(contact.joint) == "16": # right foot
+                                for k in range(3):
+                                    fsArranged[p*knots+i-impulse_count,k+6] = force.linear[k]
+                                    fsArranged[p*knots+i-impulse_count,k+9] = force.angular[k]
+                    fs.append(force_k)
+                else: # Skip impulse data since dt=0 and hence not relevant for logs or plots
+                    impulse_count += 1
+                if bounds:
+                    us_lb += [model.u_lb]
+                    us_ub += [model.u_ub]
+                    xs_lb += [model.state.lb]
+                    xs_ub += [model.state.ub]
+            print(len(s.xs))
+            print(len(s.us))
 
     # Getting the state, control and wrench trajectories
-    nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fs[0].shape[0], accs[0].shape[0]
+    nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
     X = [0.] * nx
     U = [0.] * nu
     F = [0.] * 12
@@ -583,7 +586,7 @@ def mergeDataFromSolvers(ddp, fs, bounds):
     for i in range(na):
         A[i] = [np.asscalar(a[i]) for a in accs]
     for i in range(nf):
-        F[i] = [np.asscalar(f[i]) for f in fs]
+        F[i] = [np.asscalar(f[i]) for f in fsArranged]
     for i in range(nx):
         X[i] = [np.asscalar(x[i]) for x in xs]
         if bounds:
@@ -596,53 +599,9 @@ def mergeDataFromSolvers(ddp, fs, bounds):
             U_UB[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else np.nan for u in us_ub]
 
     if bounds: 
-        return rmodel, xs, us, accs, X, U, F, A, X_LB, X_UB, U_LB, U_UB
+        return rmodel, xs, us, accs, fs, fsArranged, X, U, F, A, X_LB, X_UB, U_LB, U_UB
     else: 
-        return rmodel, xs, us, accs, X, U, F, A
-
-
-def getCartesianForcesLocalCS(ddp):
-    # Idea: Calc individual CoP for each foot and merge geometrically via Fz weight
-    forces = []
-    if isinstance(ddp, list):
-        for s in ddp:
-            models = s.problem.runningModels.tolist()
-            datas = s.problem.runningDatas.tolist()
-            # m_externalForces = m_robotData->liMi[1].act(m_robotData->f[1]);
-            for i, data in enumerate(datas):
-                model = models[i]
-                force_k = []
-                # 1) Compute cartesian forces expressed in world frame
-                try: # TODO: Fix error: Update structure to new croccoddyl version
-                    Items = data.differential.multibody.contacts.contacts.todict().items()
-                except: 
-                    # print('Exception catched')
-                    Items = data.multibody.impulses.impulses.todict().items()
-                try: 
-                    for key, contact in Items:  # Iterate all available contacts (2 for DS)
-                        if model.differential.contacts.contacts[key].active:
-                            force = contact.jMf.actInv(contact.f)
-                            force_k.append({"key": str(contact.joint), "f": force})
-                except: 
-                    # print('Exception catched')
-                    for key, impulse in Items:  # Iterate all available contacts (2 for DS)
-                        if model.impulses.impulses[key].active:
-                            force = impulse.jMf.actInv(impulse.f)
-                            force_k.append({"key": str(impulse.joint), "f": force})
-                forces.append(force_k)
-    else: 
-        models = ddp.problem.runningModels.tolist()
-        datas = ddp.problem.runningDatas.tolist()
-        for i, data in enumerate(datas):
-            model = models[i]
-            force_k = []
-            for key, contact in data.differential.multibody.contacts.contacts.todict().items():
-                if model.differential.contacts.contacts[key].active:
-                    force = contact.jMf.actInv(contact.f)
-                    force_k.append({"key": str(contact.joint), "f": force})
-            forces.append(force_k)
-
-    return forces
+        return rmodel, xs, us, accs, fs, fsArranged, X, U, F, A
 
 def calcCoPs(forces):
     CoPs = []
