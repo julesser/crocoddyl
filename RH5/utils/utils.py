@@ -525,14 +525,17 @@ def setLimits(rmodel):
 
 def mergeDataFromSolvers(ddp, bounds):
     xs, us, accs, fs = [], [], [], []
-    print('len(ddp): ' + str(len(ddp)))
-    print('len(ddo[0]): ' + str(len(ddp[0].problem.runningModels)))
-    knots = len(ddp[0].problem.runningModels)
-    fsArranged = np.zeros((len(ddp)*(len(ddp[0].problem.runningModels)),12))
+    # Collect number of total knots
+    knots = 0 
+    for s in ddp:
+        knots += len(s.problem.runningModels)
+    print(knots)
+    fsArranged = np.zeros((knots,12))
     impulse_count = 0
     if bounds:
         us_lb, us_ub = [], []
         xs_lb, xs_ub = [], []
+    # Collect xs, us, accs, fs from solvers
     if isinstance(ddp, list):
         rmodel = ddp[0].problem.runningModels[0].state.pinocchio
         print('Collect data from ddp list: ...')
@@ -553,14 +556,16 @@ def mergeDataFromSolvers(ddp, bounds):
                             force = contact.jMf.actInv(contact.f)
                             force_k.append({"key": str(contact.joint), "f": force})
                             # Additionally create the aligned forces
+                            k = p*len(ddp[0].problem.runningDatas)+i-impulse_count #Assumes only the last OC problem varies in number of knots (e.g. due to an additional stabilization)
+                            print(k)
                             if str(contact.joint) == "10": # left foot
-                                for k in range(3):
-                                    fsArranged[p*knots+i-impulse_count,k] = force.linear[k]
-                                    fsArranged[p*knots+i-impulse_count,k+3] = force.angular[k]
+                                for c in range(3):
+                                    fsArranged[k,c] = force.linear[c]
+                                    fsArranged[k,c+3] = force.angular[c]
                             elif str(contact.joint) == "16": # right foot
-                                for k in range(3):
-                                    fsArranged[p*knots+i-impulse_count,k+6] = force.linear[k]
-                                    fsArranged[p*knots+i-impulse_count,k+9] = force.angular[k]
+                                for c in range(3):
+                                    fsArranged[k,c+6] = force.linear[c]
+                                    fsArranged[k,c+9] = force.angular[c]
                     fs.append(force_k)
                 else: # Skip impulse data since dt=0 and hence not relevant for logs or plots
                     impulse_count += 1
@@ -569,8 +574,7 @@ def mergeDataFromSolvers(ddp, bounds):
                     us_ub += [model.u_ub]
                     xs_lb += [model.state.lb]
                     xs_ub += [model.state.ub]
-            print(len(s.xs))
-            print(len(s.us))
+    fsArranged = fsArranged[:-impulse_count]
 
     # Getting the state, control and wrench trajectories
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
