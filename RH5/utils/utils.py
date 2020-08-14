@@ -12,6 +12,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     else: 
          rmodel, xs, us, accs, fs, fsArranged, X, U, F, A = mergeDataFromSolvers(ddp, bounds)
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
+    print('Plotting the results..')
     # print('nx: ', nx)
     # print('nq: ', nq)
     # print('na: ', na)
@@ -216,7 +217,6 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
-    print("timepoints: " + str(total_knots))
     # relTimePoints = [0,(2*total_knots)+num_knots[1]-1] # TaskSpecific:Walking 2 steps (stabilization)
     relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
@@ -380,6 +380,7 @@ def logSolution(ddp, timeStep, logPath):
     # Stack together all data contained in multiple solvers
     rmodel, xs, us, accs, fs, fsArranged, X, U, F, A = mergeDataFromSolvers(ddp, bounds=False)
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
+    print('Logging the results..')
     # Collect time steps
     time = []
     for t in range(len(xs)):
@@ -522,6 +523,22 @@ def setLimits(rmodel):
     # lims[11] = 70
     rmodel.effortLimit = lims
 
+def calcAverageCoMVelocity(ddp, rmodel, GAITPHASES, knots, timeStep):
+    logFirst = ddp[0].getCallbacks()[0]
+    logLast = ddp[-1].getCallbacks()[0]
+    first_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logFirst.xs[1][:rmodel.nq]) # calc CoM for init pose
+    final_com = pinocchio.centerOfMass(rmodel, rmodel.createData(), logLast.xs[-1][:rmodel.nq]) # calc CoM for final pose
+    n_knots = 2*len(GAITPHASES)*(sum(knots)) # Don't consider impulse knots (dt=0)
+    t_total = n_knots * timeStep # total time = f(knots, timeStep)
+    distance = final_com[0] - first_com[0]
+    v_com = distance / t_total
+    print('..................')
+    print('Simulation Results')
+    print('..................')
+    print('Step Time:    ' + str(knots[0] * timeStep) + ' s')
+    print('Step Length:  ' + str(distance / len(GAITPHASES)).strip('[]') + ' m')
+    print('CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
+
 
 def mergeDataFromSolvers(ddp, bounds):
     xs, us, accs, fs = [], [], [], []
@@ -529,7 +546,6 @@ def mergeDataFromSolvers(ddp, bounds):
     knots = 0 
     for s in ddp:
         knots += len(s.problem.runningModels)
-    print(knots)
     fsArranged = np.zeros((knots,12))
     impulse_count = 0
     if bounds:
@@ -538,11 +554,9 @@ def mergeDataFromSolvers(ddp, bounds):
     # Collect xs, us, accs, fs from solvers
     if isinstance(ddp, list):
         rmodel = ddp[0].problem.runningModels[0].state.pinocchio
-        print('Collect data from ddp list: ...')
         for p, s in enumerate(ddp):
             models = s.problem.runningModels.tolist()
             datas = s.problem.runningDatas.tolist()
-            print('len(data) ' + str(len(datas)))
             for i, data in enumerate(datas):
                 model = models[i]
                 force_k = []
@@ -557,7 +571,6 @@ def mergeDataFromSolvers(ddp, bounds):
                             force_k.append({"key": str(contact.joint), "f": force})
                             # Additionally create the aligned forces
                             k = p*len(ddp[0].problem.runningDatas)+i-impulse_count #Assumes only the last OC problem varies in number of knots (e.g. due to an additional stabilization)
-                            print(k)
                             if str(contact.joint) == "10": # left foot
                                 for c in range(3):
                                     fsArranged[k,c] = force.linear[c]

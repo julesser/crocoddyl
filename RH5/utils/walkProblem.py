@@ -16,32 +16,32 @@ class SimpleBipedGaitProblem:
         self.rfId = self.rmodel.getFrameId(rightFoot)
         self.lfId = self.rmodel.getFrameId(leftFoot)
         # Defining default state
-        """ q0 = np.matrix([0,0,0.9163,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
+        """ q0 = np.array([0,0,0.9163,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
                         0,0,0,
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
-                        0,0,-0.1,0.2,0,-0.1]).T  #q14-19: Right Leg """
-        q0 = np.matrix([0,0,0.8793,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+                        0,0,-0.1,0.2,0,-0.1])  #q14-19: Right Leg """
+        q0 = np.array([0,0,0.8793,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
                         0.2,0,0,                    # Torso
                         0,0,-0.33,0.63,0,-0.30,     # Left Leg     
-                        0,0,-0.33,0.63,0,-0.30]).T  # Right Leg
-        # q0 = np.matrix([0,0,0.8793,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+                        0,0,-0.33,0.63,0,-0.30])  # Right Leg
+        # q0 = np.array([0,0,0.8793,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
         #                 0.2,0,0,-0.25,0.1,0.25,-0.1,# Torso + Two shoulder DoFs each arm
         #                 0,0,-0.33,0.63,0,-0.30,     # Left Leg     
-        #                 0,0,-0.33,0.63,0,-0.30]).T  # Right Leg
-        """ q0 = np.matrix([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file
+        #                 0,0,-0.33,0.63,0,-0.30])  # Right Leg
+        """ q0 = np.array([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file
                         0.2,0,0,
                         0,0,-0.353,0.642,0,-0.289,     #q8-13:  Left Leg     
-                        0,0,-0.352,0.627,0,-0.275]).T  #q14-19: Right Leg """
+                        0,0,-0.352,0.627,0,-0.275])  #q14-19: Right Leg """
         self.q0 = q0
         self.comRefY = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, self.q0)[2])
         pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
         pinocchio.updateFramePlacements(self.rmodel, self.rdata)
         self.heightRef = self.rdata.oMf[self.rfId].translation[2] # height for RF and LF identical
-        self.rmodel.defaultState = np.concatenate([q0, np.zeros((self.rmodel.nv, 1))])
+        self.rmodel.defaultState = np.concatenate([q0, np.zeros(self.rmodel.nv)])
         self.firstStep = True
         # Defining the friction coefficient and normal
         self.mu = 0.7
-        self.nsurf = np.matrix([0., 0., 1.]).T
+        self.nsurf = np.array([0., 0., 1.])
 
     def createWalkingProblem(self, x0, stepLength, stepHeight, timeStep, stepKnots, supportKnots, isLastPhase):
         """ Create a shooting problem for a simple walking gait.
@@ -157,11 +157,11 @@ class SimpleBipedGaitProblem:
         for k in range(numKnots):
             phKnots = (numKnots / 2)
             if k < phKnots:
-                comTask = np.matrix([0., 0., -heightChange * (k + 1) / phKnots]).T + comRef
+                comTask = np.array([0., 0., -heightChange * (k + 1) / phKnots]) + comRef
             elif k == phKnots:
-                comTask = np.matrix([0., 0., -heightChange]).T + comRef
+                comTask = np.array([0., 0., -heightChange]) + comRef
             else:
-                comTask = np.matrix([0., 0., -heightChange * (1 - float(k - phKnots) / phKnots)]).T + comRef
+                comTask = np.array([0., 0., -heightChange * (1 - float(k - phKnots) / phKnots)]) + comRef
             # print(comTask[2])
             squatModels += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comTask)]
         squatModels += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comRef) for k in range(20)] # Enshure last CoM equals reference
@@ -190,11 +190,11 @@ class SimpleBipedGaitProblem:
         print('rfPos0: ' + str(rfPos0))
         comYDiff = lfPos0[1] - comRef[1]
         for k in range(shiftKnots):
-            comTask = np.matrix([0, np.asscalar(comYDiff) * (k + 1) / shiftKnots, 0.]).T + comRef
+            comTask = np.array([0, np.asscalar(comYDiff) * (k + 1) / shiftKnots, 0.]) + comRef
             shiftingToLF += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comTask)]
         # Foot task
         balancing = []
-        relTargetRF = np.matrix([0., -0.05, 0.05]).T
+        relTargetRF = np.array([0., -0.05, 0.05])
         for k in range(balanceKnots):
             phKnots = (balanceKnots / 2)
             if k < phKnots:
@@ -214,7 +214,7 @@ class SimpleBipedGaitProblem:
         # Shift CoM back to center
         shiftingToCenter = []
         for k in range(shiftKnots):
-            comTask = np.matrix([0, np.asscalar(comYDiff) * (1 - (k / shiftKnots)), 0.]).T + comRef
+            comTask = np.array([0, np.asscalar(comYDiff) * (1 - (k / shiftKnots)), 0.]) + comRef
             shiftingToCenter += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comTask)]
         # Recover to initial pose
         stabilization = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], poseRecovery=True) for k in range(60)]
@@ -237,7 +237,7 @@ class SimpleBipedGaitProblem:
         # print('comRef: ' + str(comRef))
         # print('lfPos0: ' + str(lfPos0))
         # print('rfPos0: ' + str(rfPos0))
-        f0 = np.matrix(jumpLength).T
+        f0 = jumpLength
 
         jumpingModels = []
         # Gain momentum
@@ -245,7 +245,7 @@ class SimpleBipedGaitProblem:
         # Fly up
         flyingUpPhase = []
         for k in range(flyingKnots):
-            comTask = np.matrix([jumpLength[0], jumpLength[1], jumpLength[2] + jumpHeight]).T * (k + 1) / flyingKnots + comRef
+            comTask = np.array([jumpLength[0], jumpLength[1], jumpLength[2] + jumpHeight]) * (k + 1) / flyingKnots + comRef
             flyingUpPhase += [self.createSwingFootModel(timeStep, [], comTask=comTask)]
         # Fly down
         flyingDownPhase = []
@@ -282,7 +282,7 @@ class SimpleBipedGaitProblem:
         # print('comRef: ' + str(comRef))
         # print('lfPos0: ' + str(lfPos0))
         # print('rfPos0: ' + str(rfPos0))
-        f0 = np.matrix(jumpLength).T
+        f0 = np.array(jumpLength)
         lfGoal = crocoddyl.FramePlacement(self.lfId, pinocchio.SE3(np.eye(3), lfPos0 + f0))
         rfGoal = crocoddyl.FramePlacement(self.rfId, pinocchio.SE3(np.eye(3), rfPos0 + f0))
 
@@ -310,9 +310,9 @@ class SimpleBipedGaitProblem:
         # print('comXDiff, comYDiff')
         # print(comXDiff, comYDiff)
         for k in range(shiftKnots):
-            comTask = np.matrix([np.asscalar(comXDiff) * (k + 1) / shiftKnots, 
+            comTask = np.array([np.asscalar(comXDiff) * (k + 1) / shiftKnots, 
                                  np.asscalar(comYDiff) * (k + 1) / shiftKnots, 
-                                 0.]).T + comRef
+                                 0.]) + comRef
             # print(comTask)
             shiftModels += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comTask)]
         return shiftModels
@@ -330,13 +330,13 @@ class SimpleBipedGaitProblem:
                     phKnots = (numKnots / 2) - 0.5 # If odd numKnots (preferred): One knot at stepHeight,target height for first and last knot is zero
                 
                 if k < phKnots:
-                    dp = np.matrix([[stepLength * (k + 1) / numKnots, 0., stepHeight * k / phKnots]]).T 
+                    dp = np.array([stepLength * (k + 1) / numKnots, 0., stepHeight * k / phKnots]) 
                 elif k == phKnots:
-                    dp = np.matrix([[stepLength * (k + 1) / numKnots, 0., stepHeight]]).T
+                    dp = np.array([stepLength * (k + 1) / numKnots, 0., stepHeight])
                 else:
-                    dp = np.matrix(
-                        [[stepLength * (k + 1) / numKnots, 0., stepHeight * (1 - float(k - phKnots) / phKnots)]]).T
-                tref = np.asmatrix(p + dp)
+                    dp = np.array(
+                        [stepLength * (k + 1) / numKnots, 0., stepHeight * (1 - float(k - phKnots) / phKnots)])
+                tref = p + dp
                 # print('p[' + str(k) + ']: ') 
                 # print(p)
                 # print('dp[' + str(k) + ']: ') 
@@ -352,7 +352,7 @@ class SimpleBipedGaitProblem:
 
         # Updating the current foot position for next jump
         for p in feetPos0:
-            p += np.matrix([[stepLength, 0., 0.]]).T
+            p += [stepLength, 0., 0.]
         return footSwingModel + [footSwitchModel]
 
     def createFootstepModels(self, comPos0, feetPos0, stepLength, stepHeight, timeStep, numKnots, supportFootIds,
@@ -387,13 +387,13 @@ class SimpleBipedGaitProblem:
                     phKnots = (numKnots / 2) - 0.5 # If odd numKnots (preferred): One knot at stepHeight,target height for first and last knot is zero
                 
                 if k < phKnots:
-                    dp = np.matrix([[stepLength * (k + 1) / numKnots, 0., stepHeight * k / phKnots]]).T 
+                    dp = np.array([stepLength * (k + 1) / numKnots, 0., stepHeight * k / phKnots]) 
                 elif k == phKnots:
-                    dp = np.matrix([[stepLength * (k + 1) / numKnots, 0., stepHeight]]).T
+                    dp = np.array([stepLength * (k + 1) / numKnots, 0., stepHeight])
                 else:
-                    dp = np.matrix(
-                        [[stepLength * (k + 1) / numKnots, 0., stepHeight * (1 - float(k - phKnots) / phKnots)]]).T
-                tref = np.asmatrix(p + dp)
+                    dp = np.array(
+                        [stepLength * (k + 1) / numKnots, 0., stepHeight * (1 - float(k - phKnots) / phKnots)])
+                tref = p + dp
                 # print('p[' + str(k) + ']: ') 
                 # print(p)
                 # print('dp[' + str(k) + ']: ') 
@@ -401,7 +401,7 @@ class SimpleBipedGaitProblem:
                 # print('tref[' + str(k) + ']: ') 
                 # print(tref)
                 swingFootTask += [crocoddyl.FramePlacement(i, pinocchio.SE3(np.eye(3), tref))]
-            comTask = comPos0 #TaskSpecific:StaticWalking
+            comTask = comPos0
             footSwingModel += [
                 self.createSwingFootModel(timeStep, supportFootIds, comTask=comTask, swingFootTask=swingFootTask)
             ]
@@ -412,7 +412,7 @@ class SimpleBipedGaitProblem:
 
         # Updating the current foot position for next step
         for p in feetPos0:
-            p += np.matrix([[stepLength, 0., 0.]]).T
+            p += [stepLength, 0., 0.]
         return footSwingModel + [footSwitchModel]
 
     def createSwingFootModel(self, timeStep, supportFootIds, comTask=None, swingFootTask=None, poseRecovery=None):
@@ -429,7 +429,7 @@ class SimpleBipedGaitProblem:
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
             supportContactModel = \
-                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.matrix([0., 60.]).T)
+                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.array([0., 60.]))
             contactModel.addContact(self.rmodel.frames[i].name + "_contact", supportContactModel)
 
         # Creating the cost model for a contact phase
@@ -437,11 +437,11 @@ class SimpleBipedGaitProblem:
         # if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting&CoMJumping
         #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
         #     costModel.addCost("comTrack", comTrack, 1e6)
-        if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
-            com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
-            com2DTrack = crocoddyl.CostModelCoMPosition(self.state, 
-                crocoddyl.ActivationModelWeightedQuad(np.matrix(com2DWeights**2).T), comTask, self.actuation.nu)
-            costModel.addCost("com2DTrack", com2DTrack, 1e6)
+        # if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
+        #     com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
+        #     com2DTrack = crocoddyl.CostModelCoMPosition(self.state, 
+        #         crocoddyl.ActivationModelWeightedQuad(com2DWeights**2), comTask, self.actuation.nu)
+        #     costModel.addCost("com2DTrack", com2DTrack, 1e6)
         for i in supportFootIds:
             # friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
@@ -472,14 +472,14 @@ class SimpleBipedGaitProblem:
         if poseRecovery is True: # TODO: Invididual class for eliminating fight recovery vs Cop cost
             poseWeights = np.array([0] * 6 + [1] * (self.state.nv - 6) + [0] * self.state.nv)
             stateRecovery = crocoddyl.CostModelState(self.state,
-                                                    crocoddyl.ActivationModelWeightedQuad(np.matrix(poseWeights**2).T),
+                                                    crocoddyl.ActivationModelWeightedQuad(poseWeights**2),
                                                     self.rmodel.defaultState, self.actuation.nu)
             costModel.addCost("stateRecovery", stateRecovery, 1e3)
             # costModel.addCost("stateRecovery", stateRecovery, 1e4) # TaskSpecific:Jumping
         # stateWeights = np.array([0] * 3 + [500.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateWeights = np.array([0] * 3 + [10.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateReg = crocoddyl.CostModelState(self.state,
-                                            crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
+                                            crocoddyl.ActivationModelWeightedQuad(stateWeights**2),
                                             self.rmodel.defaultState, self.actuation.nu)
         ctrlReg = crocoddyl.CostModelControl(self.state, self.actuation.nu)
         costModel.addCost("stateReg", stateReg, 1e1)
@@ -519,7 +519,7 @@ class SimpleBipedGaitProblem:
         contactModel = crocoddyl.ContactModelMultiple(self.state, self.actuation.nu)
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
-            supportContactModel = crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.matrix([0., 40.]).T)
+            supportContactModel = crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.array([0., 40.]))
             contactModel.addContact(self.rmodel.frames[i].name + "_contact", supportContactModel)
 
         # Creating the cost model for a contact phase
@@ -547,7 +547,7 @@ class SimpleBipedGaitProblem:
         # stateWeights = np.array([0] * 3 + [500.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateWeights = np.array([0] * 3 + [10.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateReg = crocoddyl.CostModelState(self.state,
-                                            crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
+                                            crocoddyl.ActivationModelWeightedQuad(stateWeights**2),
                                             self.rmodel.defaultState, self.actuation.nu)
         ctrlReg = crocoddyl.CostModelControl(self.state, self.actuation.nu)
         costModel.addCost("stateReg", stateReg, 1e1)
@@ -596,7 +596,7 @@ class SimpleBipedGaitProblem:
     
         stateWeights = np.array([1.] * 6 + [0.1] * (self.rmodel.nv - 6) + [10] * self.rmodel.nv)
         stateReg = crocoddyl.CostModelState(self.state,
-                                            crocoddyl.ActivationModelWeightedQuad(np.matrix(stateWeights**2).T),
+                                            crocoddyl.ActivationModelWeightedQuad(stateWeights**2),
                                             self.rmodel.defaultState, 0)
         costModel.addCost("stateReg", stateReg, 1e1)
 
