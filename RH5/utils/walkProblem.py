@@ -6,7 +6,8 @@ import sys
 class SimpleBipedGaitProblem:
     """ Defines a simple 3d locomotion problem
     """
-    def __init__(self, rmodel, rightFoot, leftFoot):
+    def __init__(self, rmodel, rightFoot, leftFoot, baumgarteGain):
+        self.baumgarteGain = baumgarteGain
         self.rmodel = rmodel
         self.rdata = rmodel.createData()
         self.state = crocoddyl.StateMultibody(self.rmodel)
@@ -20,7 +21,7 @@ class SimpleBipedGaitProblem:
                         0,0,0,
                         0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
                         0,0,-0.1,0.2,0,-0.1])  #q14-19: Right Leg """
-        q0 = np.array([0,0,0.8793,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+        q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
                         0.2,0,0,                    # Torso
                         0,0,-0.33,0.63,0,-0.30,     # Left Leg     
                         0,0,-0.33,0.63,0,-0.30])  # Right Leg
@@ -36,6 +37,7 @@ class SimpleBipedGaitProblem:
         self.comRefY = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, self.q0)[2])
         pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
         pinocchio.updateFramePlacements(self.rmodel, self.rdata)
+        print(self.rdata.oMf[self.rfId].translation[2])
         self.heightRef = self.rdata.oMf[self.rfId].translation[2] # height for RF and LF identical
         self.rmodel.defaultState = np.concatenate([q0, np.zeros(self.rmodel.nv)])
         self.firstStep = True
@@ -425,11 +427,14 @@ class SimpleBipedGaitProblem:
         :return action model for a swing foot phase
         """
         # Creating a 6D multi-contact model, and then including the supporting foot
+        baumgarteGains = np.array([0., self.baumgarteGain])
+        # baumgarteGains = np.array([0., 30.]) #TaskSpecific:StaticWalking
         contactModel = crocoddyl.ContactModelMultiple(self.state, self.actuation.nu)
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
             supportContactModel = \
-                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.array([0., 60.]))
+                crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, baumgarteGains) #TaskSpecific:DynamicWalking
+                # crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.array([0., 60.]))
             contactModel.addContact(self.rmodel.frames[i].name + "_contact", supportContactModel)
 
         # Creating the cost model for a contact phase
@@ -451,8 +456,8 @@ class SimpleBipedGaitProblem:
             costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
             # center of pressure cost
             CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
-                crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
-                # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
                 # crocoddyl.FrameCoPSupport(i, np.array([0.05, 0.02])), self.actuation.nu)
             costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
             # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e3) # TaskSpecific:Jumping
@@ -532,10 +537,10 @@ class SimpleBipedGaitProblem:
             costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
             # center of pressure
             CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
-                crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
-                # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
                 # crocoddyl.FrameCoPSupport(i, np.array([0.05, 0.02])), self.actuation.nu)
-            # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
@@ -585,7 +590,8 @@ class SimpleBipedGaitProblem:
         for i in supportFootIds:
             # Impulse center of pressure cost
             CoP = crocoddyl.CostModelImpulseCoPPosition(self.state, 
-            crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
+            # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
+            crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])))
             costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
             # Impulse friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)

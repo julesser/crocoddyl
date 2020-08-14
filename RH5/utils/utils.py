@@ -12,7 +12,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     else: 
          rmodel, xs, us, accs, fs, fsArranged, X, U, F, A = mergeDataFromSolvers(ddp, bounds)
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
-    print('Plotting the results..')
+    
     # print('nx: ', nx)
     # print('nq: ', nq)
     # print('na: ', na)
@@ -217,8 +217,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
-    # relTimePoints = [0,(2*total_knots)+num_knots[1]-1] # TaskSpecific:Walking 2 steps (stabilization)
-    relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
+    relTimePoints = [0,(2*total_knots)+num_knots[1]-1] # TaskSpecific:Walking 2 steps (stabilization)
+    # relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
     # relTimePoints = [0, 100] # TaskSpecific:Jumping
@@ -263,8 +263,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     currentAxis = plt.gca()
     for t in relTimePoints:
         # if smaller region: draw dotted rectangle
-        # currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/4, lfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
-        # currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/4, rfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
+        currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/4, lfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
+        currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/4, rfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
         # currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/8, lfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
         # currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/8, rfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
         if t != relTimePoints[-1]:
@@ -323,6 +323,23 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.legend()
     plt.savefig(dirName + 'TaskSpace.png', dpi = 300)
 
+    plt.figure(figIndex + 6, figsize=(16,9))
+    [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
+    plt.plot(knots, [0.]*len(knots), linestyle=':', markersize = '1', color='k')
+    plt.xlabel('Knots')
+    plt.ylabel('Foot Z [m]')
+    plt.legend()
+    plt.savefig(dirName + 'TaskSpaceFeetAnalysis.png', dpi = 300)
+
+    plt.figure(figIndex + 7, figsize=(16,9))
+    [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
+    plt.plot(knots, [0.]*len(knots), linestyle=':', markersize = '1', color='k')
+    plt.xlabel('Knots')
+    plt.ylabel('Foot Z [m]')
+    plt.legend()
+    plt.ylim(-0.001, 0.001)
+    plt.savefig(dirName + 'TaskSpaceFeetAnalysisZoom.png', dpi = 300)
+
     # Plotting the Contact Wrenches
     contactForceNames = ['Fx','Fy','Fz'] 
     contactMomentNames = ['Tx','Ty','Tz']
@@ -374,6 +391,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.ylabel('Acceleration')
     plt.legend()
     plt.savefig(dirName + 'Base.png', dpi = 300)
+    plt.close('all') # Important for multiple simulations: Otherwise plots are simply added on top
 
 
 def logSolution(ddp, timeStep, logPath):
