@@ -63,7 +63,7 @@ rmodel = rh5_robot.model
 setLimits(rmodel)
 
 # Start multi-simulation analysis
-baumgarteGains = [20, 30, 40, 50, 60]
+baumgarteGains = [20, 25, 30, 35, 40, 45, 50, 55, 60]
 for baumgarteGain in baumgarteGains:
 
     # Setting up the 3d walking problem
@@ -101,12 +101,12 @@ for baumgarteGain in baumgarteGains:
         os.makedirs(simName)
 
     # Perform 2 Steps
-    GAITPHASES = \
-        [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
-                    'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
     # GAITPHASES = \
-    #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
-    #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+    #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
+    #                 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+    GAITPHASES = \
+        [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep, 
+                            'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
     # Perform 6 Steps
     # GAITPHASES = \
     #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
