@@ -69,10 +69,10 @@ for baumgarteGain in baumgarteGains:
     # Setting up the 3d walking problem
     timeStep = 0.03
     # timeStep = 0.01 #TaskSpecific:Jumping
-    stepKnots = 45
-    supportKnots = 15
-    # stepKnots = 90 #TaskSpecific:StaticWalking
-    # supportKnots = 90
+    # stepKnots = 45
+    # supportKnots = 15
+    stepKnots = 90 #TaskSpecific:StaticWalking
+    supportKnots = 90
     impulseKnots = 1
     stepLength = 0.2
     knots = [stepKnots, supportKnots]
@@ -96,7 +96,7 @@ for baumgarteGain in baumgarteGains:
     # simName = 'results/Test/' # Used when just testing
     # simName = 'results/2Steps_10cmStride/'
     # simName = 'results/HumanoidFixedArms/Jump_FootForward_50cm_CoP100/'
-    simName = 'results/HumanoidFixedArms/Analysis/BaumgarteGainsFeetDrifting/2Steps_StaticWalking_BGain' + str(baumgarteGain) + '/'
+    simName = 'results/HumanoidFixedArms/Analysis/BaumgarteGainsFeetDrifting/staticWalking/2Steps_StaticWalking_BGain' + str(baumgarteGain) + '/'
     if not os.path.exists(simName):
         os.makedirs(simName)
 
@@ -170,7 +170,7 @@ for baumgarteGain in baumgarteGains:
             m.quasiStatic(d, rmodel.defaultState)
             for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
         ]
-        print(ddp[i].solve(xs, us, 100, False, 0.1))
+        print(ddp[i].solve(xs, us, 250, False, 0.1))
         
         # Defining the final state as initial one for the next phase
         x0 = ddp[i].xs[-1]

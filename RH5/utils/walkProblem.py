@@ -428,13 +428,12 @@ class SimpleBipedGaitProblem:
         """
         # Creating a 6D multi-contact model, and then including the supporting foot
         baumgarteGains = np.array([0., self.baumgarteGain])
-        # baumgarteGains = np.array([0., 30.]) #TaskSpecific:StaticWalking
+        # baumgarteGains = np.array([0., 30.]) #TaskSpecific:DynamicWalking
         contactModel = crocoddyl.ContactModelMultiple(self.state, self.actuation.nu)
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
             supportContactModel = \
                 crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, baumgarteGains) #TaskSpecific:DynamicWalking
-                # crocoddyl.ContactModel6D(self.state, Mref, self.actuation.nu, np.array([0., 60.]))
             contactModel.addContact(self.rmodel.frames[i].name + "_contact", supportContactModel)
 
         # Creating the cost model for a contact phase
@@ -442,11 +441,11 @@ class SimpleBipedGaitProblem:
         # if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting&CoMJumping
         #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
         #     costModel.addCost("comTrack", comTrack, 1e6)
-        # if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
-        #     com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
-        #     com2DTrack = crocoddyl.CostModelCoMPosition(self.state, 
-        #         crocoddyl.ActivationModelWeightedQuad(com2DWeights**2), comTask, self.actuation.nu)
-        #     costModel.addCost("com2DTrack", com2DTrack, 1e6)
+        if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
+            com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
+            com2DTrack = crocoddyl.CostModelCoMPosition(self.state, 
+                crocoddyl.ActivationModelWeightedQuad(com2DWeights**2), comTask, self.actuation.nu)
+            costModel.addCost("com2DTrack", com2DTrack, 1e6)
         for i in supportFootIds:
             # friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
