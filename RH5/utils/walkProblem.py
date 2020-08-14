@@ -6,8 +6,7 @@ import sys
 class SimpleBipedGaitProblem:
     """ Defines a simple 3d locomotion problem
     """
-    def __init__(self, rmodel, rightFoot, leftFoot, baumgarteGain):
-        self.baumgarteGain = baumgarteGain
+    def __init__(self, rmodel, rightFoot, leftFoot):
         self.rmodel = rmodel
         self.rdata = rmodel.createData()
         self.state = crocoddyl.StateMultibody(self.rmodel)
@@ -427,8 +426,7 @@ class SimpleBipedGaitProblem:
         :return action model for a swing foot phase
         """
         # Creating a 6D multi-contact model, and then including the supporting foot
-        baumgarteGains = np.array([0., self.baumgarteGain])
-        # baumgarteGains = np.array([0., 30.]) #TaskSpecific:DynamicWalking
+        baumgarteGains = np.array([0., 30.]) #TaskSpecific:DynamicWalking
         contactModel = crocoddyl.ContactModelMultiple(self.state, self.actuation.nu)
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
