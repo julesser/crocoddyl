@@ -194,12 +194,16 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
         print("total stateRecoveryCost: " + str(stateRecoveryCost))
         print("..total costs then are multiplied with the assigned weight")
     
-    # Calc CoP traejctory
+    # Calc CoP and ZMP trajectory
     CoPs = calcCoPs(fs)
+    ZMPs = calcZMPs(ddp)
+    # print('dim(CoPs): ' + str(len(CoPs)))
+    # print('dim(ZMPs): ' + str(len(ZMPs)))
+    
     # Transform CoP to image plane (world CS)
-    CoPLF = np.zeros((2, len(CoPs)))
-    CoPRF = np.zeros((2, len(CoPs)))
-    CoPLFx, CoPLFy, CoPRFx, CoPRFy = [], [], [], []
+    CoPLF = np.zeros((2, len(CoPs))) 
+    CoPRF = np.zeros((2, len(CoPs))) # Used for logging + task space plot
+    CoPLFx, CoPLFy, CoPRFx, CoPRFy = [], [], [], [] # Used for stability analysis plot
     for k in range(len(CoPs)): 
         for CoP in CoPs[k]: # Iterate if DS
             if CoP["key"] == "10":  # LF
@@ -213,6 +217,15 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
                 CoPRF[1][k] = CoP["CoP"][1] + rfPose[1][k]
                 CoPRFx.append(CoP["CoP"][0] + rfPose[0][k])
                 CoPRFy.append(CoP["CoP"][1] + rfPose[1][k])
+    
+    # Transform ZMP to image plane (world CS)
+    ZMP = np.zeros((2, len(ZMPs))) # Used for logging + task space plot
+    ZMPx, ZMPy = [], [] # Used for stability analysis plot
+    for k in range(len(ZMPs)): 
+        ZMP[0][k] = ZMPs[k][0] + Cx[k]
+        ZMP[1][k] = ZMPs[k][1] + Cy[k]
+        ZMPx.append(ZMPs[k][0] + Cx[k])
+        ZMPy.append(ZMPs[k][1] + Cy[k])
 
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
@@ -250,6 +263,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFStart')]
     [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFEnd')]
+    [plt.plot(ZMPx, ZMPy, linestyle=':', label='ZMP')]
     [plt.plot(CoPLFx, CoPLFy, marker='x', linestyle='', label='LFCoP')]
     [plt.plot(CoPRFx, CoPRFy, marker='x', linestyle='', label='RFCoP')]
     plt.legend()
@@ -339,6 +353,15 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.legend()
     plt.ylim(-0.001, 0.001)
     plt.savefig(dirName + 'TaskSpaceFeetAnalysisZoom.png', dpi = 300)
+
+    # Plotting ZMP vs CoM
+    plt.figure(figIndex + 8, figsize=(16,9))
+    [plt.plot(knots, Cx, label='CoMx'), plt.plot(knots, Cy, label='CoMy')]
+    [plt.plot(knots, ZMP[0], label='ZMPx'), plt.plot(knots, ZMP[1], label='ZMPy')]
+    plt.xlabel('Knots')
+    plt.ylabel('Position [m]')
+    plt.legend()
+    plt.savefig(dirName + 'TaskSpaceCoMvsZMP.png', dpi = 300)
 
     # Plotting the Contact Wrenches
     contactForceNames = ['Fx','Fy','Fz'] 
@@ -479,7 +502,7 @@ def logSolution(ddp, timeStep, logPath):
     cs = []
     lfPoses, rfPoses = [], []
     lfPosition, rfPosition = [], []
-    sol = np.zeros([len(time), 21])
+    sol = np.zeros([len(time), 23])
     rdata = rmodel.createData()
     lfId = rmodel.getFrameId('FL_SupportCenter')
     rfId = rmodel.getFrameId('FR_SupportCenter')
@@ -502,9 +525,8 @@ def logSolution(ddp, timeStep, logPath):
     for i in range(nfeet):
         lfPosImg[i] = [np.asscalar(p[i]) for p in lfPosition]
         rfPosImg[i] = [np.asscalar(p[i]) for p in rfPosition]
-    # Compute CoP
+    # Compute CoP and transform CoP to image plane
     CoPs = calcCoPs(fs)
-    # Transform CoP to image plane
     CoPLF = np.zeros((2, len(CoPs)))
     CoPRF = np.zeros((2, len(CoPs)))
     for k in range(len(CoPs)): 
@@ -515,11 +537,18 @@ def logSolution(ddp, timeStep, logPath):
             elif CoP["key"] == "16":  # RF
                 CoPRF[0][k] = CoP["CoP"][0] + rfPosImg[0][k]
                 CoPRF[1][k] = CoP["CoP"][1] + rfPosImg[1][k]
+    # Compute and transform ZMP to image plane
+    ZMPs = calcZMPs(ddp)
+    ZMP = np.zeros((2, len(ZMPs)))
+    for k in range(len(ZMPs)): 
+        ZMP[0][k] = ZMPs[k][0] + cs[k][0]
+        ZMP[1][k] = ZMPs[k][1] + cs[k][1]
     for l in range(len(time)):
-        sol[l] = [*cs[l], CoPLF[0][l], CoPLF[1][l], CoPRF[0][l], CoPRF[1][l], *lfPoses[l], *rfPoses[l]]
+        sol[l] = [*cs[l], ZMP[0][l], ZMP[1][l], CoPLF[0][l], CoPLF[1][l], CoPRF[0][l], CoPRF[1][l], *lfPoses[l], *rfPoses[l]]
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['Cx', 'Cy', 'Cz',
+                         'ZMPx', 'ZMPy',
                          'CoPx_FL', 'CoPy_FL', 'CoPx_FR', 'CoPy_FR',  
                          'X_FL_SupportCenter', 'Y_FL_SupportCenter', 'Z_FL_SupportCenter', 'Qx_FL_SupportCenter', 'Qy_FL_SupportCenter', 'Qz_FL_SupportCenter', 'Qw_FL_SupportCenter',
                          'X_FR_SupportCenter', 'Y_FR_SupportCenter', 'Z_FR_SupportCenter', 'Qx_FR_SupportCenter', 'Qy_FR_SupportCenter', 'Qz_FR_SupportCenter', 'Qw_FR_SupportCenter',])
@@ -652,14 +681,46 @@ def calcCoPs(forces):
         CoPs.append(CoP_k)
     return CoPs 
 
-# TODO: ZMP calculation for cross-checking (should equal CoP results for flat floor)
-def calcZMPs(ma_G, H_G):
-    pass
-    # eq.(20): OD = (n x M_o^gi) / (R^gi x n)       (zero moment point)
-    # eq.(8):  RGi = mg - ma_G                      (gravity plus inertia forces, ma_g acceleration of G)
+
+def calcZMPs(ddp):
+    ZMPs = []
+    rmodel = ddp[0].problem.runningModels[0].state.pinocchio
+    rdata = rmodel.createData()
+    if isinstance(ddp, list):
+        for p, s in enumerate(ddp):
+            models = s.problem.runningModels.tolist()
+            datas = s.problem.runningDatas.tolist()
+            for i, data in enumerate(datas):
+                if hasattr(data, "differential"):
+                    # 1. Collect data from Pinocchio
+                    m = data.differential.pinocchio.mass[0] # total mass
+                    g = rmodel.gravity.linear               # gravity vector
+                    q = s.xs[i][:rmodel.nq]                 # pos
+                    v = s.xs[i][rmodel.nq:]                 # vel
+                    a = data.differential.xout              # acc
+                    pinocchio.centerOfMass(rmodel, rdata, q, v, a)
+                    pinocchio.computeCentroidalMomentumTimeVariation(rmodel, rdata)
+                    ma_G = rdata.acom[0] # acceleration at center of gravity
+                    H_G = rdata.dhg.angular # rate-of-change of the angular momentum
+                    # print('ma_G:  ' + str(ma_G))
+                    # print('H_G:  ' + str(H_G))
+                    # 2. Compute centroidal gravito-inertial wrench
+                    f_gi = m * (g - ma_G)
+                    tau_gi = -H_G
+                    f = np.hstack((f_gi, tau_gi))
+                    # print('w_G:  ' + str(f))
+                    # 3. Compute ZMP
+                    ZMP_k = [np.asscalar(-f[4] / f[2]),  # ZMPX = tauY / fZ
+                            np.asscalar(f[3] / f[2]),  # ZMPY = tauX / fZ
+                            0.0]
+                    # print('ZMP:  ' + str(ZMP_k))
+                    ZMPs.append(ZMP_k)
+    return ZMPs 
+    # eq.(20): OD = (n x M_o^gi) / (F^gi x n)       (zero moment point)
+    # eq.(8):  FGi = mg - ma_G                      (gravity plus inertia forces, ma_g acceleration of G)
     # eq.(9):  M_Q^gi = QG x mg - QG x ma_G - H_G   (gravity plus inertia moments, H_G rate of angular momentum at G)
 
     # Input from Justin
-    # CoM acceleration: computeCenterOfMass(model,data,q,v,a) access via data.acom[0]
+    # CoM acceleration: centerOfMass(model,data,q,v,a) access via data.acom[0]
     # Gravity field:    model.gravity.linear
     # Rate of angular momentum: computeCentroidalMomentumTimeVariation() access via data.dhg.angular
