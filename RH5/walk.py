@@ -64,7 +64,6 @@ setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.03
-# timeStep = 0.01 #TaskSpecific:Jumping
 # stepKnots = 45
 # supportKnots = 15
 stepKnots = 90  # TaskSpecific:StaticWalking
@@ -119,9 +118,6 @@ GAITPHASES = \
 #      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
 # GAITPHASES = \
 #     [{'balancing': {'supportKnots': 10, 'shiftKnots': 120, 'balanceKnots': 240, 'timeStep': timeStep}}]
-# GAITPHASES = \
-#     [{'jumping': {'jumpHeight': 0.15, 'jumpLength': [0.5, 0, 0],
-#                   'timeStep': timeStep, 'groundKnots': 50, 'flyingKnots': 15}}] # jumpLength is direction vector
         
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
@@ -145,11 +141,6 @@ for i, phase in enumerate(GAITPHASES):
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createBalancingProblem(x0, value['supportKnots'], value['shiftKnots'], value['balanceKnots'],
                                             value['timeStep']))
-        if key == 'jumping':
-            # Creating a walking problem
-            ddp[i] = crocoddyl.SolverBoxFDDP(
-                gait.createFootTrajJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
-                                                  value['groundKnots'], value['flyingKnots']))
         ddp[i].th_stop = 1e-7
 
     # Add the callback functions
