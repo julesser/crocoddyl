@@ -22,12 +22,12 @@ URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
 # Load the full model 
 rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
 # Create a list of joints to lock
-jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-                'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
-                'HeadPitch', 'HeadRoll', 'HeadYaw']
-# jointsToLock = ['ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-#                 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+# jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+#                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
 #                 'HeadPitch', 'HeadRoll', 'HeadYaw']
+jointsToLock = ['ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+                'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+                'HeadPitch', 'HeadRoll', 'HeadYaw']
 # Get the existing joint IDs
 jointsToLockIDs = []
 for jn in range(len(jointsToLock)):
@@ -52,8 +52,10 @@ setLimits(rmodel)
 timeStep = 0.01
 jumpHeight = 0.15
 jumpLength = [0.5, 0, 0]
+# jumpLength = [0, 0, 0]
 groundKnots = 50
 flyingKnots = 15
+recoveryKnots = 40
 impulseKnots = 1
 knots = [groundKnots, flyingKnots]
 rightFoot = 'FR_SupportCenter'
@@ -68,15 +70,16 @@ cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
 # cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
 # cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
 
-# simName = 'results/HumanoidFixedArms/Jump_FootForward_50cm_CoP100/'
-simName = 'results/HumanoidFixedArms/Test/'
+simName = 'results/HumanoidFixedArms/JumpForward_50cm_CoP100/'
+# simName = 'results/HumanoidFixedArms/JumpVertical_15cm_CoP100/'
+# simName = 'results/HumanoidFixedArms/Test/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform Jumping
 GAITPHASES = \
     [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots}}]
+                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
         
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
@@ -85,7 +88,7 @@ for i, phase in enumerate(GAITPHASES):
             # Creating a walking problem
             ddp[i] = crocoddyl.SolverBoxFDDP(
                 gait.createFootTrajJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
-                                                  value['groundKnots'], value['flyingKnots']))
+                                                  value['groundKnots'], value['flyingKnots'], value['recoveryKnots']))
         ddp[i].th_stop = 1e-7
 
     # Add the callback functions
@@ -100,7 +103,7 @@ for i, phase in enumerate(GAITPHASES):
         m.quasiStatic(d, rmodel.defaultState)
         for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
     ]
-    print(ddp[i].solve(xs, us, 500, False, 0.1))
+    print(ddp[i].solve(xs, us, 250, False, 0.1))
 
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]
@@ -121,4 +124,4 @@ if WITHLOG:
 
 # Plotting the entire motion
 if WITHPLOT:
-    plotSolution(ddp, simName, knots, bounds=False, figIndex=1, show=False)
+    plotSolution(ddp, simName, knots, bounds=True, figIndex=1, show=False)

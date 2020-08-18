@@ -4,7 +4,7 @@ import numpy as np
 import sys
 
 class HumanoidJumpProblem:
-    """ Defines a simple 3d locomotion problem
+    """ Defines a jumping problem for a full-size humanoid robot
     """
     def __init__(self, rmodel, rightFoot, leftFoot):
         self.rmodel = rmodel
@@ -16,10 +16,17 @@ class HumanoidJumpProblem:
         self.rfId = self.rmodel.getFrameId(rightFoot)
         self.lfId = self.rmodel.getFrameId(leftFoot)
         # Defining default state
+        # (1) Fixed arms
+        # q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+        #                 0.2,0,0,                    # Torso
+        #                 0,0,-0.33,0.63,0,-0.30,     # Left Leg     
+        #                 0,0,-0.33,0.63,0,-0.30])    # Right Leg
+        # (2) Losen shoulder joints
         q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
                         0.2,0,0,                    # Torso
+                        -0.25,0.1,0,0.25,-0.1,0,    # Shoulders
                         0,0,-0.33,0.63,0,-0.30,     # Left Leg     
-                        0,0,-0.33,0.63,0,-0.30])  # Right Leg
+                        0,0,-0.33,0.63,0,-0.30])    # Right Leg
         self.q0 = q0
         self.comRefY = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, self.q0)[2])
         pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
@@ -31,7 +38,7 @@ class HumanoidJumpProblem:
         self.mu = 0.7
         self.nsurf = np.array([0., 0., 1.])
 
-    def createFootTrajJumpingProblem(self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots, final=False):
+    def createFootTrajJumpingProblem(self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots, recoveryKnots, final=False):
         # Compute the current foot positions
         q0 = x0[:self.state.nq]
         pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
@@ -56,7 +63,7 @@ class HumanoidJumpProblem:
                                         timeStep, 2*flyingKnots, [], [self.lfId, self.rfId])
         # Recover to initial pose
         recovery = []
-        for k in range(40):
+        for k in range(recoveryKnots):
             recovery += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], 
                               comTask=comRef+f0, swingFootTask=[lfGoal, rfGoal], poseRecovery=True)]
         
@@ -113,7 +120,7 @@ class HumanoidJumpProblem:
         :return action model for a swing foot phase
         """
         # Creating a 6D multi-contact model, and then including the supporting foot
-        baumgarteGains = np.array([0., 30.]) #TaskSpecific:DynamicWalking
+        baumgarteGains = np.array([0., 100.])
         contactModel = crocoddyl.ContactModelMultiple(self.state, self.actuation.nu)
         for i in supportFootIds:
             Mref = crocoddyl.FramePlacement(i, pinocchio.SE3.Identity())
@@ -123,7 +130,7 @@ class HumanoidJumpProblem:
 
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, self.actuation.nu)
-        if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting&CoMJumping
+        if isinstance(comTask, np.ndarray):
             comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
             costModel.addCost("comTrack", comTrack, 1e6)
         for i in supportFootIds:
@@ -136,15 +143,11 @@ class HumanoidJumpProblem:
             # center of pressure cost
             CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
                 crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
-                # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
-                # crocoddyl.FrameCoPSupport(i, np.array([0.05, 0.02])), self.actuation.nu)
-            # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
-            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e3) # TaskSpecific:Jumping
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e3)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
                 costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6)
-                # costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6) # TODO: ActivationModelWeightedQuad 6 components: Focus on [3:6] = z-component, angular
         
         # joint limits cost
         x_lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])
@@ -153,14 +156,12 @@ class HumanoidJumpProblem:
         joint_limits = crocoddyl.CostModelState(self.state, activation_xbounds, 0 * self.rmodel.defaultState, self.actuation.nu)
         costModel.addCost("jointLim", joint_limits, 1e1)
         
-        if poseRecovery is True: # TODO: Invididual class for eliminating fight recovery vs Cop cost
+        if poseRecovery is True:
             poseWeights = np.array([0] * 6 + [1] * (self.state.nv - 6) + [0] * self.state.nv)
             stateRecovery = crocoddyl.CostModelState(self.state,
                                                     crocoddyl.ActivationModelWeightedQuad(poseWeights**2),
                                                     self.rmodel.defaultState, self.actuation.nu)
-            # costModel.addCost("stateRecovery", stateRecovery, 1e3)
-            costModel.addCost("stateRecovery", stateRecovery, 1e4) # TaskSpecific:Jumping
-        # stateWeights = np.array([0] * 3 + [500.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
+            costModel.addCost("stateRecovery", stateRecovery, 1e4)
         stateWeights = np.array([0] * 3 + [10.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateReg = crocoddyl.CostModelState(self.state,
                                             crocoddyl.ActivationModelWeightedQuad(stateWeights**2),
@@ -169,8 +170,7 @@ class HumanoidJumpProblem:
         costModel.addCost("stateReg", stateReg, 1e1)
         costModel.addCost("ctrlReg", ctrlReg, 1e-1)
         
-        # Creating the action model for the KKT dynamics with simpletic Euler
-        # integration scheme
+        # Creating the action model for the KKT dynamics with simpletic Euler integration scheme
         dmodel = crocoddyl.DifferentialActionModelContactFwdDynamics(self.state, self.actuation, contactModel,
                                                                      costModel, 0., True)
         model = crocoddyl.IntegratedActionModelEuler(dmodel, timeStep)
@@ -202,7 +202,6 @@ class HumanoidJumpProblem:
             # Impulse center of pressure cost
             CoP = crocoddyl.CostModelImpulseCoPPosition(self.state, 
             crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
-            # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])))
             costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
             # Impulse friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
@@ -217,7 +216,6 @@ class HumanoidJumpProblem:
                                             self.rmodel.defaultState, 0)
         costModel.addCost("stateReg", stateReg, 1e1)
 
-        # Creating the action model for the KKT dynamics with simpletic Euler
-        # integration scheme
+        # Creating the action model for the KKT dynamics with simpletic Euler integration scheme
         model = crocoddyl.ActionModelImpulseFwdDynamics(self.state, impulseModel, costModel)
         return model
