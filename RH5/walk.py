@@ -88,10 +88,8 @@ cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
 # while True: # Get desired view params
 #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-# simName = 'results/Test/' # Used when just testing
-# simName = 'results/2Steps_10cmStride/'
 # simName = 'results/HumanoidFixedArms/Jump_FootForward_50cm_CoP100/'
-simName = 'results/HumanoidFixedArms/Analysis_StaticWalking_CoP50_ImpulseCoPCost /'
+simName = 'results/HumanoidFixedArms/Test /'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
