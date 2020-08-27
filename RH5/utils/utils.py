@@ -121,30 +121,48 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     Cz = []
     lfPoses = []
     rfPoses = []
+    lfVelocities = []
+    rfVelocities = []
     for x in xs:
         q = x[:rmodel.nq]
-        c = pinocchio.centerOfMass(rmodel, rdata, q)
+        v = x[rmodel.nq:]
+        c = pinocchio.centerOfMass(rmodel, rdata, q, v)
         Cx.append(np.asscalar(c[0]))
         Cy.append(np.asscalar(c[1]))
         Cz.append(np.asscalar(c[2]))
         pinocchio.forwardKinematics(rmodel, rdata, q)
+        pinocchio.computeJointJacobians(rmodel,rdata,q)
         pinocchio.updateFramePlacements(rmodel, rdata)
         lfPoses.append(rdata.oMf[lfId].translation) 
         rfPoses.append(rdata.oMf[rfId].translation)
         # print(rdata.oMf[lfId]) # Pose specified via rotation matrix + translation vector
         # print(pinocchio.SE3ToXYZQUATtuple(rdata.oMf[lfId])) # Pose specified via quaternion + translation vector
+        
+        # local_to_world_transform = pinocchio.SE3.Identity()
+        # local_to_world_transform.rotation = rdata.oMf[lfId].rotation
+        # v_local = pinocchio.getFrameVelocity(rmodel, rdata, lfId)
+        # frame_v = local_to_world_transform.act(v_local) 
+        # print(v_local)
+        # print(frame_v)
+        lfVelocities.append(pinocchio.getFrameVelocity(rmodel, rdata, lfId).linear)
+        rfVelocities.append(pinocchio.getFrameVelocity(rmodel, rdata, rfId).linear)
+    # print(lfVelocities)
+    # print(rfVelocities)
 
     nfeet = lfPoses[0].shape[0]
     lfPose, rfPose = [0.] * nfeet, [0.] * nfeet       
+    lfVel, rfVel = [0.] * nfeet, [0.] * nfeet       
     for i in range(nfeet):
         lfPose[i] = [np.asscalar(p[i]) for p in lfPoses]
         rfPose[i] = [np.asscalar(p[i]) for p in rfPoses]
+        lfVel[i] = [np.asscalar(p[i]) for p in lfVelocities]
+        rfVel[i] = [np.asscalar(p[i]) for p in rfVelocities]
     knots = list(range(0,len(Cz)))
 
     # Analyse CoP cost
-    print('....................')
-    print('Constraints Analysis')
-    print('....................')
+    # print('....................')
+    # print('Constraints Analysis')
+    # print('....................')
     copCost, frictionConeCost = 0, 0
     com2DTrackCost, footTrackCost = 0, 0 
     jointLimCost, stateRecoveryCost, stateRegCost, ctrlRegCost = 0, 0, 0, 0
@@ -152,10 +170,13 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
         for s in ddp:
             for j in range(s.problem.T):
                 try: 
+                    # print('Enter node')
                     for costName in s.problem.runningModels[j].differential.costs.costs.todict():
                         costTerm = s.problem.runningDatas[j].differential.costs.costs[costName]
                         if costName == "FR_SupportCenter_CoP" or costName == "FL_SupportCenter_CoP":
+                            # print('enter cost')
                             copCost += costTerm.cost
+                            # print('cost weight: ' +str(costTerm.weight))
                             # print(costName)
                             # print("r: " + str(costTerm.r))
                             # print("cost: " + str(costTerm.cost))
@@ -173,6 +194,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
                         elif costName == "com2DTrack":
                             com2DTrackCost += costTerm.cost
                         elif costName == "FR_SupportCenter_footTrack" or costName == "FL_SupportCenter_footTrack":
+                            # print('CoP weight: ' + str(costTerm.weight))
                             footTrackCost += costTerm.cost
                         elif costName == "jointLim":
                             jointLimCost += costTerm.cost
@@ -183,6 +205,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
                         elif costName == "stateRecovery":
                             stateRecoveryCost += costTerm.cost
                 except: # Don't consider costs during impulse knot TODO: Find appropriate way to access these
+                    # print('Skipped node')
                     pass
         print("total copCost: " + str(copCost))
         print("total frictionConeCost: " + str(frictionConeCost))
@@ -230,12 +253,11 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
-    # relTimePoints = [0,(2*total_knots)+num_knots[1]-1] # TaskSpecific:Walking 2 steps (stabilization)
     # relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
-    relTimePoints = [0, 100] # TaskSpecific:Jumping
-    # relTimePoints = [0] # TaskSpecific:Balancing
+    # relTimePoints = [0, 100] # TaskSpecific:Jumping
+    relTimePoints = [0] # TaskSpecific:Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
     # (1) Variant with subplots
@@ -261,8 +283,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
     # plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
     # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
-    [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFStart')]
-    [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFEnd')]
+    # [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFStart')]
+    # [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFEnd')]
     # [plt.plot(ZMPx, ZMPy, linestyle=':', label='ZMP')]
     [plt.plot(CoPLFx, CoPLFy, marker='x', linestyle='', label='LFCoP')]
     [plt.plot(CoPRFx, CoPRFy, marker='x', linestyle='', label='RFCoP')]
@@ -297,29 +319,73 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.savefig(dirName + 'StabilityAnalysis.png', dpi = 300)
 
     # Plotting the Task Space: Center of Mass and Feet (x,y,z over knots)
-    plt.figure(figIndex + 3, figsize=(16,9))
+    # plt.figure(figIndex + 3, figsize=(16,9))
+    # plt.subplot(3, 3, 1)
+    # [plt.plot(knots, CoPLF[0], label='LF'), plt.plot(knots, CoPRF[0], label='RF')]
+    # plt.xlabel('Knots')
+    # plt.ylabel('CoP X [m]')
+    # plt.legend()
+    # plt.subplot(3, 3, 2)
+    # [plt.plot(knots, CoPLF[1], label='LF'), plt.plot(knots, CoPRF[1], label='RF')]
+    # plt.xlabel('Knots')
+    # plt.ylabel('CoP Y [m]')
+    # plt.legend()
+    # plt.subplot(3, 3, 4)
+    # plt.plot(knots, Cx)
+    # plt.xlabel('Knots')
+    # plt.ylabel('CoM X [m]')
+    # plt.subplot(3, 3, 5)
+    # plt.plot(knots, Cy)
+    # plt.xlabel('Knots')
+    # plt.ylabel('CoM Y [m]')
+    # plt.subplot(3, 3, 6)
+    # plt.plot(knots, Cz)
+    # plt.xlabel('Knots')
+    # plt.ylabel('CoM Z [m]')
+    # plt.subplot(3, 3, 7)
+    # [plt.plot(knots, lfPose[0], label='LF'), plt.plot(knots, rfPose[0], label='RF')]
+    # plt.xlabel('Knots')
+    # plt.ylabel('Foot X [m]')
+    # plt.legend()
+    # plt.subplot(3, 3, 8)
+    # [plt.plot(knots, lfPose[1], label='LF'), plt.plot(knots, rfPose[1], label='RF')]
+    # plt.xlabel('Knots')
+    # plt.ylabel('Foot Y [m]')
+    # plt.legend()
+    # plt.subplot(3, 3, 9)
+    # [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
+    # plt.xlabel('Knots')
+    # plt.ylabel('Foot Z [m]')
+    # plt.legend()
+    # plt.savefig(dirName + 'TaskSpace.png', dpi = 300)
+
     plt.subplot(3, 3, 1)
-    [plt.plot(knots, CoPLF[0], label='LF'), plt.plot(knots, CoPRF[0], label='RF')]
-    plt.xlabel('Knots')
-    plt.ylabel('CoP X [m]')
-    plt.legend()
-    plt.subplot(3, 3, 2)
-    [plt.plot(knots, CoPLF[1], label='LF'), plt.plot(knots, CoPRF[1], label='RF')]
-    plt.xlabel('Knots')
-    plt.ylabel('CoP Y [m]')
-    plt.legend()
-    plt.subplot(3, 3, 4)
     plt.plot(knots, Cx)
     plt.xlabel('Knots')
     plt.ylabel('CoM X [m]')
-    plt.subplot(3, 3, 5)
+    plt.subplot(3, 3, 2)
     plt.plot(knots, Cy)
     plt.xlabel('Knots')
     plt.ylabel('CoM Y [m]')
-    plt.subplot(3, 3, 6)
+    plt.subplot(3, 3, 3)
     plt.plot(knots, Cz)
     plt.xlabel('Knots')
     plt.ylabel('CoM Z [m]')
+    plt.subplot(3, 3, 4)
+    [plt.plot(knots, lfVel[0], label='LF'), plt.plot(knots, rfVel[0], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot dX [m/s]')
+    plt.legend()
+    plt.subplot(3, 3, 5)
+    [plt.plot(knots, lfVel[1], label='LF'), plt.plot(knots, rfVel[1], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot dY [m/s]')
+    plt.legend()
+    plt.subplot(3, 3, 6)
+    [plt.plot(knots, lfVel[2], label='LF'), plt.plot(knots, rfVel[2], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot dY [m/s]')
+    plt.legend()
     plt.subplot(3, 3, 7)
     [plt.plot(knots, lfPose[0], label='LF'), plt.plot(knots, rfPose[0], label='RF')]
     plt.xlabel('Knots')
@@ -353,6 +419,11 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.legend()
     plt.ylim(-0.001, 0.001)
     plt.savefig(dirName + 'TaskSpaceFeetAnalysisZoom.png', dpi = 300)
+
+    # For baumgarte grid search: Get max deviation in feet_Z from 0
+    allFeetHeights = lfPose[2] + rfPose[2]
+    minFeetError = min(allFeetHeights)
+    # print('minFeetError' + str(minFeetError))
 
     # Plotting ZMP vs CoM
     plt.figure(figIndex + 8, figsize=(16,9))
@@ -415,6 +486,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.legend()
     plt.savefig(dirName + 'Base.png', dpi = 300)
     plt.close('all') # Important for multiple simulations: Otherwise plots are simply added on top
+
+    return minFeetError
 
 
 def logSolution(ddp, timeStep, logPath):
@@ -556,6 +629,11 @@ def logSolution(ddp, timeStep, logPath):
 
 
 def setLimits(rmodel):
+    # Artificially reduce the joint limits
+    # velLimsRed = rmodel.velocityLimit
+    # velLimsRed *= 0.05
+    # rmodel.velocityLimit = velLimsRed
+
     # Add the free-flyer joint limits (floating base)
     ub = rmodel.upperPositionLimit
     ub[:7] = 1
@@ -565,10 +643,10 @@ def setLimits(rmodel):
     rmodel.lowerPositionLimit = lb
 
     # Artificially reduce the torque limits
-    lims = rmodel.effortLimit
-    # lims *= 0.5 
-    # lims[11] = 70
-    rmodel.effortLimit = lims
+    # torqueLims = rmodel.effortLimit
+    # torqueLims *= 0.75
+    # torqueLims[11] = 70
+    # rmodel.effortLimit = torqueLims
 
 def calcAverageCoMVelocity(ddp, rmodel, GAITPHASES, knots, timeStep):
     logFirst = ddp[0].getCallbacks()[0]
@@ -585,6 +663,15 @@ def calcAverageCoMVelocity(ddp, rmodel, GAITPHASES, knots, timeStep):
     print('Step Time:    ' + str(knots[0] * timeStep) + ' s')
     print('Step Length:  ' + str(distance / len(GAITPHASES)).strip('[]') + ' m')
     print('CoM Velocity: ' + str(v_com).strip('[]') + ' m/s')
+
+def addObstacleToViewer(display, name, dim, pos, color=None):
+    # Generate obstacle 
+    if color == None:
+        display.robot.viewer.gui.addBox(name, dim[0], dim[1], dim[2], [0.7,0.7,0.7,1.0]) # grey
+    else:
+        display.robot.viewer.gui.addBox(name, dim[0], dim[1], dim[2], color)
+    # Add to obstacle to viewer
+    display.robot.viewer.gui.applyConfiguration(name, pos + [0, 0, 0, 1])  # xyz+quaternion
 
 
 def mergeDataFromSolvers(ddp, bounds):
@@ -619,10 +706,12 @@ def mergeDataFromSolvers(ddp, bounds):
                             # Additionally create the aligned forces
                             k = p*len(ddp[0].problem.runningDatas)+i-impulse_count #Assumes only the last OC problem varies in number of knots (e.g. due to an additional stabilization)
                             if str(contact.joint) == "10": # left foot
+                            # if str(contact.joint) == "16": # left foot #TaskSpecific:Jumping (6 add joints)
                                 for c in range(3):
                                     fsArranged[k,c] = force.linear[c]
                                     fsArranged[k,c+3] = force.angular[c]
                             elif str(contact.joint) == "16": # right foot
+                            # elif str(contact.joint) == "22": # right foot #TaskSpecific:Jumping (6 add joints)
                                 for c in range(3):
                                     fsArranged[k,c+6] = force.linear[c]
                                     fsArranged[k,c+9] = force.angular[c]
@@ -634,7 +723,10 @@ def mergeDataFromSolvers(ddp, bounds):
                     us_ub += [model.u_ub]
                     xs_lb += [model.state.lb]
                     xs_ub += [model.state.ub]
-    fsArranged = fsArranged[:-impulse_count]
+    if impulse_count is not 0:  
+        fsArranged = fsArranged[:-impulse_count]
+    else: 
+        pass
 
     # Getting the state, control and wrench trajectories
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
