@@ -33,12 +33,12 @@ class HumanoidJumpProblem:
         pinocchio.updateFramePlacements(self.rmodel, self.rdata)
         self.heightRef = self.rdata.oMf[self.rfId].translation[2] # height for RF and LF identical
         self.rmodel.defaultState = np.concatenate([q0, np.zeros(self.rmodel.nv)])
-        self.firstStep = True
+        self.firstJump = True
         # Defining the friction coefficient and normal
         self.mu = 0.7
         self.nsurf = np.array([0., 0., 1.])
 
-    def createFootTrajJumpingProblem(self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots, recoveryKnots, final=False):
+    def createJumpingProblem(self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots, recoveryKnots, final=False):
         # Compute the current foot positions
         q0 = x0[:self.state.nq]
         pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
@@ -57,10 +57,11 @@ class HumanoidJumpProblem:
 
         jumpingModels = []
         # Gain momentum
-        takeOff = [self.createSwingFootModel(timeStep,[self.lfId, self.rfId],) for k in range(groundKnots)]
+        takeOff = [self.createSwingFootModel(timeStep,[self.lfId, self.rfId]) for k in range(groundKnots)]
         # Fly up + down + impact
-        flying = self.createJumpingModels([], [lfPos0, rfPos0], jumpLength[0], jumpLength[2]+jumpHeight, 
-                                        timeStep, 2*flyingKnots, [], [self.lfId, self.rfId])
+        flying = self.createSymmetricFlyingModels([lfPos0, rfPos0], jumpLength[0], jumpLength[2]+jumpHeight,
+                                                    timeStep, flyingKnots, [], [self.lfId, self.rfId])
+
         # Recover to initial pose
         recovery = []
         for k in range(recoveryKnots):
@@ -72,25 +73,22 @@ class HumanoidJumpProblem:
         problem = crocoddyl.ShootingProblem(x0, jumpingModels, jumpingModels[-1])
         return problem
 
-    def createJumpingModels(self, comPos0, feetPos0, stepLength, stepHeight, timeStep, numKnots, supportFootIds,
-                             swingFootIds):
+    def createSymmetricFlyingModels(self, feetPos0, jumpLength, jumpHeight, 
+                                    timeStep, numKnots, supportFootIds, swingFootIds):
         footSwingModel = []
         for k in range(numKnots):
             swingFootTask = []
             for i, p in zip(swingFootIds, feetPos0):
-                # phKnots = numKnots / 2 # Problem: stepHeight of last knot is greater than zero!
-                if numKnots % 2 == 0: 
-                    phKnots = (numKnots / 2) - 0.5 # If even numKnots (not preferred): Two knots have maxHeight, target height for first and last knot is zero 
-                else: 
-                    phKnots = (numKnots / 2) - 0.5 # If odd numKnots (preferred): One knot at stepHeight,target height for first and last knot is zero
+                # phKnots = numKnots / 2 # Problem: jumpHeight of last knot is greater than zero!
+                phKnots = (numKnots / 2) - 0.5 # If even numKnots (not preferred): Two knots have maxHeight, target height for first and last knot is zero 
                 
                 if k < phKnots:
-                    dp = np.array([stepLength * (k + 1) / numKnots, 0., stepHeight * k / phKnots]) 
+                    dp = np.array([jumpLength * (k + 1) / numKnots, 0., jumpHeight * k / phKnots]) 
                 elif k == phKnots:
-                    dp = np.array([stepLength * (k + 1) / numKnots, 0., stepHeight])
+                    dp = np.array([jumpLength * (k + 1) / numKnots, 0., jumpHeight])
                 else:
                     dp = np.array(
-                        [stepLength * (k + 1) / numKnots, 0., stepHeight * (1 - float(k - phKnots) / phKnots)])
+                        [jumpLength * (k + 1) / numKnots, 0., jumpHeight * (1 - float(k - phKnots) / phKnots)])
                 tref = p + dp
                 # print('p[' + str(k) + ']: ') 
                 # print(p)
@@ -107,7 +105,85 @@ class HumanoidJumpProblem:
 
         # Updating the current foot position for next jump
         for p in feetPos0:
-            p += [stepLength, 0., 0.]
+            p += [jumpLength, 0., 0.]
+        return footSwingModel + [footSwitchModel]
+
+    def createBoxJumpingProblem(self, x0, jumpHeight, jumpLength, obstacleHeight, timeStep, groundKnots, flyingKnots, recoveryKnots, final=False):
+        # Compute the current foot positions
+        q0 = x0[:self.state.nq]
+        pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
+        pinocchio.updateFramePlacements(self.rmodel, self.rdata)
+        rfPos0 = self.rdata.oMf[self.rfId].translation
+        lfPos0 = self.rdata.oMf[self.lfId].translation
+        rfPos0[2], lfPos0[2] = self.heightRef, self.heightRef # Set global target height of feet to initial height from q0
+        comRef = (rfPos0 + lfPos0) / 2
+        comRef[2] = self.comRefY
+        # print('comRef: ' + str(comRef))
+        # print('lfPos0: ' + str(lfPos0))
+        # print('rfPos0: ' + str(rfPos0))
+        f0 = jumpLength
+        lfGoal = crocoddyl.FramePlacement(self.lfId, pinocchio.SE3(np.eye(3), lfPos0 + f0))
+        rfGoal = crocoddyl.FramePlacement(self.rfId, pinocchio.SE3(np.eye(3), rfPos0 + f0))
+
+        jumpingModels = []
+        # Gain momentum
+        takeOff = [self.createSwingFootModel(timeStep,[self.lfId, self.rfId]) for k in range(groundKnots)]
+        # Fly up + down + impact
+        jumpOnObs = self.createAsymmetricFlyingModels([lfPos0, rfPos0], jumpLength[0], jumpLength[2]+jumpHeight, obstacleHeight,
+                                                    timeStep, flyingKnots, [], [self.lfId, self.rfId])
+        jumpOffObs = self.createAsymmetricFlyingModels([lfPos0, rfPos0], jumpLength[0], jumpLength[2]+jumpHeight, obstacleHeight,
+                                                    timeStep, flyingKnots, [], [self.lfId, self.rfId])
+
+        # Recover to initial pose
+        recovery = []
+        # for k in range(recoveryKnots):
+        #     recovery += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], 
+        #                       comTask=comRef+f0+np.array([0,0,obstacleHeight]), swingFootTask=[lfGoal, rfGoal], poseRecovery=True)]
+        
+        # jumpingModels += takeOff + jumpOnObs + jumpOffObs + recovery
+        jumpingModels += takeOff + jumpOnObs + jumpOffObs
+
+        problem = crocoddyl.ShootingProblem(x0, jumpingModels, jumpingModels[-1])
+        return problem
+
+    def createAsymmetricFlyingModels(self, feetPos0, jumpLength, jumpHeight, obstacleHeight,
+                                        timeStep, numKnots, supportFootIds, swingFootIds):
+        footSwingModel = []
+        for k in range(numKnots):
+            swingFootTask = []
+            for i, p in zip(swingFootIds, feetPos0):
+                upDownRatio = jumpHeight / (jumpHeight + (jumpHeight - obstacleHeight))
+                # upDownRatio = obstacleHeight/(jumpHeight+(jumpHeight-obstacleHeight))
+                upKnots = (numKnots * upDownRatio) - 0.5
+                # print(jumpHeight)
+                # print(obstacleHeight)
+                # print(upDownRatio)
+                # print(upKnots)
+                if k < upKnots:
+                    dp = np.array([jumpLength * (k + 1) / numKnots, 0., jumpHeight * k / upKnots]) 
+                elif k == upKnots:
+                    dp = np.array([jumpLength * (k + 1) / numKnots, 0., jumpHeight])
+                else:
+                    dp = np.array(
+                        [jumpLength * (k + 1) / numKnots, 0., jumpHeight * (1 - float(k - upKnots) / upKnots)])
+                tref = p + dp
+                    
+                swingFootTask += [crocoddyl.FramePlacement(i, pinocchio.SE3(np.eye(3), tref))]
+            footSwingModel += [
+                self.createSwingFootModel(timeStep, supportFootIds, swingFootTask=swingFootTask)
+            ]
+            # print('p[' + str(k) + ']: ') 
+            # print(p)
+            # print('dp[' + str(k) + ']: ')
+            # print(dp)
+            print('tref[' + str(k) + ']: ')
+            print(tref)
+        # Action model for the foot switch
+        footSwitchModel = self.createImpulseModel(supportFootIds, swingFootTask)
+
+        # Updating the current foot position for next jump
+        for p in feetPos0:
+            p += [jumpLength, 0., jumpHeight]
         return footSwingModel + [footSwitchModel]
 
     def createSwingFootModel(self, timeStep, supportFootIds, comTask=None, swingFootTask=None, poseRecovery=None):
@@ -154,7 +230,7 @@ class HumanoidJumpProblem:
         x_ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
         activation_xbounds = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(x_lb, x_ub))
         joint_limits = crocoddyl.CostModelState(self.state, activation_xbounds, 0 * self.rmodel.defaultState, self.actuation.nu)
-        costModel.addCost("jointLim", joint_limits, 1e1)
+        costModel.addCost("jointLim", joint_limits, 1e2)
         
         if poseRecovery is True:
             poseWeights = np.array([0] * 6 + [1] * (self.state.nv - 6) + [0] * self.state.nv)

@@ -7,7 +7,7 @@ import crocoddyl
 import example_robot_data
 import pinocchio
 from utils.jumpProblem import HumanoidJumpProblem
-from utils.utils import setLimits, calcAverageCoMVelocity, plotSolution, logSolution 
+from utils.utils import setLimits, calcAverageCoMVelocity, plotSolution, logSolution, addObstacleToViewer
 from pinocchio.robot_wrapper import RobotWrapper
 
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
@@ -50,12 +50,12 @@ setLimits(rmodel)
 
 # Setting up the 3d walking problem
 timeStep = 0.01
-jumpHeight = 0.15
-jumpLength = [0.5, 0, 0]
-# jumpLength = [0, 0, 0]
-groundKnots = 50
-flyingKnots = 15
-recoveryKnots = 40
+jumpHeight = 0.4
+# jumpLength = [0.6, 0, 0]
+jumpLength = [0.3, 0, 0]
+groundKnots = 60
+flyingKnots = 40
+recoveryKnots = 50
 impulseKnots = 1
 knots = [groundKnots, flyingKnots]
 rightFoot = 'FR_SupportCenter'
@@ -66,29 +66,54 @@ gait = HumanoidJumpProblem(rmodel, rightFoot, leftFoot)
 x0 = gait.rmodel.defaultState
 
 # Set camera perspective
-cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
+# cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
 # cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
-# cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
+cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
 
-simName = 'results/HumanoidFixedArms/JumpForward_50cm_CoP100/'
-# simName = 'results/HumanoidFixedArms/JumpVertical_15cm_CoP100/'
-# simName = 'results/HumanoidFixedArms/Test/'
+display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
+name = 'world/box'
+# obsDim = [.2, 1, .1]
+obsDim = [.25, 1, .2]
+pos = [[jumpLength[0]+0.12, 0, obsDim[2]/2]]
+# pos = [[0.4, 0, obsDim[2]/2], [1, 0, obsDim[2]/2], [1.6, 0, obsDim[2]/2]]
+for i in range(len(pos)):
+    addObstacleToViewer(display, name+str(i), obsDim, pos[i])
+display.display(xs=[x0])
+
+simName = 'results/Test/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
-# Perform Jumping
+# Perform one jump
+# GAITPHASES = \
+#     [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
 GAITPHASES = \
-    [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+    [{'boxJumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength, 'obstacleHeight': obsDim[2],
                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
-        
+    
+# Perform multiple jumps
+# GAITPHASES = \
+#     [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
+#      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
+#      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
+
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
     for key, value in phase.items():
         if key == 'jumping':
-            # Creating a walking problem
+            # Creating a simple jumping problem
             ddp[i] = crocoddyl.SolverBoxFDDP(
-                gait.createFootTrajJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
+                gait.createJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
                                                   value['groundKnots'], value['flyingKnots'], value['recoveryKnots']))
+        if key == 'boxJumping':
+            # Creating a simple jumping problem
+            ddp[i] = crocoddyl.SolverBoxFDDP(
+                gait.createBoxJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['obstacleHeight'], 
+                                            value['timeStep'], value['groundKnots'], value['flyingKnots'], value['recoveryKnots']))
         ddp[i].th_stop = 1e-7
 
     # Add the callback functions
