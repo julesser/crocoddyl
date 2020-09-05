@@ -18,22 +18,15 @@ class SimpleBipedGaitProblem:
         self.rfId = self.rmodel.getFrameId(rightFoot)
         self.lfId = self.rmodel.getFrameId(leftFoot)
         # Defining default state
-        """ q0 = np.array([0,0,0.9163,0,0,0,1,      #q1-7:   Floating Base (quaternions) # Init pose between zero config and smurf
-                        0,0,0,
-                        0,0,-0.1,0.2,0,-0.1,     #q8-13:  Left Leg     
-                        0,0,-0.1,0.2,0,-0.1])  #q14-19: Right Leg """
-        q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
-                        0.2,0,0,                    # Torso
-                        0,0,-0.33,0.63,0,-0.30,     # Left Leg     
-                        0,0,-0.33,0.63,0,-0.30])  # Right Leg
-        # q0 = np.array([0,0,0.8793,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
-        #                 0.2,0,0,-0.25,0.1,0.25,-0.1,# Torso + Two shoulder DoFs each arm
+        # q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+        #                 0.2,0,0,                    # Torso
         #                 0,0,-0.33,0.63,0,-0.30,     # Left Leg     
         #                 0,0,-0.33,0.63,0,-0.30])  # Right Leg
-        """ q0 = np.array([0,0,0.88,0,0,0,1,          #q1-7:   Floating Base (quaternions) # Init like in smurf file
-                        0.2,0,0,
-                        0,0,-0.353,0.642,0,-0.289,     #q8-13:  Left Leg     
-                        0,0,-0.352,0.627,0,-0.275])  #q14-19: Right Leg """
+        # Task specific: Static Walking from Mid of other step
+        q0 = np.array([0.0548,0.0172,0.8902,0,0.0067,0.0160,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+                        0.1417,-0.0221,0.0019,                    # Torso
+                        -0.0255,-0.0236,-0.2379,0.5359,0.0252,-0.3180,     # Left Leg     
+                        -0.0274,-0.0247,-0.3376,0.5318,0.0258,-0.2054])  # Right Leg
         self.q0 = q0
         self.comRefY = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, self.q0)[2])
         pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
@@ -116,10 +109,11 @@ class SimpleBipedGaitProblem:
         # print('comShiftToLF')
         # print(rfPos0, lfPos0)
         print('comShiftToLF:')
-        comShiftToLF = self.createCoMShiftModels(supportKnots, comRef, lfPos0, timeStep)
+        comYHackyOffset = 0.0075
+        comShiftToLF = self.createCoMShiftModels(supportKnots, comRef, lfPos0+[0,comYHackyOffset,0], timeStep)
         # print('rfPos0, lfPos0 after shift')
         # print(rfPos0, lfPos0)
-        comTaskLF = np.hstack((lfPos0[0:2], comRef[2]))
+        comTaskLF = np.hstack((lfPos0[0:2]+[0,comYHackyOffset], comRef[2]))
         print('comTaskLF: ' +  str(comTaskLF))
         if self.firstStep is True:
             # rStep = self.createFootstepModels(lfPos0, [rfPos0], 0.5 * stepLength, stepHeight, timeStep, stepKnots, [self.lfId], [self.rfId])
@@ -131,10 +125,11 @@ class SimpleBipedGaitProblem:
         # print('rfPos0, lfPos0')
         # print(rfPos0, lfPos0)
         print('comShiftToRF:')
-        comShiftToRF = self.createCoMShiftModels(supportKnots, comTaskLF, rfPos0, timeStep)
+        comYHackyOffset = -0.0125
+        comShiftToRF = self.createCoMShiftModels(supportKnots, comTaskLF, rfPos0+[0,comYHackyOffset,0], timeStep)
         # print('rfPos0, lfPos0 after shift')
         # print(rfPos0, lfPos0)
-        comTaskRF = np.hstack((rfPos0[0:2], comRef[2]))
+        comTaskRF = np.hstack((rfPos0[0:2]+[0,comYHackyOffset], comRef[2]))
         print('comTaskRF: ' +  str(comTaskRF))
         if isLastPhase is True: 
             lStep = self.createFootstepModels(comTaskRF, [lfPos0], 0.5 * stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
@@ -145,6 +140,41 @@ class SimpleBipedGaitProblem:
         # print(rfPos0, lfPos0)
         # We define the problem as:
         loco3dModel += comShiftToLF + rStep
+        loco3dModel += comShiftToRF + lStep
+        if isLastPhase is True: 
+            loco3dModel += stabilization
+
+        problem = crocoddyl.ShootingProblem(x0, loco3dModel, loco3dModel[-1])
+        return problem
+
+    def createOneStepStaticWalkingProblem(self, x0, stepLength, stepHeight, timeStep, stepKnots, supportKnots, isLastPhase):
+        # Compute the current foot positions
+        q0 = x0[:self.state.nq]
+        pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
+        pinocchio.updateFramePlacements(self.rmodel, self.rdata)
+        rfPos0 = self.rdata.oMf[self.rfId].translation
+        lfPos0 = self.rdata.oMf[self.lfId].translation
+        rfPos0[2], lfPos0[2] = self.heightRef, self.heightRef # Set global target height of feet to initial height from q0
+        comRef = (rfPos0 + lfPos0) / 2
+        comRef[2] = self.comRefY # Define global CoM target height 
+        # Defining the action models along the time instances
+        loco3dModel = []
+        stabilization = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], poseRecovery=True) for k in range(60)]
+        
+        # Perform only right step
+        # comYHackyOffset = 0.0075
+        # comShiftToLF = self.createCoMShiftModels(supportKnots, comRef, lfPos0+[0,comYHackyOffset,0], timeStep)
+        # comTaskLF = np.hstack((lfPos0[0:2]+[0,comYHackyOffset], comRef[2]))
+        # rStep = self.createFootstepModels(comTaskLF, [rfPos0], 0.5 * stepLength, stepHeight, timeStep, stepKnots, [self.lfId], [self.rfId])
+        
+        # Perform only left step
+        comYHackyOffset = -0.01
+        comShiftToRF = self.createCoMShiftModels(supportKnots, comRef, rfPos0+[0,comYHackyOffset,0], timeStep)
+        comTaskRF = np.hstack((rfPos0[0:2]+[0,comYHackyOffset], comRef[2]))
+        lStep = self.createFootstepModels(comTaskRF, [lfPos0], 0.5 * stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
+        
+        # We define the problem as:
+        # loco3dModel += comShiftToLF + rStep
         loco3dModel += comShiftToRF + lStep
         if isLastPhase is True: 
             loco3dModel += stabilization
@@ -166,6 +196,7 @@ class SimpleBipedGaitProblem:
         comRef[2] = self.comRefY
         # print('comRef:' + str(comRef[2]))
         squatModels = []
+        comXHackyOffset = 0.005
         for k in range(numKnots):
             phKnots = (numKnots / 2)
             if k < phKnots:
@@ -201,8 +232,9 @@ class SimpleBipedGaitProblem:
         print('balanceKnots: ' + str(balanceKnots))
         print('rfPos0: ' + str(rfPos0))
         comYDiff = lfPos0[1] - comRef[1]
+        comHackyYOffset = 0.0075
         for k in range(shiftKnots):
-            comTask = np.array([0, np.asscalar(comYDiff) * (k + 1) / shiftKnots, 0.]) + comRef
+            comTask = np.array([0, (np.asscalar(comYDiff) * (k + 1) / shiftKnots) + comHackyYOffset, 0.]) + comRef
             shiftingToLF += [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], comTask=comTask)]
         # Foot task
         balancing = []
@@ -219,7 +251,8 @@ class SimpleBipedGaitProblem:
             print(footPosTask)
             swingFootTask = [crocoddyl.FramePlacement(self.rfId, pinocchio.SE3(np.eye(3), footPosTask))]
             # balancing += [self.createSwingFootModel(timeStep, [self.lfId], comTask=lfPos0, swingFootTask=swingFootTask)]
-            comTask = np.hstack((lfPos0[0:2], comRef[2]))
+            comTask = np.hstack((lfPos0[0:2]+[0,comHackyYOffset], comRef[2]))
+            print(comTask)
             # balancing += [self.createSwingFootModel(timeStep, [self.lfId], comTask=lfPos0, swingFootTask=swingFootTask)]
             balancing += [self.createSwingFootModel(timeStep, [self.lfId], comTask=comTask, swingFootTask=swingFootTask)]
         # Impact RF

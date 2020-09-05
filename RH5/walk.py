@@ -78,8 +78,8 @@ for DGain in baumgarteDGains:
         # timeStep = 0.01
         # stepKnots = 45
         # supportKnots = 15
-        stepKnots = 90  # TaskSpecific:StaticWalking
-        supportKnots = 90
+        stepKnots = 180  # TaskSpecific:StaticWalking
+        supportKnots = 300
         # stepKnots = 300  # TaskSpecific:StaticWalking_DT=0.01
         # supportKnots = 300
         impulseKnots = 1
@@ -102,8 +102,7 @@ for DGain in baumgarteDGains:
         # while True: # Get desired view params
         #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-        # simName = 'results/HumanoidFixedArms/StaticWalking_CoP50_ImpulseCoPCost_DT10_DGain90_FixedFootPenetration/'
-        simName = 'results/HumanoidFixedArms/OneLegBalancing/'
+        simName = 'results/HumanoidFixedArms/StaticWalking_LStepFromMidPos_NoCoPCost_ComHeightConstant_16s_CoMAdjust10mm/'
         # simName = 'results/HumanoidFixedArms/Analysis/GridSearchBaumgarteGains/DGain' + str(DGain) + '_PGain' + str(round(PGain,1)) + '/'
         if not os.path.exists(simName):
             os.makedirs(simName)
@@ -115,6 +114,9 @@ for DGain in baumgarteDGains:
         # GAITPHASES = \
         #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
         #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        GAITPHASES = \
+            [{'OneStepstaticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+                                'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # Perform 6 Steps
         # GAITPHASES = \
         #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
@@ -126,11 +128,11 @@ for DGain in baumgarteDGains:
         # GAITPHASES = \
         #     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
         # GAITPHASES = \
-        #     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
-        #      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}},
-        #      {'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
-        GAITPHASES = \
-            [{'balancing': {'supportKnots': 10, 'shiftKnots': 120, 'balanceKnots': 240, 'timeStep': timeStep}}]
+        #     [{'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
+        #      {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
+        #      {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}}]
+        # GAITPHASES = \
+        #     [{'balancing': {'supportKnots': 10, 'shiftKnots': 240, 'balanceKnots': 480, 'timeStep': timeStep}}]
                 
         ddp = [None] * len(GAITPHASES)
         for i, phase in enumerate(GAITPHASES):
@@ -144,6 +146,11 @@ for DGain in baumgarteDGains:
                     # Creating a walking problem
                     ddp[i] = crocoddyl.SolverBoxFDDP(
                         gait.createStaticWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
+                                                        value['stepKnots'], value['supportKnots'], value['isLastPhase']))
+                if key == 'OneStepstaticWalking':
+                    # Creating a walking problem
+                    ddp[i] = crocoddyl.SolverBoxFDDP(
+                        gait.createOneStepStaticWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
                                                         value['stepKnots'], value['supportKnots'], value['isLastPhase']))
                 if key == 'squat':
                     # Creating a squat problem
@@ -171,7 +178,7 @@ for DGain in baumgarteDGains:
                 m.quasiStatic(d, rmodel.defaultState)
                 for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
             ]
-            solved = ddp[i].solve(xs, us, 250, False, 0.1)
+            solved = ddp[i].solve(xs, us, 100, False, 0.1)
             print(solved)
 
             # Defining the final state as initial one for the next phase
