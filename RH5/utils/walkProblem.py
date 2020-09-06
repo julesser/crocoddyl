@@ -17,16 +17,23 @@ class SimpleBipedGaitProblem:
         # Getting the frame id for all the legs
         self.rfId = self.rmodel.getFrameId(rightFoot)
         self.lfId = self.rmodel.getFrameId(leftFoot)
-        # Defining default state
+        # Default state
         # q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
         #                 0.2,0,0,                    # Torso
         #                 0,0,-0.33,0.63,0,-0.30,     # Left Leg     
-        #                 0,0,-0.33,0.63,0,-0.30])  # Right Leg
-        # Task specific: Static Walking from Mid of other step
-        q0 = np.array([0.0548,0.0172,0.8902,0,0.0067,0.0160,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
-                        0.1417,-0.0221,0.0019,                    # Torso
-                        -0.0255,-0.0236,-0.2379,0.5359,0.0252,-0.3180,     # Left Leg     
-                        -0.0274,-0.0247,-0.3376,0.5318,0.0258,-0.2054])  # Right Leg
+        #                 0,0,-0.33,0.63,0,-0.30])    # Right Leg
+        # TaskSpecific:ArmsIncluded
+        q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+                        0.2,0,0,                    # Torso
+                        -0.25, 0.1, 0, 0,           # Left Arm
+                        0.25, -0.1, 0, 0,           # Right Arm
+                        0,0,-0.33,0.63,0,-0.30,     # Left Leg     
+                        0,0,-0.33,0.63,0,-0.30])    # Right Leg
+        # TaskSpecific: Static Walking from Mid of other step
+        # q0 = np.array([0.0548,0.0172,0.8902,0,0.0067,0.0160,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+        #                 0.1417,-0.0221,0.0019,                    # Torso
+        #                 -0.0255,-0.0236,-0.2379,0.5359,0.0252,-0.3180,     # Left Leg     
+        #                 -0.0274,-0.0247,-0.3376,0.5318,0.0258,-0.2054])  # Right Leg
         self.q0 = q0
         self.comRefY = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, self.q0)[2])
         pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
@@ -368,12 +375,12 @@ class SimpleBipedGaitProblem:
         # if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting
         #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
         #     costModel.addCost("comTrack", comTrack, 1e6)
-        if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
-            # com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
-            com2DWeights = np.array([1, 1, 1]) # Neglect height of CoM
-            com2DTrack = crocoddyl.CostModelCoMPosition(self.state, 
-                crocoddyl.ActivationModelWeightedQuad(com2DWeights**2), comTask, self.actuation.nu)
-            costModel.addCost("com2DTrack", com2DTrack, 1e6)
+        # if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
+        #     # com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
+        #     com2DWeights = np.array([1, 1, 1]) # Neglect height of CoM
+        #     com2DTrack = crocoddyl.CostModelCoMPosition(self.state, 
+        #         crocoddyl.ActivationModelWeightedQuad(com2DWeights**2), comTask, self.actuation.nu)
+        #     costModel.addCost("com2DTrack", com2DTrack, 1e6)
         for i in supportFootIds:
             # friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
@@ -382,10 +389,10 @@ class SimpleBipedGaitProblem:
                 crocoddyl.FrameFrictionCone(i, cone), self.actuation.nu)
             costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
             # center of pressure cost
-            # CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
-            #     # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
-            #     crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
-            # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
+                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
@@ -460,10 +467,10 @@ class SimpleBipedGaitProblem:
                 crocoddyl.FrameFrictionCone(i, cone), self.actuation.nu)
             costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
             # center of pressure
-            # CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
-            #     # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
-            #     crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
-            # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
+                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
         if swingFootTask is not None:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
@@ -512,10 +519,10 @@ class SimpleBipedGaitProblem:
                 costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e8)
         for i in supportFootIds:
             # Impulse center of pressure cost
-            # CoP = crocoddyl.CostModelImpulseCoPPosition(self.state, 
-            # # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
-            # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])))
-            # costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            CoP = crocoddyl.CostModelImpulseCoPPosition(self.state, 
+            # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
+            crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])))
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
             # Impulse friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
             frictionCone = crocoddyl.CostModelImpulseFrictionCone(

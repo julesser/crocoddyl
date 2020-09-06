@@ -13,11 +13,74 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
          rmodel, xs, us, accs, fs, fsArranged, X, U, F, A = mergeDataFromSolvers(ddp, bounds)
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
     
-    # print('nx: ', nx)
-    # print('nq: ', nq)
+    print('nx: ', nx)
+    print('nq: ', nq)
     # print('na: ', na)
+    # # Plotting the joint state: positions, velocities and torques
+    # plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
+    # torsoJointNames = ['BodyPitch','BodyRoll','BodyYaw']
+    # legJointNames = ['Hip1', 'Hip2', 'Hip3', 'Knee', 'AnkleRoll', 'AnklePitch']
+    # # torso
+    # plt.subplot(3, 3, 1)
+    # plt.title('Joint Position [rad]')
+    # [plt.plot(X[k], label=torsoJointNames[i]) for i, k in enumerate(range(7, 10))]
+    # if bounds:
+    #     [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(7, 10))]
+    #     [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(7, 10))]
+    # plt.ylabel('Torso')
+    # plt.subplot(3, 3, 2)
+    # plt.title('Joint Velocity [rad/s]')
+    # [plt.plot(X[k], label=torsoJointNames[i]) for i, k in enumerate(range(nq + 6, nq + 9))]
+    # if bounds:
+    #     [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 9))]
+    #     [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 9))]
+    # plt.ylabel('Torso')
+    # plt.subplot(3, 3, 3)
+    # plt.title('Joint Acceleration [rad/s²]')
+    # [plt.plot(A[k], label=torsoJointNames[i]) for i, k in enumerate(range(6, 9))]
+    # plt.ylabel('Torso')
+    # plt.legend()
+    # # left foot
+    # plt.subplot(3, 3, 4)
+    # [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(10, 16))]
+    # if bounds:
+    #     [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(10, 16))]
+    #     [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(10, 16))]
+    # plt.ylabel('LF')
+    # plt.subplot(3, 3, 5)
+    # [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 9, nq + 15))]
+    # if bounds:
+    #     [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 9, nq + 15))]
+    #     [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 9, nq + 15))]
+    # plt.ylabel('LF')
+    # plt.subplot(3, 3, 6)
+    # [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(9, 15))]
+    # plt.ylabel('LF')
+    # plt.legend()
+    # # right foot
+    # plt.subplot(3, 3, 7)
+    # [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(16, 22))]
+    # if bounds:
+    #     [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(16, 22))]
+    #     [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(16, 22))]
+    # plt.ylabel('RF')
+    # plt.xlabel('Knots')
+    # plt.subplot(3, 3, 8)
+    # [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 15, nq + 21))]
+    # if bounds:
+    #     [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 15, nq + 21))]
+    #     [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 15, nq + 21))]
+    # plt.ylabel('RF')
+    # plt.xlabel('Knots')
+    # plt.subplot(3, 3, 9)
+    # [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(15, 21))]
+    # plt.ylabel('RF')
+    # plt.xlabel('Knots')
+    # plt.legend()
+    # plt.savefig(dirName + 'JointState.png', dpi = 300)
 
-    # Plotting the joint state: positions, velocities and torques
+    nArms = 8 # total number of freed joints for both arms
+    # TaskSpecific:ArmsIncluded - Plotting the joint state: positions, velocities and torques
     plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
     torsoJointNames = ['BodyPitch','BodyRoll','BodyYaw']
     legJointNames = ['Hip1', 'Hip2', 'Hip3', 'Knee', 'AnkleRoll', 'AnklePitch']
@@ -43,44 +106,76 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.legend()
     # left foot
     plt.subplot(3, 3, 4)
-    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(10, 16))]
+    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(10+nArms, 16+nArms))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(10, 16))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(10, 16))]
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(10+nArms, 16+nArms))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(10+nArms, 16+nArms))]
     plt.ylabel('LF')
     plt.subplot(3, 3, 5)
-    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 9, nq + 15))]
+    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 9+nArms, nq + 15+nArms))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 9, nq + 15))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 9, nq + 15))]
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 9+nArms, nq + 15+nArms))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 9+nArms, nq + 15+nArms))]
     plt.ylabel('LF')
     plt.subplot(3, 3, 6)
-    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(9, 15))]
+    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(9+nArms, 15+nArms))]
     plt.ylabel('LF')
     plt.legend()
     # right foot
     plt.subplot(3, 3, 7)
-    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(16, 22))]
+    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(16+nArms, 22+nArms))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(16, 22))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(16, 22))]
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(16+nArms, 22+nArms))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(16+nArms, 22+nArms))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.subplot(3, 3, 8)
-    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 15, nq + 21))]
+    [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 15+nArms, nq + 21+nArms))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 15, nq + 21))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 15, nq + 21))]
+        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 15+nArms, nq + 21+nArms))]
+        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 15+nArms, nq + 21+nArms))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.subplot(3, 3, 9)
-    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(15, 21))]
+    [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(15+nArms, 21+nArms))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.legend()
     plt.savefig(dirName + 'JointState.png', dpi = 300)
 
-    # Plotting the joint torques
+    # # Plotting the joint torques
+    # plt.figure(figIndex+1, figsize=(16,9))
+    # # Torso
+    # plt.subplot(3, 1, 1)
+    # plt.title('Joint Torque [Nm]')
+    # [plt.plot(U[k], label=torsoJointNames[i]) for i, k in enumerate(range(0, 3))]
+    # if bounds:
+    #     [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(0, 3))]
+    #     [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(0, 3))]
+    # plt.ylabel('Torso')
+    # plt.xlabel('Knots')
+    # plt.legend()
+    # plt.subplot(3, 1, 2)
+    # # Left foot
+    # [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(3, 9))]
+    # if bounds:
+    #     [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(3, 9))]
+    #     [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(3, 9))]
+    # plt.ylabel('LF')
+    # plt.xlabel('Knots')
+    # plt.legend()
+    # # Right foot
+    # plt.subplot(3, 1, 3)
+    # [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(9, 15))]
+    # if bounds:
+    #     [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(9, 15))]
+    #     [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(9, 15))]
+    # plt.ylabel('RF')
+    # plt.xlabel('Knots')
+    # plt.legend()
+    # plt.savefig(dirName + 'JointTorques.png', dpi = 300)
+
+    # TaskSpecific:ArmsIncluded - Plotting the joint torques
     plt.figure(figIndex+1, figsize=(16,9))
     # Torso
     plt.subplot(3, 1, 1)
@@ -94,19 +189,19 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.legend()
     plt.subplot(3, 1, 2)
     # Left foot
-    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(3, 9))]
+    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(3+nArms, 9+nArms))]
     if bounds:
-        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(3, 9))]
-        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(3, 9))]
+        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(3+nArms, 9+nArms))]
+        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(3+nArms, 9+nArms))]
     plt.ylabel('LF')
     plt.xlabel('Knots')
     plt.legend()
     # Right foot
     plt.subplot(3, 1, 3)
-    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(9, 15))]
+    [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(9+nArms, 15+nArms))]
     if bounds:
-        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(9, 15))]
-        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(9, 15))]
+        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(9+nArms, 15+nArms))]
+        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(9+nArms, 15+nArms))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.legend()
@@ -229,13 +324,15 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     CoPLFx, CoPLFy, CoPRFx, CoPRFy = [], [], [], [] # Used for stability analysis plot
     for k in range(len(CoPs)): 
         for CoP in CoPs[k]: # Iterate if DS
-            if CoP["key"] == "10":  # LF
+            # if CoP["key"] == "10":  # LF
+            if CoP["key"] == "18":  # LF TaskSpecific:ArmsIncluded
                 # print(CoP["CoP"][0])
                 CoPLF[0][k] = CoP["CoP"][0] + lfPose[0][k]
                 CoPLF[1][k] = CoP["CoP"][1] + lfPose[1][k]
                 CoPLFx.append(CoP["CoP"][0] + lfPose[0][k])
                 CoPLFy.append(CoP["CoP"][1] + lfPose[1][k])
-            elif CoP["key"] == "16":  # RF
+            # elif CoP["key"] == "16":  # RF
+            elif CoP["key"] == "24":  # RF TaskSpecific:ArmsIncluded
                 CoPRF[0][k] = CoP["CoP"][0] + rfPose[0][k]
                 CoPRF[1][k] = CoP["CoP"][1] + rfPose[1][k]
                 CoPRFx.append(CoP["CoP"][0] + rfPose[0][k])
@@ -253,11 +350,11 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
-    # relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
+    relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
     # relTimePoints = [0,(total_knots)-1] # TaskSpecific:Walking 1 step
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
-    relTimePoints = [0, 100] # TaskSpecific:Jumping
+    # relTimePoints = [0, 100] # TaskSpecific:Jumping
     # relTimePoints = [0] # TaskSpecific:Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
@@ -278,20 +375,20 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # (2) Variant with just one plot
     # plt.subplot(1,2,1)
     plt.plot(Cx[1:-1], Cy[1:-1], label='CoM')
-    # plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
-    # plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
-    # plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
-    # plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
-    # plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
-    # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
-    # [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFStart')]
-    # [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFEnd')]
+    plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
+    plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
+    plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
+    plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
+    plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
+    plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
+    [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFStart')]
+    [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFEnd')]
     # [plt.plot(ZMPx, ZMPy, linestyle=':', label='ZMP')]
     [plt.plot(CoPLFx, CoPLFy, marker='x', linestyle='', label='LFCoP')]
     [plt.plot(CoPRFx, CoPRFy, marker='x', linestyle='', label='RFCoP')]
     plt.legend()
     plt.axis('scaled')
-    plt.xlim(0, 0.5)
+    plt.xlim(0, 0.8)
     plt.ylim(-0.2, 0.2)
     # plt.xlim(-0.05, 0.9) # TaskSpecific: LongGait or large steps
     # plt.ylim(-0.3, 0.3)
@@ -533,7 +630,7 @@ def logSolution(ddp, timeStep, logPath):
                          'Tau_BodyPitch', 'Tau_BodyRoll', 'Tau_BodyYaw',
                          'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch',
                          'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch'])
-        # When shoulder joints are included:
+        # TaskSpecific:ArmsIncluded:
         # writer.writerow(['t[s]',
         #                  'q_BodyPitch', 'q_BodyRoll', 'q_BodyYaw',
         #                  'q_ALShoulder1', 'q_ALShoulder2', 'q_ALShoulder3',
@@ -729,12 +826,14 @@ def mergeDataFromSolvers(ddp, bounds):
                             # Additionally create the aligned forces
                             k = p*len(ddp[0].problem.runningDatas)+i-impulse_count #Assumes only the last OC problem varies in number of knots (e.g. due to an additional stabilization)
                             # if str(contact.joint) == "10": # left foot
-                            if str(contact.joint) == "16": # left foot #TaskSpecific:Jumping (6 add joints)
+                            # if str(contact.joint) == "16": # left foot #TaskSpecific:Jumping (6 add joints)
+                            if str(contact.joint) == "18": # left foot #TaskSpecific:ArmsIncluded (nArms add joints)
                                 for c in range(3):
                                     fsArranged[k,c] = force.linear[c]
                                     fsArranged[k,c+3] = force.angular[c]
                             # elif str(contact.joint) == "16": # right foot
-                            elif str(contact.joint) == "22": # right foot #TaskSpecific:Jumping (6 add joints)
+                            # elif str(contact.joint) == "22": # right foot #TaskSpecific:Jumping (6 add joints)
+                            if str(contact.joint) == "24": #TaskSpecific:ArmsIncluded (nArms add joints)
                                 for c in range(3):
                                     fsArranged[k,c+6] = force.linear[c]
                                     fsArranged[k,c+9] = force.angular[c]

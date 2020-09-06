@@ -28,12 +28,15 @@ rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pi
 # for jn in rh5_robot.model.names:
 #     print(jn)
 # Create a list of joints to lock
-jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-                'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
-                'HeadPitch', 'HeadRoll', 'HeadYaw']
+# jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+#                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+#                 'HeadPitch', 'HeadRoll', 'HeadYaw']
 # jointsToLock = ['ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
 #                 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
 #                 'HeadPitch', 'HeadRoll', 'HeadYaw']
+jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+                'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+                'HeadPitch', 'HeadRoll', 'HeadYaw']
 # Get the existing joint IDs
 jointsToLockIDs = []
 for jn in range(len(jointsToLock)):
@@ -42,13 +45,13 @@ for jn in range(len(jointsToLock)):
     else:
         print('Warning: joint ' + str(jointsToLock[jn]) + ' does not belong to the model!')
 # Init CoM perfectly on feet center line
-fixedJointConfig = np.array([0,0,0,0,0,0,0, # Floating Base
+fixedJointConfig = np.array([0,0,0,0,0,0,0,    # Floating Base
                         0,0,0,                 # Torso
-                        -0.25,0.1,0,0,0,0,0, # Left Arm
-                        0.25,-0.1,0,0,0,0,0,  # Right Arm
+                        -0.25,0.1,0,0,0,0,0,   # Left Arm
+                        0.25,-0.1,0,0,0,0,0,   # Right Arm
                         0,0,0,                 # Head
                         0,0,0,0,0,0,           # Left Leg     
-                        0,0,0,0,0,0])        # Right Leg)
+                        0,0,0,0,0,0])          # Right Leg)
 # Build the reduced model
 # rh5_robot.model = pinocchio.buildReducedModel(rh5_robot.model, jointsToLockIDs, fixedJointConfig) # If no displaying needed
 rh5_robot.model, rh5_robot.visual_model = pinocchio.buildReducedModel(rh5_robot.model, rh5_robot.visual_model, jointsToLockIDs, fixedJointConfig)
@@ -76,14 +79,15 @@ for DGain in baumgarteDGains:
         # Setting up the 3d walking problem
         timeStep = 0.03
         # timeStep = 0.01
-        # stepKnots = 45
-        # supportKnots = 15
-        stepKnots = 180  # TaskSpecific:StaticWalking
-        supportKnots = 300
+        stepKnots = 45
+        supportKnots = 15
+        # stepKnots = 90  # TaskSpecific:StaticWalking
+        # supportKnots = 90
         # stepKnots = 300  # TaskSpecific:StaticWalking_DT=0.01
         # supportKnots = 300
         impulseKnots = 1
-        stepLength = 0.2
+        # stepLength = 0.2
+        stepLength = 0.8 #TaskSpecific: DynamicWalking Large steps
         knots = [stepKnots, supportKnots]
         stepHeight = 0.05
         rightFoot = 'FR_SupportCenter'
@@ -102,21 +106,21 @@ for DGain in baumgarteDGains:
         # while True: # Get desired view params
         #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-        simName = 'results/HumanoidFixedArms/StaticWalking_LStepFromMidPos_NoCoPCost_ComHeightConstant_16s_CoMAdjust10mm/'
+        simName = 'results/HumanoidFixedArms/DynamicWalking_LargeSteps_CoP50_ArmsFreed/'
         # simName = 'results/HumanoidFixedArms/Analysis/GridSearchBaumgarteGains/DGain' + str(DGain) + '_PGain' + str(round(PGain,1)) + '/'
         if not os.path.exists(simName):
             os.makedirs(simName)
 
         # Perform 2 Steps
-        # GAITPHASES = \
-        #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
-        #                 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        GAITPHASES = \
+            [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+                        'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # GAITPHASES = \
         #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
         #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
-        GAITPHASES = \
-            [{'OneStepstaticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
-                                'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        # GAITPHASES = \
+        #     [{'OneStepstaticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+        #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # Perform 6 Steps
         # GAITPHASES = \
         #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
@@ -178,7 +182,7 @@ for DGain in baumgarteDGains:
                 m.quasiStatic(d, rmodel.defaultState)
                 for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
             ]
-            solved = ddp[i].solve(xs, us, 100, False, 0.1)
+            solved = ddp[i].solve(xs, us, 200, False, 0.1)
             print(solved)
 
             # Defining the final state as initial one for the next phase
