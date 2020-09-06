@@ -68,7 +68,7 @@ rmodel = rh5_robot.model
 setLimits(rmodel)
 
 gridSearchResults = []
-baumgarteDGains = [30]
+baumgarteDGains = [35]
 baumgartePGains = [0]
 # baumgarteDGains = np.arange(20, 110, 10)
 # baumgartePGains = np.arange(0, 1.2, 0.1)
@@ -106,7 +106,8 @@ for DGain in baumgarteDGains:
         # while True: # Get desired view params
         #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-        simName = 'results/HumanoidFixedArms/DynamicWalking_LargeSteps_CoP50_ArmsFreed/'
+        # simName = 'results/HumanoidFixedArms/DynamicWalking_LargeSteps_CoP50_ArmsFreed/'
+        simName = 'results/DynamicWalking_LargeSteps_CoP100_ArmsFreed/'
         # simName = 'results/HumanoidFixedArms/Analysis/GridSearchBaumgarteGains/DGain' + str(DGain) + '_PGain' + str(round(PGain,1)) + '/'
         if not os.path.exists(simName):
             os.makedirs(simName)

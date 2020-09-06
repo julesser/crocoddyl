@@ -397,8 +397,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     currentAxis = plt.gca()
     for t in relTimePoints:
         # if smaller region: draw dotted rectangle
-        currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/4, lfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
-        currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/4, rfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
+        # currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/4, lfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
+        # currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/4, rfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
         # currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/8, lfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
         # currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/8, rfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
         if t != relTimePoints[-1]:
@@ -457,6 +457,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # plt.legend()
     # plt.savefig(dirName + 'TaskSpace.png', dpi = 300)
 
+    plt.figure(figIndex + 3, figsize=(16,9))
     plt.subplot(3, 3, 1)
     plt.plot(knots, Cx)
     plt.xlabel('Knots')
@@ -470,38 +471,68 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.xlabel('Knots')
     plt.ylabel('CoM Z [m]')
     plt.subplot(3, 3, 4)
-    [plt.plot(knots, lfVel[0], label='LF'), plt.plot(knots, rfVel[0], label='RF')]
-    plt.xlabel('Knots')
-    plt.ylabel('Foot dX [m/s]')
-    plt.legend()
-    plt.subplot(3, 3, 5)
-    [plt.plot(knots, lfVel[1], label='LF'), plt.plot(knots, rfVel[1], label='RF')]
-    plt.xlabel('Knots')
-    plt.ylabel('Foot dY [m/s]')
-    plt.legend()
-    plt.subplot(3, 3, 6)
-    [plt.plot(knots, lfVel[2], label='LF'), plt.plot(knots, rfVel[2], label='RF')]
-    plt.xlabel('Knots')
-    plt.ylabel('Foot dY [m/s]')
-    plt.legend()
-    plt.subplot(3, 3, 7)
     [plt.plot(knots, lfPose[0], label='LF'), plt.plot(knots, rfPose[0], label='RF')]
     plt.xlabel('Knots')
     plt.ylabel('Foot X [m]')
     plt.legend()
-    plt.subplot(3, 3, 8)
+    plt.subplot(3, 3, 5)
     [plt.plot(knots, lfPose[1], label='LF'), plt.plot(knots, rfPose[1], label='RF')]
     plt.xlabel('Knots')
     plt.ylabel('Foot Y [m]')
     plt.legend()
-    plt.subplot(3, 3, 9)
+    plt.subplot(3, 3, 6)
     [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
     plt.xlabel('Knots')
     plt.ylabel('Foot Z [m]')
     plt.legend()
+    plt.subplot(3, 3, 7)
+    [plt.plot(knots, lfVel[0], label='LF'), plt.plot(knots, rfVel[0], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot dX [m/s]')
+    plt.legend()
+    plt.subplot(3, 3, 8)
+    [plt.plot(knots, lfVel[1], label='LF'), plt.plot(knots, rfVel[1], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot dY [m/s]')
+    plt.legend()
+    plt.subplot(3, 3, 9)
+    [plt.plot(knots, lfVel[2], label='LF'), plt.plot(knots, rfVel[2], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot dZ [m/s]')
+    plt.legend()
     plt.savefig(dirName + 'TaskSpace.png', dpi = 300)
 
-    plt.figure(figIndex + 6, figsize=(16,9))
+    plt.figure(figIndex + 4, figsize=(16,9))
+    plt.subplot(2, 3, 1)
+    plt.plot(knots, Cx)
+    plt.xlabel('Knots')
+    plt.ylabel('CoM X [m]')
+    plt.subplot(2, 3, 2)
+    plt.plot(knots, Cy)
+    plt.xlabel('Knots')
+    plt.ylabel('CoM Y [m]')
+    plt.subplot(2, 3, 3)
+    plt.plot(knots, Cz)
+    plt.xlabel('Knots')
+    plt.ylabel('CoM Z [m]')
+    plt.subplot(2, 3, 4)
+    [plt.plot(knots, lfPose[0], label='LF'), plt.plot(knots, rfPose[0], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot X [m]')
+    plt.legend()
+    plt.subplot(2, 3, 5)
+    [plt.plot(knots, lfPose[1], label='LF'), plt.plot(knots, rfPose[1], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot Y [m]')
+    plt.legend()
+    plt.subplot(2, 3, 6)
+    [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
+    plt.xlabel('Knots')
+    plt.ylabel('Foot Z [m]')
+    plt.legend()
+    plt.savefig(dirName + 'TaskSpaceReduced.png', dpi = 300)
+
+    plt.figure(figIndex + 5, figsize=(16,9))
     [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
     plt.plot(knots, [0.]*len(knots), linestyle=':', markersize = '1', color='k')
     plt.xlabel('Knots')
@@ -509,7 +540,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.legend()
     plt.savefig(dirName + 'TaskSpaceFeetAnalysis.png', dpi = 300)
 
-    plt.figure(figIndex + 7, figsize=(16,9))
+    plt.figure(figIndex + 6, figsize=(16,9))
     [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
     plt.plot(knots, [0.]*len(knots), linestyle=':', markersize = '1', color='k')
     plt.xlabel('Knots')
@@ -524,18 +555,35 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # print('minFeetError' + str(minFeetError))
 
     # Plotting ZMP vs CoM
-    plt.figure(figIndex + 8, figsize=(16,9))
+    plt.figure(figIndex + 7, figsize=(16,9))
     [plt.plot(knots, Cx, label='CoMx'), plt.plot(knots, Cy, label='CoMy')]
     [plt.plot(knots, ZMP[0], label='ZMPx'), plt.plot(knots, ZMP[1], label='ZMPy')]
     plt.xlabel('Knots')
     plt.ylabel('Position [m]')
     plt.legend()
-    plt.savefig(dirName + 'TaskSpaceCoMvsZMP.png', dpi = 300)
+    plt.savefig(dirName + 'TaskSpaceZMPvsCoM.png', dpi = 300)
+
+    # Plotting CoP vs ZMP
+    plt.figure(figIndex + 8, figsize=(16,9))
+    plt.subplot(1,2,1)
+    plt.plot(knots, CoPLF[0], label='CoPLFx')
+    plt.plot(knots, CoPRF[0], label='CoPRFx')
+    plt.plot(knots, ZMP[0], label='ZMPx')
+    plt.xlabel('Knots')
+    plt.ylabel('Position [m]')
+    plt.legend()
+    plt.subplot(1,2,2)
+    plt.plot(knots, CoPLF[1], label='CoPLFy')
+    plt.plot(knots, CoPRF[1], label='CoPRFy')
+    plt.plot(knots, ZMP[1], label='ZMPy')
+    plt.xlabel('Knots')
+    plt.legend()
+    plt.savefig(dirName + 'TaskSpaceZMPvsCoP.png', dpi = 300)
 
     # Plotting the Contact Wrenches
     contactForceNames = ['Fx','Fy','Fz'] 
     contactMomentNames = ['Tx','Ty','Tz']
-    plt.figure(figIndex + 4, figsize=(16,9))
+    plt.figure(figIndex + 9, figsize=(16,9))
     plt.subplot(2,2,1)
     plt.title('Contact Forces [N]')
     [plt.plot(F[k], label=contactForceNames[i]) for i, k in enumerate(range(0, 3))]
@@ -566,7 +614,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     PosFBNames = ['X', 'Y', 'Z']
     VelFBNames = ['vx', 'vy', 'vz', 'wx', 'wy', 'wz']
     AccFBNames = ['vxd', 'vyd', 'vzd', 'wxd', 'wyd', 'wzd']
-    plt.figure(figIndex + 5, figsize=(16,9))
+    plt.figure(figIndex + 10, figsize=(16,9))
     ax1 = plt.subplot(3,1,1)
     [plt.plot(X[k], label=PosFBNames[i]) for i, k in enumerate(range(0, 3))]
     plt.setp(ax1.get_xticklabels(), visible=False)

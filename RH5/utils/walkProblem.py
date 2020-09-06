@@ -390,8 +390,8 @@ class SimpleBipedGaitProblem:
             costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
             # center of pressure cost
             CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
-                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
-                crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
             costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
         if swingFootTask is not None:
             for i in swingFootTask:
@@ -468,8 +468,8 @@ class SimpleBipedGaitProblem:
             costModel.addCost(self.rmodel.frames[i].name + "_frictionCone", frictionCone, 1e2)
             # center of pressure
             CoP = crocoddyl.CostModelContactCoPPosition(self.state, 
-                # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
-                crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
+                crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])), self.actuation.nu)
+                # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])), self.actuation.nu)
             costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
         if swingFootTask is not None:
             for i in swingFootTask:
@@ -520,8 +520,8 @@ class SimpleBipedGaitProblem:
         for i in supportFootIds:
             # Impulse center of pressure cost
             CoP = crocoddyl.CostModelImpulseCoPPosition(self.state, 
-            # crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
-            crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])))
+            crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
+            # crocoddyl.FrameCoPSupport(i, np.array([0.1, 0.04])))
             costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
             # Impulse friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
