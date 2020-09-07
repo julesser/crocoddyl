@@ -77,9 +77,10 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # plt.ylabel('RF')
     # plt.xlabel('Knots')
     # plt.legend()
-    # plt.savefig(dirName + 'JointState.png', dpi = 300)
+    # plt.tight_layout()
+    # plt.savefig(dirName + 'JointState.pdf', dpi = 300)
 
-    nArms = 8 # total number of freed joints for both arms
+    nArms = 6 # total number of freed joints for both arms
     # TaskSpecific:ArmsIncluded - Plotting the joint state: positions, velocities and torques
     plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
     torsoJointNames = ['BodyPitch','BodyRoll','BodyYaw']
@@ -141,7 +142,10 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.legend()
-    plt.savefig(dirName + 'JointState.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'JointState.pdf', dpi = 300, bbox_inches='tight')
+
+
 
     # # Plotting the joint torques
     # plt.figure(figIndex+1, figsize=(16,9))
@@ -173,7 +177,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # plt.ylabel('RF')
     # plt.xlabel('Knots')
     # plt.legend()
-    # plt.savefig(dirName + 'JointTorques.png', dpi = 300)
+    # plt.tight_layout()
+    # plt.savefig(dirName + 'JointTorques.pdf', dpi = 300, bbox_inches='tight')
 
     # TaskSpecific:ArmsIncluded - Plotting the joint torques
     plt.figure(figIndex+1, figsize=(16,9))
@@ -205,7 +210,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.legend()
-    plt.savefig(dirName + 'JointTorques.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'JointTorques.pdf', dpi = 300, bbox_inches='tight')
     
     # Get 3 dim CoM, get feet poses
     rdata = rmodel.createData()
@@ -325,14 +331,14 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     for k in range(len(CoPs)): 
         for CoP in CoPs[k]: # Iterate if DS
             # if CoP["key"] == "10":  # LF
-            if CoP["key"] == "18":  # LF TaskSpecific:ArmsIncluded
+            if CoP["key"] == "16":  # LF TaskSpecific:ArmsIncluded
                 # print(CoP["CoP"][0])
                 CoPLF[0][k] = CoP["CoP"][0] + lfPose[0][k]
                 CoPLF[1][k] = CoP["CoP"][1] + lfPose[1][k]
                 CoPLFx.append(CoP["CoP"][0] + lfPose[0][k])
                 CoPLFy.append(CoP["CoP"][1] + lfPose[1][k])
             # elif CoP["key"] == "16":  # RF
-            elif CoP["key"] == "24":  # RF TaskSpecific:ArmsIncluded
+            elif CoP["key"] == "22":  # RF TaskSpecific:ArmsIncluded
                 CoPRF[0][k] = CoP["CoP"][0] + rfPose[0][k]
                 CoPRF[1][k] = CoP["CoP"][1] + rfPose[1][k]
                 CoPRFx.append(CoP["CoP"][0] + rfPose[0][k])
@@ -350,11 +356,11 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
-    relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
+    # relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
     # relTimePoints = [0,(total_knots)-1] # TaskSpecific:Walking 1 step
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
-    # relTimePoints = [0, 100] # TaskSpecific:Jumping
+    relTimePoints = [0, 100] # TaskSpecific:Jumping
     # relTimePoints = [0] # TaskSpecific:Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
@@ -375,12 +381,12 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # (2) Variant with just one plot
     # plt.subplot(1,2,1)
     plt.plot(Cx[1:-1], Cy[1:-1], label='CoM')
-    plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
-    plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
-    plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
-    plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
-    plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
-    plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
+    # plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
+    # plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
+    # plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
+    # plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
+    # plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
+    # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd') 
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFStart')]
     [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFEnd')]
     # [plt.plot(ZMPx, ZMPy, linestyle=':', label='ZMP')]
@@ -388,7 +394,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     [plt.plot(CoPRFx, CoPRFy, marker='x', linestyle='', label='RFCoP')]
     plt.legend()
     plt.axis('scaled')
-    plt.xlim(0, 0.8)
+    plt.xlim(0, 0.4)
     plt.ylim(-0.2, 0.2)
     # plt.xlim(-0.05, 0.9) # TaskSpecific: LongGait or large steps
     # plt.ylim(-0.3, 0.3)
@@ -414,7 +420,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # plt.plot(knots, Cz)
     # plt.xlabel('Knots')
     # plt.ylabel('CoM Z [m]')
-    plt.savefig(dirName + 'StabilityAnalysis.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'StabilityAnalysis.pdf', dpi = 300, bbox_inches='tight')
 
     # Plotting the Task Space: Center of Mass and Feet (x,y,z over knots)
     # plt.figure(figIndex + 3, figsize=(16,9))
@@ -455,7 +462,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # plt.xlabel('Knots')
     # plt.ylabel('Foot Z [m]')
     # plt.legend()
-    # plt.savefig(dirName + 'TaskSpace.png', dpi = 300)
+    # plt.tight_layout()
+    # plt.savefig(dirName + 'TaskSpace.pdf', dpi = 300, bbox_inches='tight')
 
     plt.figure(figIndex + 3, figsize=(16,9))
     plt.subplot(3, 3, 1)
@@ -500,7 +508,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.xlabel('Knots')
     plt.ylabel('Foot dZ [m/s]')
     plt.legend()
-    plt.savefig(dirName + 'TaskSpace.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'TaskSpace.pdf', dpi = 300, bbox_inches='tight')
 
     plt.figure(figIndex + 4, figsize=(16,9))
     plt.subplot(2, 3, 1)
@@ -530,7 +539,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.xlabel('Knots')
     plt.ylabel('Foot Z [m]')
     plt.legend()
-    plt.savefig(dirName + 'TaskSpaceReduced.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'TaskSpaceReduced.pdf', dpi = 300, bbox_inches='tight')
 
     plt.figure(figIndex + 5, figsize=(16,9))
     [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
@@ -538,7 +548,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.xlabel('Knots')
     plt.ylabel('Foot Z [m]')
     plt.legend()
-    plt.savefig(dirName + 'TaskSpaceFeetAnalysis.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'TaskSpaceFeetAnalysis.pdf', dpi = 300, bbox_inches='tight')
 
     plt.figure(figIndex + 6, figsize=(16,9))
     [plt.plot(knots, lfPose[2], label='LF'), plt.plot(knots, rfPose[2], label='RF')]
@@ -547,7 +558,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.ylabel('Foot Z [m]')
     plt.legend()
     plt.ylim(-0.001, 0.001)
-    plt.savefig(dirName + 'TaskSpaceFeetAnalysisZoom.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'TaskSpaceFeetAnalysisZoom.pdf', dpi = 300, bbox_inches='tight')
 
     # For baumgarte grid search: Get max deviation in feet_Z from 0
     allFeetHeights = lfPose[2] + rfPose[2]
@@ -561,7 +573,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.xlabel('Knots')
     plt.ylabel('Position [m]')
     plt.legend()
-    plt.savefig(dirName + 'TaskSpaceZMPvsCoM.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'TaskSpaceZMPvsCoM.pdf', dpi = 300, bbox_inches='tight')
 
     # Plotting CoP vs ZMP
     plt.figure(figIndex + 8, figsize=(16,9))
@@ -578,7 +591,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.plot(knots, ZMP[1], label='ZMPy')
     plt.xlabel('Knots')
     plt.legend()
-    plt.savefig(dirName + 'TaskSpaceZMPvsCoP.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'TaskSpaceZMPvsCoP.pdf', dpi = 300, bbox_inches='tight')
 
     # Plotting the Contact Wrenches
     contactForceNames = ['Fx','Fy','Fz'] 
@@ -608,7 +622,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.xlabel('Knots')
     plt.ylabel('RF')
     plt.legend()
-    plt.savefig(dirName + 'ContactWrenches.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'ContactWrenches.pdf', dpi = 300, bbox_inches='tight')
 
     # Plotting the Floating Base Position, Velocity and Acceleration
     PosFBNames = ['X', 'Y', 'Z']
@@ -630,7 +645,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.xlabel('Knots')
     plt.ylabel('Acceleration')
     plt.legend()
-    plt.savefig(dirName + 'Base.png', dpi = 300)
+    plt.tight_layout()
+    plt.savefig(dirName + 'Base.pdf', dpi = 300, bbox_inches='tight')
     plt.close('all') # Important for multiple simulations: Otherwise plots are simply added on top
 
     return minFeetError
@@ -874,14 +890,14 @@ def mergeDataFromSolvers(ddp, bounds):
                             # Additionally create the aligned forces
                             k = p*len(ddp[0].problem.runningDatas)+i-impulse_count #Assumes only the last OC problem varies in number of knots (e.g. due to an additional stabilization)
                             # if str(contact.joint) == "10": # left foot
-                            # if str(contact.joint) == "16": # left foot #TaskSpecific:Jumping (6 add joints)
-                            if str(contact.joint) == "18": # left foot #TaskSpecific:ArmsIncluded (nArms add joints)
+                            if str(contact.joint) == "16": # left foot #TaskSpecific:Jumping (6 add joints)
+                            # if str(contact.joint) == "18": # left foot #TaskSpecific:ArmsIncluded (nArms add joints)
                                 for c in range(3):
                                     fsArranged[k,c] = force.linear[c]
                                     fsArranged[k,c+3] = force.angular[c]
                             # elif str(contact.joint) == "16": # right foot
-                            # elif str(contact.joint) == "22": # right foot #TaskSpecific:Jumping (6 add joints)
-                            if str(contact.joint) == "24": #TaskSpecific:ArmsIncluded (nArms add joints)
+                            elif str(contact.joint) == "22": # right foot #TaskSpecific:Jumping (6 add joints)
+                            # if str(contact.joint) == "24": #TaskSpecific:ArmsIncluded (nArms add joints)
                                 for c in range(3):
                                     fsArranged[k,c+6] = force.linear[c]
                                     fsArranged[k,c+9] = force.angular[c]
