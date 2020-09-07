@@ -90,15 +90,19 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.title('Joint Position [rad]')
     [plt.plot(X[k], label=torsoJointNames[i]) for i, k in enumerate(range(7, 10))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(7, 10))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(7, 10))]
+        plt.gca().set_prop_cycle(None) # Enshure same color for limits as for trajectories
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(7, 10))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(7, 10))]
     plt.ylabel('Torso')
     plt.subplot(3, 3, 2)
     plt.title('Joint Velocity [rad/s]')
     [plt.plot(X[k], label=torsoJointNames[i]) for i, k in enumerate(range(nq + 6, nq + 9))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 9))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 6, nq + 9))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(nq + 6, nq + 9))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(nq + 6, nq + 9))]
     plt.ylabel('Torso')
     plt.subplot(3, 3, 3)
     plt.title('Joint Acceleration [rad/s²]')
@@ -109,14 +113,18 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.subplot(3, 3, 4)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(10+nArms, 16+nArms))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(10+nArms, 16+nArms))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(10+nArms, 16+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(10+nArms, 16+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(10+nArms, 16+nArms))]
     plt.ylabel('LF')
     plt.subplot(3, 3, 5)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 9+nArms, nq + 15+nArms))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 9+nArms, nq + 15+nArms))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 9+nArms, nq + 15+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(nq + 9+nArms, nq + 15+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(nq + 9+nArms, nq + 15+nArms))]
     plt.ylabel('LF')
     plt.subplot(3, 3, 6)
     [plt.plot(A[k], label=legJointNames[i]) for i, k in enumerate(range(9+nArms, 15+nArms))]
@@ -126,15 +134,19 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.subplot(3, 3, 7)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(16+nArms, 22+nArms))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(16+nArms, 22+nArms))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(16+nArms, 22+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(16+nArms, 22+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(16+nArms, 22+nArms))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.subplot(3, 3, 8)
     [plt.plot(X[k], label=legJointNames[i]) for i, k in enumerate(range(nq + 15+nArms, nq + 21+nArms))]
     if bounds:
-        [plt.plot(X_LB[k], '--r') for i, k in enumerate(range(nq + 15+nArms, nq + 21+nArms))]
-        [plt.plot(X_UB[k], '--r') for i, k in enumerate(range(nq + 15+nArms, nq + 21+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(nq + 15+nArms, nq + 21+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(nq + 15+nArms, nq + 21+nArms))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.subplot(3, 3, 9)
@@ -144,8 +156,6 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.legend()
     plt.tight_layout()
     plt.savefig(dirName + 'JointState.pdf', dpi = 300, bbox_inches='tight')
-
-
 
     # # Plotting the joint torques
     # plt.figure(figIndex+1, figsize=(16,9))
@@ -187,8 +197,10 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.title('Joint Torque [Nm]')
     [plt.plot(U[k], label=torsoJointNames[i]) for i, k in enumerate(range(0, 3))]
     if bounds:
-        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(0, 3))]
-        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(0, 3))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_LB[k], '--') for i, k in enumerate(range(0, 3))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_UB[k], '--') for i, k in enumerate(range(0, 3))]
     plt.ylabel('Torso')
     plt.xlabel('Knots')
     plt.legend()
@@ -196,8 +208,10 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # Left foot
     [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(3+nArms, 9+nArms))]
     if bounds:
-        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(3+nArms, 9+nArms))]
-        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(3+nArms, 9+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_LB[k], '--') for i, k in enumerate(range(3+nArms, 9+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_UB[k], '--') for i, k in enumerate(range(3+nArms, 9+nArms))]
     plt.ylabel('LF')
     plt.xlabel('Knots')
     plt.legend()
@@ -205,8 +219,10 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.subplot(3, 1, 3)
     [plt.plot(U[k], label=legJointNames[i]) for i, k in enumerate(range(9+nArms, 15+nArms))]
     if bounds:
-        [plt.plot(U_LB[k], '--r') for i, k in enumerate(range(9+nArms, 15+nArms))]
-        [plt.plot(U_UB[k], '--r') for i, k in enumerate(range(9+nArms, 15+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_LB[k], '--') for i, k in enumerate(range(9+nArms, 15+nArms))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_UB[k], '--') for i, k in enumerate(range(9+nArms, 15+nArms))]
     plt.ylabel('RF')
     plt.xlabel('Knots')
     plt.legend()
