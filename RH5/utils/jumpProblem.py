@@ -238,8 +238,8 @@ class HumanoidJumpProblem:
             stateRecovery = crocoddyl.CostModelState(self.state,
                                                     crocoddyl.ActivationModelWeightedQuad(poseWeights**2),
                                                     self.rmodel.defaultState, self.actuation.nu)
-            costModel.addCost("stateRecovery", stateRecovery, 1e4)
-        stateWeights = np.array([0] * 3 + [10.] * 3 + [10.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
+            costModel.addCost("stateRecovery", stateRecovery, 1e5)
+        stateWeights = np.array([0] * 3 + [10.] * 3 + [50.] * 3 + [0.01] * (self.state.nv - 9) + [10] * self.state.nv)
         stateReg = crocoddyl.CostModelState(self.state,
                                             crocoddyl.ActivationModelWeightedQuad(stateWeights**2),
                                             self.rmodel.defaultState, self.actuation.nu)

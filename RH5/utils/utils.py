@@ -376,7 +376,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # relTimePoints = [0,(total_knots)-1] # TaskSpecific:Walking 1 step
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
-    relTimePoints = [0, 50] # TaskSpecific:Jumping
+    # relTimePoints = [0, 50] # TaskSpecific:Jumping
+    relTimePoints = [0,(total_knots)-1, (2*total_knots)-1,(3*total_knots)-1] # TaskSpecific:JumpingMultiple
     # relTimePoints = [0] # TaskSpecific:Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
@@ -410,10 +411,12 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     [plt.plot(CoPRFx, CoPRFy, marker='x', linestyle='', label='RFCoP')]
     plt.legend()
     plt.axis('scaled')
-    plt.xlim(0, 0.4)
-    plt.ylim(-0.2, 0.2)
+    # plt.xlim(0, 0.4)
+    # plt.ylim(-0.2, 0.2)
     # plt.xlim(-0.05, 0.9) # TaskSpecific: LongGait or large steps
     # plt.ylim(-0.3, 0.3)
+    plt.xlim(-0.05, 2.3) # TaskSpecific: MultipleJumps
+    plt.ylim(-0.3, 0.3)
     plt.xlabel('X [m]')
     plt.ylabel('Y [m]')
     currentAxis = plt.gca()

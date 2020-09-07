@@ -57,16 +57,16 @@ setLimits(rmodel)
 # 3. groundKnots = flyingKnots = 2*recoveryKnots
 # Setting up the jumping problem
 timeStep = 0.01
-jumpHeight = 0.1
-jumpLength = [0.6, 0, 0]
+jumpHeight = 0.25
+# jumpLength = [0, 0, 0]
 # jumpLength = [0.3, 0, 0]
-jumpLength = [0, 0, 0]
-groundKnots = 30
+jumpLength = [0.6, 0, 0]
+groundKnots = 45
 flyingKnots = round(2*math.sqrt(2*jumpHeight/9.81)/timeStep)
 print(flyingKnots)
-recoveryKnots = 30
+recoveryKnots = 25
 impulseKnots = 1
-knots = [groundKnots, flyingKnots]
+knots = [groundKnots, flyingKnots, recoveryKnots]
 rightFoot = 'FR_SupportCenter'
 leftFoot = 'FL_SupportCenter'
 gait = HumanoidJumpProblem(rmodel, rightFoot, leftFoot)
@@ -81,10 +81,10 @@ cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
 
 display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
 name = 'world/box'
-# obsDim = [.2, 1, .1]
-obsDim = [.25, 1, .2]
-pos = [[jumpLength[0]+0.12, 0, obsDim[2]/2]]
-# pos = [[0.4, 0, obsDim[2]/2], [1, 0, obsDim[2]/2], [1.6, 0, obsDim[2]/2]]
+obsDim = [.2, 1, .1]
+# obsDim = [.25, 1, .2]
+# pos = [[jumpLength[0]/2+0.12, 0, obsDim[2]/2]]
+pos = [[0.4, 0, obsDim[2]/2], [1, 0, obsDim[2]/2], [1.6, 0, obsDim[2]/2]]
 for i in range(len(pos)):
     addObstacleToViewer(display, name+str(i), obsDim, pos[i])
 display.display(xs=[x0])
@@ -94,28 +94,28 @@ if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform one jump
-GAITPHASES = \
-    [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
+# GAITPHASES = \
+#     [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
 # GAITPHASES = \
 #     [{'boxJumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength, 'obstacleHeight': obsDim[2],
 #                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
     
 # Perform multiple jumps
-# GAITPHASES = \
-#     [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
-#      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
-#      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
+GAITPHASES = \
+    [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
+     {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
+     {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
 
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
     for key, value in phase.items():
         if key == 'jumping':
             # Creating a simple jumping problem
-            ddp[i] = crocoddyl.SolverBoxFDDP(
+            ddp[i] = crocoddyl.SolverFDDP(
                 gait.createJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
                                                   value['groundKnots'], value['flyingKnots'], value['recoveryKnots']))
         if key == 'boxJumping':
