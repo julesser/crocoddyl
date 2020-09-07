@@ -58,7 +58,7 @@ setLimits(rmodel)
 # Setting up the jumping problem
 timeStep = 0.01
 jumpHeight = 0.1
-# jumpLength = [0.6, 0, 0]
+jumpLength = [0.6, 0, 0]
 # jumpLength = [0.3, 0, 0]
 jumpLength = [0, 0, 0]
 groundKnots = 30
@@ -79,15 +79,15 @@ cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
 # cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
 # cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
 
-# display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
-# name = 'world/box'
-# # obsDim = [.2, 1, .1]
-# obsDim = [.25, 1, .2]
-# pos = [[jumpLength[0]+0.12, 0, obsDim[2]/2]]
-# # pos = [[0.4, 0, obsDim[2]/2], [1, 0, obsDim[2]/2], [1.6, 0, obsDim[2]/2]]
-# for i in range(len(pos)):
-#     addObstacleToViewer(display, name+str(i), obsDim, pos[i])
-# display.display(xs=[x0])
+display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
+name = 'world/box'
+# obsDim = [.2, 1, .1]
+obsDim = [.25, 1, .2]
+pos = [[jumpLength[0]+0.12, 0, obsDim[2]/2]]
+# pos = [[0.4, 0, obsDim[2]/2], [1, 0, obsDim[2]/2], [1.6, 0, obsDim[2]/2]]
+for i in range(len(pos)):
+    addObstacleToViewer(display, name+str(i), obsDim, pos[i])
+display.display(xs=[x0])
 
 simName = 'results/Jump_Test/'
 if not os.path.exists(simName):

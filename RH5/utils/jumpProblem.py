@@ -231,7 +231,7 @@ class HumanoidJumpProblem:
         x_ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
         activation_xbounds = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(x_lb, x_ub))
         joint_limits = crocoddyl.CostModelState(self.state, activation_xbounds, 0 * self.rmodel.defaultState, self.actuation.nu)
-        costModel.addCost("jointLim", joint_limits, 1e3)
+        # costModel.addCost("jointLim", joint_limits, 1e3)
         
         if poseRecovery is True:
             poseWeights = np.array([0] * 6 + [1] * (self.state.nv - 6) + [0] * self.state.nv)
@@ -279,7 +279,7 @@ class HumanoidJumpProblem:
             # Impulse center of pressure cost
             CoP = crocoddyl.CostModelImpulseCoPPosition(self.state, 
             crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
-            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2) # TaskSpecific:Walking(Dynamic)
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2)
             # Impulse friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
             frictionCone = crocoddyl.CostModelImpulseFrictionCone(
