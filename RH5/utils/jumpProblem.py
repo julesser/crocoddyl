@@ -69,6 +69,7 @@ class HumanoidJumpProblem:
                               comTask=comRef+f0, swingFootTask=[lfGoal, rfGoal], poseRecovery=True)]
         
         jumpingModels += takeOff + flying + recovery
+        # jumpingModels += takeOff + flying
 
         problem = crocoddyl.ShootingProblem(x0, jumpingModels, jumpingModels[-1])
         return problem
@@ -230,7 +231,7 @@ class HumanoidJumpProblem:
         x_ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
         activation_xbounds = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(x_lb, x_ub))
         joint_limits = crocoddyl.CostModelState(self.state, activation_xbounds, 0 * self.rmodel.defaultState, self.actuation.nu)
-        costModel.addCost("jointLim", joint_limits, 1e2)
+        costModel.addCost("jointLim", joint_limits, 1e3)
         
         if poseRecovery is True:
             poseWeights = np.array([0] * 6 + [1] * (self.state.nv - 6) + [0] * self.state.nv)

@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 import itertools
+import math 
 
 import crocoddyl
 import example_robot_data
@@ -48,16 +49,22 @@ rh5_robot.model, rh5_robot.visual_model = pinocchio.buildReducedModel(rh5_robot.
 rmodel = rh5_robot.model
 setLimits(rmodel)
 
-# Setting up the 3d walking problem
+# Basics of jumping physics:
+# 1. Calc falling time based on height: s=1/2*g*t^2 <-> t=sqrt(2h/g)
+# >> 0.15s for 0.1m jump height
+# 2. jumpingUpTime == fallingDownTime always: t_peak=0.5*t_total (velocity is a linear function v=a*t)
+# >> 2*0.15s=0.3s
+# 3. groundKnots = flyingKnots = 2*recoveryKnots
+# Setting up the jumping problem
 timeStep = 0.01
-jumpHeight = 0.2
+jumpHeight = 0.1
 # jumpLength = [0.6, 0, 0]
 # jumpLength = [0.3, 0, 0]
 jumpLength = [0, 0, 0]
-groundKnots = 60
-# flyingKnots = 40
-flyingKnots = 30
-recoveryKnots = 50
+groundKnots = 30
+flyingKnots = round(2*math.sqrt(2*jumpHeight/9.81)/timeStep)
+print(flyingKnots)
+recoveryKnots = 30
 impulseKnots = 1
 knots = [groundKnots, flyingKnots]
 rightFoot = 'FR_SupportCenter'
@@ -68,9 +75,9 @@ gait = HumanoidJumpProblem(rmodel, rightFoot, leftFoot)
 x0 = gait.rmodel.defaultState
 
 # Set camera perspective
-# cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
+cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
 # cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
-cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
+# cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
 
 # display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
 # name = 'world/box'
@@ -82,7 +89,7 @@ cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
 #     addObstacleToViewer(display, name+str(i), obsDim, pos[i])
 # display.display(xs=[x0])
 
-simName = 'results/Jump_Vertical_20cm_CoP100/'
+simName = 'results/Jump_Test/'
 if not os.path.exists(simName):
     os.makedirs(simName)
 
@@ -130,7 +137,7 @@ for i, phase in enumerate(GAITPHASES):
         m.quasiStatic(d, rmodel.defaultState)
         for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
     ]
-    print(ddp[i].solve(xs, us, 250, False, 0.1))
+    print(ddp[i].solve(xs, us, 500, False, 0.1))
 
     # Defining the final state as initial one for the next phase
     x0 = ddp[i].xs[-1]

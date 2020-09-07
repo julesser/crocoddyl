@@ -376,7 +376,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # relTimePoints = [0,(total_knots)-1] # TaskSpecific:Walking 1 step
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
-    relTimePoints = [0, 100] # TaskSpecific:Jumping
+    relTimePoints = [0, 50] # TaskSpecific:Jumping
     # relTimePoints = [0] # TaskSpecific:Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
