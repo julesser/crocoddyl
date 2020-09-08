@@ -279,7 +279,7 @@ class HumanoidJumpProblem:
             # Impulse center of pressure cost
             CoP = crocoddyl.CostModelImpulseCoPPosition(self.state, 
             crocoddyl.FrameCoPSupport(i, np.array([0.2, 0.08])))
-            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e2)
+            costModel.addCost(self.rmodel.frames[i].name + "_CoP", CoP, 1e3)
             # Impulse friction cone cost
             cone = crocoddyl.FrictionCone(self.nsurf, self.mu, 4, False)
             frictionCone = crocoddyl.CostModelImpulseFrictionCone(
