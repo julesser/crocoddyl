@@ -29,13 +29,13 @@ rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pi
 #     print(jn)
 # Create a list of joints to lock
 # TaskSpecific:StaticWalking
-# jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-#                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
-#                 'HeadPitch', 'HeadRoll', 'HeadYaw']
-# TaskSpecific:DynamicWalking
-jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-                'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+                'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
                 'HeadPitch', 'HeadRoll', 'HeadYaw']
+# TaskSpecific:DynamicWalking
+# jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+#                 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+#                 'HeadPitch', 'HeadRoll', 'HeadYaw']
 # Get the existing joint IDs
 jointsToLockIDs = []
 for jn in range(len(jointsToLock)):
@@ -78,15 +78,15 @@ for DGain in baumgarteDGains:
         # Setting up the 3d walking problem
         timeStep = 0.03
         # timeStep = 0.01
-        stepKnots = 45
-        supportKnots = 15
-        # stepKnots = 90  # TaskSpecific:StaticWalking
-        # supportKnots = 90
+        # stepKnots = 45
+        # supportKnots = 15
+        stepKnots = 90  # TaskSpecific:StaticWalking
+        supportKnots = 90
         # stepKnots = 300  # TaskSpecific:StaticWalking_DT=0.01
         # supportKnots = 300
         impulseKnots = 1
-        # stepLength = 0.2
-        stepLength = 0.8 #TaskSpecific: DynamicWalking Large steps
+        stepLength = 0.2
+        # stepLength = 0.8 #TaskSpecific: DynamicWalking Large steps
         knots = [stepKnots, supportKnots]
         stepHeight = 0.05
         rightFoot = 'FR_SupportCenter'
@@ -97,8 +97,8 @@ for DGain in baumgarteDGains:
         x0 = gait.rmodel.defaultState
 
         # Set camera perspective
-        cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
-        # cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
+        # cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
+        cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
         # cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
         # display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
         # display.display(xs=[x0])
@@ -106,18 +106,18 @@ for DGain in baumgarteDGains:
         #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
         # simName = 'results/HumanoidFixedArms/DynamicWalking_LargeSteps_CoP50_ArmsFreed/'
-        simName = 'results/DynamicWalking_Test/'
+        simName = 'results/HumanoidFixedArms/StaticWalking_Test/'
         # simName = 'results/HumanoidFixedArms/Analysis/GridSearchBaumgarteGains/DGain' + str(DGain) + '_PGain' + str(round(PGain,1)) + '/'
         if not os.path.exists(simName):
             os.makedirs(simName)
 
-        # Perform 2 Steps
-        GAITPHASES = \
-            [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
-                        'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        # Perform 2 Steps #TaskSpecific
         # GAITPHASES = \
-        #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
-        #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+        #                 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        GAITPHASES = \
+            [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+                                'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # GAITPHASES = \
         #     [{'OneStepstaticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
         #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
