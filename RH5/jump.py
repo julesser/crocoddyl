@@ -59,16 +59,16 @@ setLimits(rmodel)
 # Setting up the jumping problem
 timeStep = 0.01
 # 1. Simple vertical / forward jump
-# jumpHeight = 0.1
+jumpHeight = 0.1
 # jumpLength = [0, 0, 0]
-# jumpLength = [0.3, 0, 0]
-# groundKnots = 30
-# recoveryKnots = 30
+jumpLength = [0.3, 0, 0] #TaskSpecific:ForwardJump
+groundKnots = 30
+recoveryKnots = 30
 # 2. Multiple obstacle jumps
-jumpHeight = 0.25
-jumpLength = [0.6, 0, 0]
-groundKnots = 45 # for 0.25 jump height
-recoveryKnots = 45 # for 0.25 jump height
+# jumpHeight = 0.25
+# jumpLength = [0.6, 0, 0]
+# groundKnots = 45 # for 0.25 jump height
+# recoveryKnots = 45 # for 0.25 jump height
 
 # Automatically calculate flying knots based on falling physics
 flyingKnots = round(2*math.sqrt(2*jumpHeight/9.81)/timeStep)
@@ -107,29 +107,29 @@ if not os.path.exists(simName):
     os.makedirs(simName)
 
 # Perform one jump
-# GAITPHASES = \
-#     [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
+GAITPHASES = \
+    [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
 # GAITPHASES = \
 #     [{'boxJumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength, 'obstacleHeight': obsDim[2],
 #                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
     
 # Perform multiple jumps
-GAITPHASES = \
-    [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
-     {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
-     {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
+# GAITPHASES = \
+#     [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
+#      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
+#      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
 
 ddp = [None] * len(GAITPHASES)
 for i, phase in enumerate(GAITPHASES):
     for key, value in phase.items():
         if key == 'jumping':
             # Creating a simple jumping problem
-            # ddp[i] = crocoddyl.SolverBoxFDDP(
-            ddp[i] = crocoddyl.SolverFDDP(
+            ddp[i] = crocoddyl.SolverBoxFDDP( #TaskSpecific:VerticalnForwardJumps
+            # ddp[i] = crocoddyl.SolverFDDP(  #TaskSpecific:MultipleObsJumps
                 gait.createJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
                                                   value['groundKnots'], value['flyingKnots'], value['recoveryKnots']))
         if key == 'boxJumping':
