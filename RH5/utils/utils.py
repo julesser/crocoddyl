@@ -80,7 +80,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # plt.tight_layout()
     # plt.savefig(dirName + 'JointState.pdf', dpi = 300)
 
-    nArms = 6 # total number of freed joints for both arms
+    nArms = 8 # TaskSpecific:DynamicWalking
+    # nArms = 6 # TaskSpecific:Jumping
     # TaskSpecific:ArmsIncluded - Plotting the joint state: positions, velocities and torques
     plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
     torsoJointNames = ['BodyPitch','BodyRoll','BodyYaw']
@@ -347,14 +348,16 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     for k in range(len(CoPs)): 
         for CoP in CoPs[k]: # Iterate if DS
             # if CoP["key"] == "10":  # LF
-            if CoP["key"] == "16":  # LF TaskSpecific:ArmsIncluded
+            if CoP["key"] == "18":  # LF TaskSpecific:DynamicWalking
+            # if CoP["key"] == "16":  # LF TaskSpecific:Jumping
                 # print(CoP["CoP"][0])
                 CoPLF[0][k] = CoP["CoP"][0] + lfPose[0][k]
                 CoPLF[1][k] = CoP["CoP"][1] + lfPose[1][k]
                 CoPLFx.append(CoP["CoP"][0] + lfPose[0][k])
                 CoPLFy.append(CoP["CoP"][1] + lfPose[1][k])
             # elif CoP["key"] == "16":  # RF
-            elif CoP["key"] == "22":  # RF TaskSpecific:ArmsIncluded
+            elif CoP["key"] == "24":  # RF TaskSpecific:DynamicWalking
+            # elif CoP["key"] == "22":  # RF TaskSpecific:Jumping
                 CoPRF[0][k] = CoP["CoP"][0] + rfPose[0][k]
                 CoPRF[1][k] = CoP["CoP"][1] + rfPose[1][k]
                 CoPRFx.append(CoP["CoP"][0] + rfPose[0][k])
@@ -373,11 +376,11 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
     # relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
-    # relTimePoints = [0,(total_knots)-1] # TaskSpecific:Walking 1 step
+    relTimePoints = [0,(total_knots)-1] # TaskSpecific:Walking 1 step
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
-    relTimePoints = [0, 80] # TaskSpecific:Jumping
-    relTimePoints = [0,(total_knots)-1, (2*total_knots)-1,(3*total_knots)-1] # TaskSpecific:JumpingMultiple
+    # relTimePoints = [0, 80] # TaskSpecific:Jumping
+    # relTimePoints = [0,(total_knots)-1, (2*total_knots)-1,(3*total_knots)-1] # TaskSpecific:JumpingMultiple
     # relTimePoints = [0] # TaskSpecific:Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
     plt.figure(figIndex + 2, figsize=(16,9))
@@ -404,9 +407,9 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
     # plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
     # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd')
-    plt.plot(Cx[relTimePoints[1]], Cy[relTimePoints[1]], marker='o', linestyle='', label='CoMEndT1')
-    plt.plot(Cx[relTimePoints[2]], Cy[relTimePoints[2]], marker='o', linestyle='', label='CoMEndT2')
-    plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEndT3') 
+    # plt.plot(Cx[relTimePoints[1]], Cy[relTimePoints[1]], marker='o', linestyle='', label='CoMEndT1')
+    # plt.plot(Cx[relTimePoints[2]], Cy[relTimePoints[2]], marker='o', linestyle='', label='CoMEndT2')
+    # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEndT3') 
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFStart')]
     [plt.plot(lfPose[0][-1], lfPose[1][-1], marker='>', markersize = '10', linestyle='', label='LFEnd'), plt.plot(rfPose[0][-1], rfPose[1][-1], marker='>', markersize = '10', linestyle='', label='RFEnd')]
     # [plt.plot(ZMPx, ZMPy, linestyle=':', label='ZMP')]
@@ -703,20 +706,43 @@ def logSolution(ddp, timeStep, logPath):
         sol[m] = [time[m]] + sol[m] + solA[m] + solU[m] 
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
+        # TaskSpecific:StaticWalking
+        # writer.writerow(['t[s]',
+        #                  'q_BodyPitch', 'q_BodyRoll', 'q_BodyYaw',
+        #                  'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
+        #                  'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
+        #                  'qd_BodyPitch', 'qd_BodyRoll', 'qd_BodyYaw',
+        #                  'qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch',
+        #                  'qd_LRHip1', 'qd_LRHip2', 'qd_LRHip3', 'qd_LRKnee', 'qd_LRAnkleRoll', 'qd_LRAnklePitch',
+        #                  'qdd_BodyPitch', 'qdd_BodyRoll', 'qdd_BodyYaw',
+        #                  'qdd_LLHip1', 'qdd_LLHip2', 'qdd_LLHip3', 'qdd_LLKnee', 'qdd_LLAnkleRoll', 'qdd_LLAnklePitch',
+        #                  'qdd_LRHip1', 'qdd_LRHip2', 'qdd_LRHip3', 'qdd_LRKnee', 'qdd_LRAnkleRoll', 'qdd_LRAnklePitch',
+        #                  'Tau_BodyPitch', 'Tau_BodyRoll', 'Tau_BodyYaw',
+        #                  'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch',
+        #                  'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch'])
+        # TaskSpecific:DynamicWalking
         writer.writerow(['t[s]',
                          'q_BodyPitch', 'q_BodyRoll', 'q_BodyYaw',
+                         'q_ALShoulder1', 'q_ALShoulder2', 'q_ALShoulder3', 'q_ALElbow',
+                         'q_ARShoulder1', 'q_ARShoulder2', 'q_ARShoulder3', 'q_ARElbow',
                          'q_LLHip1', 'q_LLHip2', 'q_LLHip3', 'q_LLKnee', 'q_LLAnkleRoll', 'q_LLAnklePitch',
                          'q_LRHip1', 'q_LRHip2', 'q_LRHip3', 'q_LRKnee', 'q_LRAnkleRoll', 'q_LRAnklePitch',
                          'qd_BodyPitch', 'qd_BodyRoll', 'qd_BodyYaw',
+                         'qd_ALShoulder1', 'qd_ALShoulder2', 'qd_ALShoulder3', 'qd_ALElbow',
+                         'qd_ARShoulder1', 'qd_ARShoulder2', 'qd_ARShoulder3', 'qd_ARElbow',
                          'qd_LLHip1', 'qd_LLHip2', 'qd_LLHip3', 'qd_LLKnee', 'qd_LLAnkleRoll', 'qd_LLAnklePitch',
                          'qd_LRHip1', 'qd_LRHip2', 'qd_LRHip3', 'qd_LRKnee', 'qd_LRAnkleRoll', 'qd_LRAnklePitch',
                          'qdd_BodyPitch', 'qdd_BodyRoll', 'qdd_BodyYaw',
+                         'qdd_ALShoulder1', 'qdd_ALShoulder2', 'qdd_ALShoulder3', 'qdd_ALElbow',
+                         'qdd_ARShoulder1', 'qdd_ARShoulder2', 'qdd_ARShoulder3', 'qdd_ARElbow',
                          'qdd_LLHip1', 'qdd_LLHip2', 'qdd_LLHip3', 'qdd_LLKnee', 'qdd_LLAnkleRoll', 'qdd_LLAnklePitch',
                          'qdd_LRHip1', 'qdd_LRHip2', 'qdd_LRHip3', 'qdd_LRKnee', 'qdd_LRAnkleRoll', 'qdd_LRAnklePitch',
                          'Tau_BodyPitch', 'Tau_BodyRoll', 'Tau_BodyYaw',
+                         'Tau_ALShoulder1', 'Tau_ALShoulder2', 'Tau_ALShoulder3', 'Tau_ALElbow',
+                         'Tau_ARShoulder1', 'Tau_ARShoulder2', 'Tau_ARShoulder3', 'Tau_ARElbow',
                          'Tau_LLHip1', 'Tau_LLHip2', 'Tau_LLHip3', 'Tau_LLKnee', 'Tau_LLAnkleRoll', 'Tau_LLAnklePitch',
                          'Tau_LRHip1', 'Tau_LRHip2', 'Tau_LRHip3', 'Tau_LRKnee', 'Tau_LRAnkleRoll', 'Tau_LRAnklePitch'])
-        # TaskSpecific:ArmsIncluded:
+        # TaskSpecific:Jumping
         # writer.writerow(['t[s]',
         #                  'q_BodyPitch', 'q_BodyRoll', 'q_BodyYaw',
         #                  'q_ALShoulder1', 'q_ALShoulder2', 'q_ALShoulder3',
@@ -912,14 +938,14 @@ def mergeDataFromSolvers(ddp, bounds):
                             # Additionally create the aligned forces
                             k = p*len(ddp[0].problem.runningDatas)+i-impulse_count #Assumes only the last OC problem varies in number of knots (e.g. due to an additional stabilization)
                             # if str(contact.joint) == "10": # left foot
-                            if str(contact.joint) == "16": # left foot #TaskSpecific:Jumping (6 add joints)
-                            # if str(contact.joint) == "18": # left foot #TaskSpecific:ArmsIncluded (nArms add joints)
+                            if str(contact.joint) == "18": # left foot #TaskSpecific:DynamicWalking
+                            # if str(contact.joint) == "16": # left foot #TaskSpecific:Jumping (6 add joints)
                                 for c in range(3):
                                     fsArranged[k,c] = force.linear[c]
                                     fsArranged[k,c+3] = force.angular[c]
                             # elif str(contact.joint) == "16": # right foot
-                            elif str(contact.joint) == "22": # right foot #TaskSpecific:Jumping (6 add joints)
-                            # if str(contact.joint) == "24": #TaskSpecific:ArmsIncluded (nArms add joints)
+                            elif str(contact.joint) == "24": #TaskSpecific:DynamicWalking
+                            # elif str(contact.joint) == "22": # right foot #TaskSpecific:Jumping (6 add joints)
                                 for c in range(3):
                                     fsArranged[k,c+6] = force.linear[c]
                                     fsArranged[k,c+9] = force.angular[c]

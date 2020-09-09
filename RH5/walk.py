@@ -28,12 +28,11 @@ rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pi
 # for jn in rh5_robot.model.names:
 #     print(jn)
 # Create a list of joints to lock
+# TaskSpecific:StaticWalking
 # jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
 #                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
 #                 'HeadPitch', 'HeadRoll', 'HeadYaw']
-# jointsToLock = ['ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-#                 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
-#                 'HeadPitch', 'HeadRoll', 'HeadYaw']
+# TaskSpecific:DynamicWalking
 jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
                 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
                 'HeadPitch', 'HeadRoll', 'HeadYaw']
@@ -107,7 +106,7 @@ for DGain in baumgarteDGains:
         #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
         # simName = 'results/HumanoidFixedArms/DynamicWalking_LargeSteps_CoP50_ArmsFreed/'
-        simName = 'results/DynamicWalking_LargeSteps_CoP100_ArmsFreed/'
+        simName = 'results/DynamicWalking_Test/'
         # simName = 'results/HumanoidFixedArms/Analysis/GridSearchBaumgarteGains/DGain' + str(DGain) + '_PGain' + str(round(PGain,1)) + '/'
         if not os.path.exists(simName):
             os.makedirs(simName)
