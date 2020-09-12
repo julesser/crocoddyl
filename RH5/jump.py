@@ -23,9 +23,6 @@ URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
 # Load the full model 
 rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pinocchio.JointModelFreeFlyer()) # Load URDF file
 # Create a list of joints to lock
-# jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-#                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
-#                 'HeadPitch', 'HeadRoll', 'HeadYaw']
 jointsToLock = ['ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
                 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
                 'HeadPitch', 'HeadRoll', 'HeadYaw']
@@ -60,8 +57,8 @@ setLimits(rmodel)
 timeStep = 0.01
 # 1. Simple vertical / forward jump
 jumpHeight = 0.1
-# jumpLength = [0, 0, 0]
-jumpLength = [0.3, 0, 0] #TaskSpecific:ForwardJump
+jumpLength = [0, 0, 0]
+# jumpLength = [0.3, 0, 0] #TaskSpecific:ForwardJump
 groundKnots = 30
 recoveryKnots = 30
 # 2. Multiple obstacle jumps

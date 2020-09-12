@@ -13,8 +13,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
          rmodel, xs, us, accs, fs, fsArranged, X, U, F, A = mergeDataFromSolvers(ddp, bounds)
     nx, nq, nu, nf, na = xs[0].shape[0], rmodel.nq, us[0].shape[0], fsArranged[0].shape[0], accs[0].shape[0]
     
-    print('nx: ', nx)
-    print('nq: ', nq)
+    # print('nx: ', nx)
+    # print('nq: ', nq)
     # print('na: ', na)
     # # Plotting the joint state: positions, velocities and torques
     # plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
@@ -80,7 +80,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # plt.tight_layout()
     # plt.savefig(dirName + 'JointState.pdf', dpi = 300)
 
-    nArms = 8 # TaskSpecific:DynamicWalking
+    # nArms = 8 # TaskSpecific:DynamicWalking
     nArms = 6 # TaskSpecific:Jumping
     # TaskSpecific:ArmsIncluded - Plotting the joint state: positions, velocities and torques
     plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
@@ -158,6 +158,56 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.tight_layout()
     plt.savefig(dirName + 'JointState.pdf', dpi = 300, bbox_inches='tight')
 
+    # Plotting the arms
+    plt.figure(figIndex+11, figsize=(16,9)) # (16,9) for bigger headings
+    shoulderJointNames = ['Shoulder1','Shoulder2','Shoulder3']
+    # left shoulder
+    plt.subplot(2, 3, 1)
+    plt.title('Joint Position [rad]')
+    [plt.plot(X[k], label=shoulderJointNames[i]) for i, k in enumerate(range(10, 13))]
+    if bounds:
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(10, 13))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(10, 13))]
+    plt.ylabel('Left Arm')
+    plt.subplot(2, 3, 2)
+    plt.title('Joint Velocity [rad/s]')
+    [plt.plot(X[k], label=shoulderJointNames[i]) for i, k in enumerate(range(nq + 9, nq + 12))]
+    if bounds:
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(nq + 9, nq + 12))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(nq + 9, nq + 12))]
+    plt.subplot(2, 3, 3)
+    plt.title('Joint Acceleration [rad/s²]')
+    [plt.plot(A[k], label=shoulderJointNames[i]) for i, k in enumerate(range(9, 12))]
+    plt.legend()
+    # right shoulder
+    plt.subplot(2, 3, 4)
+    [plt.plot(X[k], label=shoulderJointNames[i]) for i, k in enumerate(range(13, 16))]
+    if bounds:
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(13, 16))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(13, 16))]
+    plt.ylabel('Right Arm')
+    plt.xlabel('Knots')
+    plt.subplot(2, 3, 5)
+    [plt.plot(X[k], label=shoulderJointNames[i]) for i, k in enumerate(range(nq + 12, nq + 15))]
+    if bounds:
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_LB[k], '--') for i, k in enumerate(range(nq + 12, nq + 15))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(X_UB[k], '--') for i, k in enumerate(range(nq + 12, nq + 15))]
+    plt.xlabel('Knots')
+    plt.subplot(2, 3, 6)
+    [plt.plot(A[k], label=shoulderJointNames[i]) for i, k in enumerate(range(12, 15))]
+    plt.legend()
+    plt.xlabel('Knots')
+    plt.tight_layout()
+    plt.savefig(dirName + 'JointStateArms.pdf', dpi = 300, bbox_inches='tight')
+
     # # Plotting the joint torques
     # plt.figure(figIndex+1, figsize=(16,9))
     # # Torso
@@ -229,6 +279,33 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.legend()
     plt.tight_layout()
     plt.savefig(dirName + 'JointTorques.pdf', dpi = 300, bbox_inches='tight')
+
+    # Plotting the arms torques
+    plt.figure(figIndex+12, figsize=(16,9))
+    # Left Shoulder
+    plt.subplot(2, 1, 1)
+    [plt.plot(U[k], label=shoulderJointNames[i]) for i, k in enumerate(range(3, 6))]
+    if bounds:
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_LB[k], '--') for i, k in enumerate(range(3, 6))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_UB[k], '--') for i, k in enumerate(range(3, 6))]
+    plt.ylabel('Left Arm')
+    plt.xlabel('Knots')
+    plt.legend()
+    # Right Shoulder
+    plt.subplot(2, 1, 2)
+    [plt.plot(U[k], label=shoulderJointNames[i]) for i, k in enumerate(range(6, 9))]
+    if bounds:
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_LB[k], '--') for i, k in enumerate(range(6, 9))]
+        plt.gca().set_prop_cycle(None)
+        [plt.plot(U_UB[k], '--') for i, k in enumerate(range(6, 9))]
+    plt.ylabel('Right Arm')
+    plt.xlabel('Knots')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(dirName + 'JointTorquesArms.pdf', dpi = 300, bbox_inches='tight')
     
     # Get 3 dim CoM, get feet poses
     rdata = rmodel.createData()
@@ -375,7 +452,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # Stability Analysis: XY-Plot of CoM Projection and Feet Positions
     footLength, footWidth = 0.2, 0.08
     total_knots = sum(num_knots)
-    relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
+    # relTimePoints = [0,(2*total_knots)-1] # TaskSpecific:Walking 2 steps
     # relTimePoints = [0,(total_knots)-1] # TaskSpecific:Walking 1 step
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
@@ -401,13 +478,13 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # (2) Variant with just one plot
     # plt.subplot(1,2,1)
     plt.plot(Cx[1:-1], Cy[1:-1], label='CoM')
-    plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
-    plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
-    plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
-    plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
-    plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
-    plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd')
-    # plt.plot(Cx[relTimePoints[1]], Cy[relTimePoints[1]], marker='o', linestyle='', label='CoMEndT1')
+    # plt.plot(Cx[0], Cy[0], marker='o', linestyle='', label='CoMStart')
+    # plt.plot(Cx[num_knots[1]-1], Cy[num_knots[1]-1], marker='o', linestyle='', label='CoMRFLiftOff') # TaskSpecific: Walking ff.
+    # plt.plot(Cx[total_knots-1], Cy[total_knots-1], marker='o', linestyle='', label='CoMRFTouchDown') 
+    # plt.plot(Cx[total_knots + num_knots[1]-1], Cy[total_knots + num_knots[1]-1], marker='o', linestyle='', label='CoMLFLiftOff')
+    # plt.plot(Cx[2*(total_knots)-1], Cy[2*(total_knots)-1], marker='o', linestyle='', label='CoMLFTouchDown')
+    # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEnd')
+    # plt.plot(Cx[relTimePoints[1]], Cy[relTimePoints[1]], marker='o', linestyle='', label='CoMEndT1') #TaskSpecific:MultipleJumps
     # plt.plot(Cx[relTimePoints[2]], Cy[relTimePoints[2]], marker='o', linestyle='', label='CoMEndT2')
     # plt.plot(Cx[-1], Cy[-1], marker='o', linestyle='', label='CoMEndT3') 
     [plt.plot(lfPose[0][0], lfPose[1][0], marker='>', markersize = '10', linestyle='', label='LFStart'), plt.plot(rfPose[0][0], rfPose[1][0], marker='>', markersize = '10', linestyle='', label='RFStart')]
@@ -950,13 +1027,20 @@ def mergeDataFromSolvers(ddp, bounds):
                                     fsArranged[k,c+6] = force.linear[c]
                                     fsArranged[k,c+9] = force.angular[c]
                     fs.append(force_k)
+                    if bounds:
+                        us_lb += [model.u_lb]
+                        us_ub += [model.u_ub]
+                        xs_lb += [model.state.lb]
+                        xs_ub += [model.state.ub]
                 else: # Skip impulse data since dt=0 and hence not relevant for logs or plots
                     impulse_count += 1
-                if bounds:
-                    us_lb += [model.u_lb]
-                    us_ub += [model.u_ub]
-                    xs_lb += [model.state.lb]
-                    xs_ub += [model.state.ub]
+                    if bounds:
+                        model = models[i-1] #impulse models don't have the lims and gaps occured in plots
+                        us_lb += [model.u_lb]
+                        us_ub += [model.u_ub]
+                        xs_lb += [model.state.lb]
+                        xs_ub += [model.state.ub]
+                
     if impulse_count is not 0:  
         fsArranged = fsArranged[:-impulse_count]
     else: 
