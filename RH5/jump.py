@@ -57,8 +57,9 @@ setLimits(rmodel)
 timeStep = 0.01
 # 1. Simple vertical / forward jump
 jumpHeight = 0.1
-jumpLength = [0, 0, 0]
-# jumpLength = [0.3, 0, 0] #TaskSpecific:ForwardJump
+# jumpHeights = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+# jumpLength = [0, 0, 0]
+jumpLengths = [[0.1, 0, 0], [0.2, 0, 0], [0.3, 0, 0], [0.4, 0, 0], [0.5, 0, 0]] #TaskSpecific:ForwardJump
 groundKnots = 30
 recoveryKnots = 30
 # 2. Multiple obstacle jumps
@@ -67,106 +68,112 @@ recoveryKnots = 30
 # groundKnots = 45 # for 0.25 jump height
 # recoveryKnots = 45 # for 0.25 jump height
 
-# Automatically calculate flying knots based on falling physics
-flyingKnots = round(2*math.sqrt(2*jumpHeight/9.81)/timeStep)
-print(flyingKnots)
-impulseKnots = 1
-knots = [groundKnots, flyingKnots, recoveryKnots]
-rightFoot = 'FR_SupportCenter'
-leftFoot = 'FL_SupportCenter'
-gait = HumanoidJumpProblem(rmodel, rightFoot, leftFoot)
+# for jumpHeight in jumpHeights: 
+for jumpLength in jumpLengths: 
+    # Automatically calculate flying knots based on falling physics
+    flyingKnots = round(2*math.sqrt(2*jumpHeight/9.81)/timeStep)
+    print(flyingKnots)
+    impulseKnots = 1
+    knots = [groundKnots, flyingKnots, recoveryKnots]
+    rightFoot = 'FR_SupportCenter'
+    leftFoot = 'FL_SupportCenter'
+    gait = HumanoidJumpProblem(rmodel, rightFoot, leftFoot)
 
-# Defining the initial state of the robot
-x0 = gait.rmodel.defaultState
+    # Defining the initial state of the robot
+    x0 = gait.rmodel.defaultState
 
-# Set camera perspective
-# cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
-cameraTF = [3.1, 4.0, 1.5, 0.2, 0.63, 0.72, 0.22] # isometric zoom
-# cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
-# cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
+    # Set camera perspective
+    # cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
+    cameraTF = [3.1, 4.0, 1.5, 0.2, 0.63, 0.72, 0.22] # isometric zoom
+    # cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
+    # cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
 
-# display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
-# name = 'world/box'
-# obsDim = [.2, 1, .1]
-# obsDim = [.25, 1, .2]
-# pos = [[jumpLength[0]/2+0.12, 0, obsDim[2]/2]]
-# pos = [[0.4, 0, obsDim[2]/2], [1, 0, obsDim[2]/2], [1.6, 0, obsDim[2]/2]]
-# for i in range(len(pos)):
-#     addObstacleToViewer(display, name+str(i), obsDim, pos[i])
-# display.display(xs=[x0])
-# display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
-# display.display(xs=[x0])
-# while True: # Get desired view params
-#     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
+    # display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
+    # name = 'world/box'
+    # obsDim = [.2, 1, .1]
+    # obsDim = [.25, 1, .2]
+    # pos = [[jumpLength[0]/2+0.12, 0, obsDim[2]/2]]
+    # pos = [[0.4, 0, obsDim[2]/2], [1, 0, obsDim[2]/2], [1.6, 0, obsDim[2]/2]]
+    # for i in range(len(pos)):
+    #     addObstacleToViewer(display, name+str(i), obsDim, pos[i])
+    # display.display(xs=[x0])
+    # display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
+    # display.display(xs=[x0])
+    # while True: # Get desired view params
+    #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-simName = 'results/Jump_Test/'
-if not os.path.exists(simName):
-    os.makedirs(simName)
+    # simName = 'results/Jump_Test/'
+    # simName = 'results/JumpAnalysis/Jump_Vertical_' + str(round(jumpHeight*100)) +'cm_NoJLims/'
+    simName = 'results/JumpAnalysis/Jump_Forward_' + str(round(jumpLength[0]*100)) +'cm_NoJLims/'
+    print(simName)
+    print('JumpHeight: ' + str(jumpHeight))
+    if not os.path.exists(simName):
+        os.makedirs(simName)
 
-# Perform one jump
-GAITPHASES = \
-    [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-                  'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
-# GAITPHASES = \
-#     [{'boxJumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength, 'obstacleHeight': obsDim[2],
-#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
-    
-# Perform multiple jumps
-# GAITPHASES = \
-#     [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
-#      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
-#      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
-#                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
+    # Perform one jump
+    GAITPHASES = \
+        [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+                    'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
+    # GAITPHASES = \
+    #     [{'boxJumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength, 'obstacleHeight': obsDim[2],
+    #                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
+        
+    # Perform multiple jumps
+    # GAITPHASES = \
+    #     [{'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+    #                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
+    #      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+    #                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}},
+    #      {'jumping': {'jumpHeight': jumpHeight, 'jumpLength': jumpLength,
+    #                   'timeStep': timeStep, 'groundKnots': groundKnots, 'flyingKnots': flyingKnots, 'recoveryKnots': recoveryKnots}}]
 
-ddp = [None] * len(GAITPHASES)
-for i, phase in enumerate(GAITPHASES):
-    for key, value in phase.items():
-        if key == 'jumping':
-            # Creating a simple jumping problem
-            ddp[i] = crocoddyl.SolverBoxFDDP( #TaskSpecific:VerticalnForwardJumps
-            # ddp[i] = crocoddyl.SolverFDDP(  #TaskSpecific:MultipleObsJumps
-                gait.createJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
-                                                  value['groundKnots'], value['flyingKnots'], value['recoveryKnots']))
-        if key == 'boxJumping':
-            # Creating a simple jumping problem
-            ddp[i] = crocoddyl.SolverBoxFDDP(
-                gait.createBoxJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['obstacleHeight'], 
-                                            value['timeStep'], value['groundKnots'], value['flyingKnots'], value['recoveryKnots']))
-        ddp[i].th_stop = 1e-7
-
-    # Add the callback functions
-    print('*** SOLVE ' + key + ' ***')
-    ddp[i].setCallbacks(
-        [crocoddyl.CallbackLogger(),
-         crocoddyl.CallbackVerbose()])
-
-    # Solving the problem with the DDP solver
-    xs = [rmodel.defaultState] * (ddp[i].problem.T + 1)
-    us = [
-        m.quasiStatic(d, rmodel.defaultState)
-        for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
-    ]
-    print(ddp[i].solve(xs, us, 500, False, 0.1))
-
-    # Defining the final state as initial one for the next phase
-    x0 = ddp[i].xs[-1]
-
-# Display the entire motion
-if WITHDISPLAY:
-    print('Displaying the motion in Gepetto..')
-    display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
+    ddp = [None] * len(GAITPHASES)
     for i, phase in enumerate(GAITPHASES):
-        display.displayFromSolver(ddp[i])
+        for key, value in phase.items():
+            if key == 'jumping':
+                # Creating a simple jumping problem
+                ddp[i] = crocoddyl.SolverBoxFDDP( #TaskSpecific:VerticalnForwardJumps
+                # ddp[i] = crocoddyl.SolverFDDP(  #TaskSpecific:MultipleObsJumps
+                    gait.createJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['timeStep'],
+                                                    value['groundKnots'], value['flyingKnots'], value['recoveryKnots']))
+            if key == 'boxJumping':
+                # Creating a simple jumping problem
+                ddp[i] = crocoddyl.SolverBoxFDDP(
+                    gait.createBoxJumpingProblem(x0, value['jumpHeight'], value['jumpLength'], value['obstacleHeight'], 
+                                                value['timeStep'], value['groundKnots'], value['flyingKnots'], value['recoveryKnots']))
+            ddp[i].th_stop = 1e-7
 
-# Export solution to .csv files
-if WITHLOG:
-    logPath = simName + '/logs/'
-    if not os.path.exists(logPath):
-        os.makedirs(logPath)
-    logSolution(ddp, timeStep,logPath)
+        # Add the callback functions
+        print('*** SOLVE ' + key + ' ***')
+        ddp[i].setCallbacks(
+            [crocoddyl.CallbackLogger(),
+            crocoddyl.CallbackVerbose()])
 
-# Plotting the entire motion
-if WITHPLOT:
-    plotSolution(ddp, simName, knots, bounds=True, figIndex=1, show=False)
+        # Solving the problem with the DDP solver
+        xs = [rmodel.defaultState] * (ddp[i].problem.T + 1)
+        us = [
+            m.quasiStatic(d, rmodel.defaultState)
+            for m, d in list(zip(ddp[i].problem.runningModels, ddp[i].problem.runningDatas))
+        ]
+        print(ddp[i].solve(xs, us, 500, False, 0.1))
+
+        # Defining the final state as initial one for the next phase
+        x0 = ddp[i].xs[-1]
+
+    # Display the entire motion
+    if WITHDISPLAY:
+        print('Displaying the motion in Gepetto..')
+        display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
+        for i, phase in enumerate(GAITPHASES):
+            display.displayFromSolver(ddp[i])
+
+    # Export solution to .csv files
+    if WITHLOG:
+        logPath = simName + '/logs/'
+        if not os.path.exists(logPath):
+            os.makedirs(logPath)
+        logSolution(ddp, timeStep,logPath)
+
+    # Plotting the entire motion
+    if WITHPLOT:
+        plotSolution(ddp, simName, knots, bounds=True, figIndex=1, show=False)

@@ -7,7 +7,7 @@ import csv
 def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", show=True):
     import matplotlib.pyplot as plt
     from matplotlib.patches import Rectangle
-    if bounds: 
+    if bounds:
         rmodel, xs, us, accs, fs, fsArranged, X, U, F, A, X_LB, X_UB, U_LB, U_UB = mergeDataFromSolvers(ddp, bounds)
     else: 
          rmodel, xs, us, accs, fs, fsArranged, X, U, F, A = mergeDataFromSolvers(ddp, bounds)
@@ -264,7 +264,6 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
         plt.gca().set_prop_cycle(None)
         [plt.plot(U_UB[k], '--') for i, k in enumerate(range(3+nArms, 9+nArms))]
     plt.ylabel('LF')
-    plt.xlabel('Knots')
     plt.legend()
     # Right foot
     plt.subplot(3, 1, 3)
@@ -275,7 +274,6 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
         plt.gca().set_prop_cycle(None)
         [plt.plot(U_UB[k], '--') for i, k in enumerate(range(9+nArms, 15+nArms))]
     plt.ylabel('RF')
-    plt.xlabel('Knots')
     plt.legend()
     plt.tight_layout()
     plt.savefig(dirName + 'JointTorques.pdf', dpi = 300, bbox_inches='tight')
@@ -284,6 +282,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.figure(figIndex+12, figsize=(16,9))
     # Left Shoulder
     plt.subplot(2, 1, 1)
+    plt.title('Joint Torque [Nm]')
     [plt.plot(U[k], label=shoulderJointNames[i]) for i, k in enumerate(range(3, 6))]
     if bounds:
         plt.gca().set_prop_cycle(None)
@@ -291,7 +290,6 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
         plt.gca().set_prop_cycle(None)
         [plt.plot(U_UB[k], '--') for i, k in enumerate(range(3, 6))]
     plt.ylabel('Left Arm')
-    plt.xlabel('Knots')
     plt.legend()
     # Right Shoulder
     plt.subplot(2, 1, 2)
@@ -456,7 +454,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     # relTimePoints = [0,(total_knots)-1] # TaskSpecific:Walking 1 step
     # relTimePoints = [0,(2*total_knots)-1, (4*total_knots)-1,(6*total_knots)+num_knots[1]-1] # TaskSpecific:Walking Long Gait
     # relTimePoints = [0,40,100] # TaskSpecific:Squats
-    relTimePoints = [0, 80] # TaskSpecific:Jumping
+    relTimePoints = [0, 50] # TaskSpecific:Jumping
     # relTimePoints = [0,(total_knots)-1, (2*total_knots)-1,(3*total_knots)-1] # TaskSpecific:JumpingMultiple
     # relTimePoints = [0] # TaskSpecific:Balancing
     numPlots = list(range(1,len(relTimePoints)+1))
@@ -505,8 +503,8 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     currentAxis = plt.gca()
     for t in relTimePoints:
         # if smaller region: draw dotted rectangle
-        currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/4, lfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
-        currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/4, rfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
+        # currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/4, lfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
+        # currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/4, rfPose[1][t] - footWidth/4), footLength/2, footWidth/2, edgecolor = 'silver', linestyle=':', fill=False))
         # currentAxis.add_patch(Rectangle((lfPose[0][t] - footLength/8, lfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
         # currentAxis.add_patch(Rectangle((rfPose[0][t] - footLength/8, rfPose[1][t] - footWidth/8), footLength/4, footWidth/4, edgecolor = 'silver', linestyle=':', fill=False))
         if t != relTimePoints[-1]:
