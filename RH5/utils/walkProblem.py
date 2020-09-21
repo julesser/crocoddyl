@@ -17,11 +17,11 @@ class SimpleBipedGaitProblem:
         # Getting the frame id for all the legs
         self.rfId = self.rmodel.getFrameId(rightFoot)
         self.lfId = self.rmodel.getFrameId(leftFoot)
-        # Default state
-        q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
-                        0.2,0,0,                    # Torso
-                        0,0,-0.33,0.63,0,-0.30,     # Left Leg     
-                        0,0,-0.33,0.63,0,-0.30])    # Right Leg
+        # Default state #TaskSepcific
+        # q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+        #                 0.2,0,0,                    # Torso
+        #                 0,0,-0.33,0.63,0,-0.30,     # Left Leg     
+        #                 0,0,-0.33,0.63,0,-0.30])    # Right Leg
         # TaskSpecific:ArmsIncluded
         # q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
         #                 0.2,0,0,                    # Torso
@@ -30,10 +30,10 @@ class SimpleBipedGaitProblem:
         #                 0,0,-0.33,0.63,0,-0.30,     # Left Leg     
         #                 0,0,-0.33,0.63,0,-0.30])    # Right Leg
         # TaskSpecific: Static Walking from Mid of other step
-        # q0 = np.array([0.0548,0.0172,0.8902,0,0.0067,0.0160,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
-        #                 0.1417,-0.0221,0.0019,                    # Torso
-        #                 -0.0255,-0.0236,-0.2379,0.5359,0.0252,-0.3180,     # Left Leg     
-        #                 -0.0274,-0.0247,-0.3376,0.5318,0.0258,-0.2054])  # Right Leg
+        q0 = np.array([0.0618,0.0020,0.8908,0.0003,0.0099,0.0114,0.9998,         # Floating Base (quaternions) # Stable init pose from long-time gait
+                        0.1372,-0.0021,0.0001,                    # Torso
+                        -0.0223,-0.0051,-0.2313,0.5316,0.0048,-0.3258,     # Left Leg     
+                        -0.0215,-0.0055,-0.3402,0.5369,0.0049,-0.2199])  # Right Leg
         self.q0 = q0
         self.comRefY = np.asscalar(pinocchio.centerOfMass(self.rmodel, self.rdata, self.q0)[2])
         pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
@@ -166,20 +166,21 @@ class SimpleBipedGaitProblem:
         comRef[2] = self.comRefY # Define global CoM target height 
         # Defining the action models along the time instances
         loco3dModel = []
-        stabilization = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], poseRecovery=True) for k in range(60)]
+        stabilization = [self.createSwingFootModel(timeStep, [self.rfId, self.lfId], poseRecovery=True) for k in range(supportKnots)]
         
         # Perform only right step
-        # comYHackyOffset = 0.0075
-        # comShiftToLF = self.createCoMShiftModels(supportKnots, comRef, lfPos0+[0,comYHackyOffset,0], timeStep)
-        # comTaskLF = np.hstack((lfPos0[0:2]+[0,comYHackyOffset], comRef[2]))
+        # comXHackyOffset = -0.02
+        # comYHackyOffset = 0.01
+        # comShiftToLF = self.createCoMShiftModels(supportKnots, comRef, lfPos0+[comXHackyOffset,comYHackyOffset,0], timeStep)
+        # comTaskLF = np.hstack((lfPos0[0:2]+[comXHackyOffset,comYHackyOffset], comRef[2]))
         # rStep = self.createFootstepModels(comTaskLF, [rfPos0], 0.5 * stepLength, stepHeight, timeStep, stepKnots, [self.lfId], [self.rfId])
         
         # Perform only left step
-        comYHackyOffset = -0.01
-        comShiftToRF = self.createCoMShiftModels(supportKnots, comRef, rfPos0+[0,comYHackyOffset,0], timeStep)
-        comTaskRF = np.hstack((rfPos0[0:2]+[0,comYHackyOffset], comRef[2]))
+        comXHackyOffset = 0
+        comYHackyOffset = -0.0165
+        comShiftToRF = self.createCoMShiftModels(supportKnots, comRef, rfPos0+[comXHackyOffset,comYHackyOffset,0], timeStep)
+        comTaskRF = np.hstack((rfPos0[0:2]+[comXHackyOffset,comYHackyOffset], comRef[2]))
         lStep = self.createFootstepModels(comTaskRF, [lfPos0], 0.5 * stepLength, stepHeight, timeStep, stepKnots, [self.rfId], [self.lfId])
-        
         # We define the problem as:
         # loco3dModel += comShiftToLF + rStep
         loco3dModel += comShiftToRF + lStep
