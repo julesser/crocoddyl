@@ -29,13 +29,13 @@ rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pi
 #     print(jn)
 # Create a list of joints to lock
 # TaskSpecific:StaticWalking
-jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-                'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
-                'HeadPitch', 'HeadRoll', 'HeadYaw']
-# TaskSpecific:DynamicWalking
-# jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-#                 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+# jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+#                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
 #                 'HeadPitch', 'HeadRoll', 'HeadYaw']
+# TaskSpecific:DynamicWalking
+jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+                'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+                'HeadPitch', 'HeadRoll', 'HeadYaw']
 # Get the existing joint IDs
 jointsToLockIDs = []
 for jn in range(len(jointsToLock)):
@@ -77,18 +77,14 @@ for DGain in baumgarteDGains:
     for PGain in baumgartePGains:
         # Setting up the 3d walking problem
         timeStep = 0.03
-        # timeStep = 0.01
-        # stepKnots = 45
-        # supportKnots = 15
-        stepKnots = 90  # TaskSpecific:StaticWalking
-        supportKnots = 90
-        # stepKnots = 300  # TaskSpecific:StaticWalking_DT=0.01
-        # supportKnots = 300
+        stepKnots = 45 # TaskSpecific:DynamicWalking
+        supportKnots = 15
+        # stepKnots = 90  # TaskSpecific:StaticWalking
+        # supportKnots = 90
         impulseKnots = 1
-        stepLength = 0.2
-        # stepLength = 0.8 #TaskSpecific: DynamicWalking Large steps
-        knots = [stepKnots, supportKnots]
+        stepLength = 0.8
         stepHeight = 0.05
+        knots = [stepKnots, supportKnots]
         rightFoot = 'FR_SupportCenter'
         leftFoot = 'FL_SupportCenter'
         gait = SimpleBipedGaitProblem(rmodel, rightFoot, leftFoot, DGain, PGain)
@@ -105,29 +101,29 @@ for DGain in baumgarteDGains:
         # while True: # Get desired view params
         #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-        # simName = 'results/HumanoidFixedArms/DynamicWalking_LargeSteps_CoP50_ArmsFreed/'
-        simName = 'results/HumanoidFixedArms/StaticWalking_Test/'
+        simName = 'results/DynamicWalking_Test/'
+        # simName = 'results/HumanoidFixedArms/StaticWalking_Test/'
         # simName = 'results/HumanoidFixedArms/Analysis/GridSearchBaumgarteGains/DGain' + str(DGain) + '_PGain' + str(round(PGain,1)) + '/'
         if not os.path.exists(simName):
             os.makedirs(simName)
 
-        # Perform 2 Steps #TaskSpecific
-        # GAITPHASES = \
-        #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
-        #                 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        # Select desired OC problem #TaskSpecific
         GAITPHASES = \
-            [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
-                                'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+            [{'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+                        'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        # GAITPHASES = \
+        #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+        #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # GAITPHASES = \
         #     [{'OneStepstaticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
         #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # Perform 6 Steps
         # GAITPHASES = \
-        #     [{'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+        #     [{'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight,
         #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-        #      {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+        #      {'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight,
         #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
-        #     {'walking': {'stepLength': stepLength, 'stepHeight': stepHeight,
+        #     {'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight,
         #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # GAITPHASES = \
         #     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
@@ -141,18 +137,18 @@ for DGain in baumgarteDGains:
         ddp = [None] * len(GAITPHASES)
         for i, phase in enumerate(GAITPHASES):
             for key, value in phase.items():
-                if key == 'walking':
-                    # Creating a walking problem
+                if key == 'dynamicWalking':
+                    # Creating a dynamic walking problem
                     ddp[i] = crocoddyl.SolverBoxFDDP(
                         gait.createWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
                                                 value['stepKnots'], value['supportKnots'], value['isLastPhase']))
                 if key == 'staticWalking':
-                    # Creating a walking problem
+                    # Creating a static walking problem
                     ddp[i] = crocoddyl.SolverBoxFDDP(
                         gait.createStaticWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
                                                         value['stepKnots'], value['supportKnots'], value['isLastPhase']))
                 if key == 'OneStepstaticWalking':
-                    # Creating a walking problem
+                    # Creating a one step walking problem
                     ddp[i] = crocoddyl.SolverBoxFDDP(
                         gait.createOneStepStaticWalkingProblem(x0, value['stepLength'], value['stepHeight'], value['timeStep'],
                                                         value['stepKnots'], value['supportKnots'], value['isLastPhase']))
