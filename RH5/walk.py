@@ -18,7 +18,8 @@ WITHLOG = 'log' in sys.argv
 modelPath = os.path.join(os.environ.get('HOME'), "Dev/rh5-models")
 # URDF_FILENAME = "RH5Torso_PkgPath.urdf"
 # URDF_FILENAME = "RH5Humanoid_PkgPath_FixedArmsNHead.urdf"
-URDF_FILENAME = "RH5Humanoid_PkgPath.urdf"
+# URDF_FILENAME = "RH5Humanoid_PkgPath.urdf"
+URDF_FILENAME = "RH5Humanoid_PkgPath_WEIGHTS.urdf"
 URDF_SUBPATH = "/abstract-urdf/urdf/" + URDF_FILENAME
 
 # Load the full model 
@@ -28,14 +29,14 @@ rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pi
 # for jn in rh5_robot.model.names:
 #     print(jn)
 # Create a list of joints to lock
-# TaskSpecific:StaticWalking
-# jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-#                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
-#                 'HeadPitch', 'HeadRoll', 'HeadYaw']
-# TaskSpecific:DynamicWalking
-jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-                'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+# TaskSpecific:StaticWalking/Squat
+jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+                'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
                 'HeadPitch', 'HeadRoll', 'HeadYaw']
+# TaskSpecific:DynamicWalking
+# jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+#                 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+#                 'HeadPitch', 'HeadRoll', 'HeadYaw']
 # Get the existing joint IDs
 jointsToLockIDs = []
 for jn in range(len(jointsToLock)):
@@ -79,11 +80,15 @@ for DGain in baumgarteDGains:
         timeStep = 0.03
         stepKnots = 45 # TaskSpecific:DynamicWalking
         supportKnots = 15
+        # stepKnots = 20 # TaskSpecific:FastDynamicWalking
+        # supportKnots = 5
         # stepKnots = 90  # TaskSpecific:StaticWalking
         # supportKnots = 90
         impulseKnots = 1
         stepLength = 0.8
+        # stepLength = 1.2 # TaskSpecific:FastDynamicWalking
         stepHeight = 0.05
+        # stepHeight = 0.1 # TaskSpecific:FastDynamicWalking
         knots = [stepKnots, supportKnots]
         rightFoot = 'FR_SupportCenter'
         leftFoot = 'FL_SupportCenter'
@@ -93,24 +98,24 @@ for DGain in baumgarteDGains:
         x0 = gait.rmodel.defaultState
 
         # Set camera perspective
-        # cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
-        cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
+        cameraTF = [4., 5., 1.5, 0.2, 0.62, 0.72, 0.22] # isometric
+        # cameraTF = [6.4, 0, 2, 0.44, 0.44, 0.55, 0.55]  # front
         # cameraTF = [0., 5.5, 1.2, 0., 0.67, 0.73, 0.] # side
         # display = crocoddyl.GepettoDisplay(rh5_robot, cameraTF=cameraTF, frameNames=[rightFoot, leftFoot])
         # display.display(xs=[x0])
         # while True: # Get desired view params
         #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-        simName = 'results/DynamicWalking_Test/'
-        # simName = 'results/HumanoidFixedArms/StaticWalking_Test/'
+        # simName = 'results/DynamicWalking_Test_Fast/'
+        simName = 'results/HumanoidFixedArms/Squats_15cm_2s_5kgAluminiumBars/'
         # simName = 'results/HumanoidFixedArms/Analysis/GridSearchBaumgarteGains/DGain' + str(DGain) + '_PGain' + str(round(PGain,1)) + '/'
         if not os.path.exists(simName):
             os.makedirs(simName)
 
         # Select desired OC problem #TaskSpecific
-        GAITPHASES = \
-            [{'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
-                        'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        # GAITPHASES = \
+        #     [{'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+        #                 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # GAITPHASES = \
         #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
         #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
@@ -127,10 +132,10 @@ for DGain in baumgarteDGains:
         #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # GAITPHASES = \
         #     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
-        # GAITPHASES = \
-        #     [{'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
-        #      {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
-        #      {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}}]
+        GAITPHASES = \
+            [{'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
+             {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
+             {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}}]
         # GAITPHASES = \
         #     [{'balancing': {'supportKnots': 10, 'shiftKnots': 240, 'balanceKnots': 480, 'timeStep': timeStep}}]
                 
@@ -210,7 +215,7 @@ for DGain in baumgarteDGains:
 
         # Plotting the entire motion
         if WITHPLOT:
-            minFeetError = plotSolution(ddp, simName, knots, bounds=False, figIndex=1, show=False)
+            minFeetError = plotSolution(ddp, simName, knots, bounds=True, figIndex=1, show=False)
 
             # for i, phase in enumerate(GAITPHASES):
             #     # title = phase.keys()[0] + " (phase " + str(i) + ")"
