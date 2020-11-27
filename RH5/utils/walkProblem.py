@@ -340,7 +340,8 @@ class SimpleBipedGaitProblem:
                 # print('tref[' + str(k) + ']: ') 
                 # print(tref)
                 swingFootTask += [crocoddyl.FramePlacement(i, pinocchio.SE3(np.eye(3), tref))]
-            comTask = comPos0
+            comTask = comPos0 
+            # comTask = np.array([stepLength * (k + 1) / numKnots, 0., 0.]) * 1/2 + comPos0 #TaskSpecific:SonicWalk
             footSwingModel += [
                 self.createSwingFootModel(timeStep, supportFootIds, comTask=comTask, swingFootTask=swingFootTask)
             ]
@@ -350,6 +351,7 @@ class SimpleBipedGaitProblem:
         footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, pseudoImpulse=False)
 
         # Updating the current foot position for next step
+        # comPos0 += [stepLength * 1/2, 0., 0.] #TaskSpecific:SonicWalk
         for p in feetPos0:
             p += [stepLength, 0., 0.]
         return footSwingModel + [footSwitchModel]
@@ -373,7 +375,7 @@ class SimpleBipedGaitProblem:
 
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, self.actuation.nu)
-        # if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting
+        # if isinstance(comTask, np.ndarray): # TaskSpecific:SonicWalk,Squatting
         #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
         #     costModel.addCost("comTrack", comTrack, 1e6)
         # if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
@@ -398,7 +400,6 @@ class SimpleBipedGaitProblem:
             for i in swingFootTask:
                 footTrack = crocoddyl.CostModelFramePlacement(self.state, i, self.actuation.nu)
                 costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6)
-                # costModel.addCost(self.rmodel.frames[i.frame].name + "_footTrack", footTrack, 1e6) # TODO: ActivationModelWeightedQuad 6 components: Focus on [3:6] = z-component, angular
         
         # joint limits cost
         x_lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])

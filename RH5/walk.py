@@ -78,17 +78,21 @@ for DGain in baumgarteDGains:
     for PGain in baumgartePGains:
         # Setting up the 3d walking problem
         timeStep = 0.03
-        stepKnots = 45 # TaskSpecific:DynamicWalking
-        supportKnots = 15
-        # stepKnots = 20 # TaskSpecific:FastDynamicWalking
-        # supportKnots = 5
+        # stepKnots = 45 # TaskSpecific:DynamicWalking
+        # supportKnots = 15
+        stepKnots = 20 # TaskSpecific:DynamicWalking
+        supportKnots = 5
+        # stepKnots = 8 #TaskSpecific:SonicWalk
+        # supportKnots = 2
         # stepKnots = 90  # TaskSpecific:StaticWalking
         # supportKnots = 90
         impulseKnots = 1
-        stepLength = 0.8
-        # stepLength = 1.2 # TaskSpecific:FastDynamicWalking
-        stepHeight = 0.05
-        # stepHeight = 0.1 # TaskSpecific:FastDynamicWalking
+        # stepLength = 0.8
+        stepLength = 1.2
+        # stepLength = 1.4 # #TaskSpecific:SonicWalk
+        # stepHeight = 0.05
+        stepHeight = 0.1
+        # stepHeight = 0.2 # #TaskSpecific:SonicWalk
         knots = [stepKnots, supportKnots]
         rightFoot = 'FR_SupportCenter'
         leftFoot = 'FL_SupportCenter'
@@ -106,16 +110,17 @@ for DGain in baumgarteDGains:
         # while True: # Get desired view params
         #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-        simName = 'results/DynamicWalking_5kgAluminiumBars_test/'
-        # simName = 'results/HumanoidFixedArms/Squats_15cm_2s_5kgAluminiumBars_test/'
+        # simName = 'results/DynamicWalking_5kgAluminiumBars_fast/'
+        # simName = 'results/DynamicWalking_5kgAluminiumBars_test/'
+        simName = 'results/HumanoidFixedArms/SquatOne_15cm_2s_5kgAluminiumBars/'
         # simName = 'results/HumanoidFixedArms/Analysis/GridSearchBaumgarteGains/DGain' + str(DGain) + '_PGain' + str(round(PGain,1)) + '/'
         if not os.path.exists(simName):
             os.makedirs(simName)
 
         # Select desired OC problem #TaskSpecific
-        GAITPHASES = \
-            [{'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
-                        'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        # GAITPHASES = \
+        #     [{'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+        #                 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # GAITPHASES = \
         #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
         #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
@@ -130,8 +135,8 @@ for DGain in baumgarteDGains:
         #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': False}},
         #     {'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight,
         #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
-        # GAITPHASES = \
-        #     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
+        GAITPHASES = \
+            [{'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}}]
         # GAITPHASES = \
         #     [{'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
         #      {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
