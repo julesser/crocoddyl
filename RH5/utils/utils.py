@@ -96,7 +96,7 @@ def plotSolution(ddp, dirName, num_knots, bounds=True, figIndex=1, figTitle="", 
     plt.savefig(dirName + 'JointState.pdf', dpi = 300, bbox_inches='tight')
 
     # Plotting the joint state: positions, velocities and torques
-    plt.figure(figIndex, figsize=(16,9)) # (16,9) for bigger headings
+    plt.figure(figIndex+13, figsize=(16,9)) # (16,9) for bigger headings
     torsoJointNames = ['BodyPitch','BodyRoll','BodyYaw']
     legJointNames = ['Hip1', 'Hip2', 'Hip3', 'Knee', 'AnkleRoll', 'AnklePitch']
     # torso
