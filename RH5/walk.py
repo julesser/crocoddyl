@@ -30,13 +30,13 @@ rh5_robot = RobotWrapper.BuildFromURDF(modelPath + URDF_SUBPATH, [modelPath], pi
 #     print(jn)
 # Create a list of joints to lock
 # TaskSpecific:StaticWalking/Squat
-jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-                'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
-                'HeadPitch', 'HeadRoll', 'HeadYaw']
-# TaskSpecific:DynamicWalking
-# jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
-#                 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+# jointsToLock = ['ALShoulder1', 'ALShoulder2', 'ALShoulder3', 'ALElbow', 'ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+#                 'ARShoulder1', 'ARShoulder2', 'ARShoulder3', 'ARElbow', 'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
 #                 'HeadPitch', 'HeadRoll', 'HeadYaw']
+# TaskSpecific:DynamicWalking
+jointsToLock = ['ALWristRoll', 'ALWristYaw', 'ALWristPitch',
+                'ARWristRoll', 'ARWristYaw', 'ARWristPitch',
+                'HeadPitch', 'HeadRoll', 'HeadYaw']
 # Get the existing joint IDs
 jointsToLockIDs = []
 for jn in range(len(jointsToLock)):
@@ -106,16 +106,16 @@ for DGain in baumgarteDGains:
         # while True: # Get desired view params
         #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-        # simName = 'results/DynamicWalking_Test_Fast/'
-        simName = 'results/HumanoidFixedArms/Squats_15cm_2s_5kgAluminiumBars/'
+        simName = 'results/DynamicWalking_5kgAluminiumBars_test/'
+        # simName = 'results/HumanoidFixedArms/Squats_15cm_2s_5kgAluminiumBars_test/'
         # simName = 'results/HumanoidFixedArms/Analysis/GridSearchBaumgarteGains/DGain' + str(DGain) + '_PGain' + str(round(PGain,1)) + '/'
         if not os.path.exists(simName):
             os.makedirs(simName)
 
         # Select desired OC problem #TaskSpecific
-        # GAITPHASES = \
-        #     [{'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
-        #                 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
+        GAITPHASES = \
+            [{'dynamicWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
+                        'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # GAITPHASES = \
         #     [{'staticWalking': {'stepLength': stepLength, 'stepHeight': stepHeight, 'timeStep': timeStep,
         #                         'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
@@ -132,10 +132,10 @@ for DGain in baumgarteDGains:
         #                   'timeStep': timeStep, 'stepKnots': stepKnots, 'supportKnots': supportKnots, 'isLastPhase': True}}]
         # GAITPHASES = \
         #     [{'squat': {'heightChange': 0.1, 'numKnots': 100, 'timeStep': timeStep}}]
-        GAITPHASES = \
-            [{'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
-             {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
-             {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}}]
+        # GAITPHASES = \
+        #     [{'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
+        #      {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}},
+        #      {'squat': {'heightChange': 0.15, 'numKnots': 70, 'timeStep': timeStep}}]
         # GAITPHASES = \
         #     [{'balancing': {'supportKnots': 10, 'shiftKnots': 240, 'balanceKnots': 480, 'timeStep': timeStep}}]
                 
@@ -215,7 +215,7 @@ for DGain in baumgarteDGains:
 
         # Plotting the entire motion
         if WITHPLOT:
-            minFeetError = plotSolution(ddp, simName, knots, bounds=True, figIndex=1, show=False)
+            minFeetError = plotSolution(ddp, simName, knots, bounds=True, figIndex=1, show=False) #TaskSpecific: Bounds?
 
             # for i, phase in enumerate(GAITPHASES):
             #     # title = phase.keys()[0] + " (phase " + str(i) + ")"

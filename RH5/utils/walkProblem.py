@@ -18,17 +18,17 @@ class SimpleBipedGaitProblem:
         self.rfId = self.rmodel.getFrameId(rightFoot)
         self.lfId = self.rmodel.getFrameId(leftFoot)
         # Default state #TaskSepcific:StaticWalking/Squat
-        q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
-                        0.2,0,0,                    # Torso
-                        0,0,-0.33,0.63,0,-0.30,     # Left Leg     
-                        0,0,-0.33,0.63,0,-0.30])    # Right Leg
-        # TaskSpecific:DynamicWalking
         # q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
         #                 0.2,0,0,                    # Torso
-        #                 -0.25, 0.1, 0, 0,           # Left Arm
-        #                 0.25, -0.1, 0, 0,           # Right Arm
         #                 0,0,-0.33,0.63,0,-0.30,     # Left Leg     
         #                 0,0,-0.33,0.63,0,-0.30])    # Right Leg
+        # TaskSpecific:DynamicWalking
+        q0 = np.array([0,0,0.87955,0,0,0,1,         # Floating Base (quaternions) # Stable init pose from long-time gait
+                        0.2,0,0,                    # Torso
+                        -0.25, 0.1, 0, 0,           # Left Arm
+                        0.25, -0.1, 0, 0,           # Right Arm
+                        0,0,-0.33,0.63,0,-0.30,     # Left Leg     
+                        0,0,-0.33,0.63,0,-0.30])    # Right Leg
         # TaskSpecific:Static Walking from Mid of other step
         # q0 = np.array([0.0618,0.0020,0.8908,0.0003,0.0099,0.0114,0.9998,         # Floating Base (quaternions) # Stable init pose from long-time gait
         #                 0.1372,-0.0021,0.0001,                    # Torso
@@ -373,9 +373,9 @@ class SimpleBipedGaitProblem:
 
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, self.actuation.nu)
-        if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting
-            comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
-            costModel.addCost("comTrack", comTrack, 1e6)
+        # if isinstance(comTask, np.ndarray): # TaskSpecific:Squatting
+        #     comTrack = crocoddyl.CostModelCoMPosition(self.state, comTask, self.actuation.nu)
+        #     costModel.addCost("comTrack", comTrack, 1e6)
         # if isinstance(comTask, np.ndarray): # TaskSpecific:Balancing&StaticWalking
         #     # com2DWeights = np.array([1, 1, 0]) # Neglect height of CoM
         #     com2DWeights = np.array([1, 1, 1]) # Neglect height of CoM

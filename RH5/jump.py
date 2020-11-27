@@ -58,7 +58,7 @@ timeStep = 0.01
 # 1. Simple vertical / forward jump
 jumpHeight = 0.1
 # jumpHeights = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-jumpLengths = [[0.1, 0, 0]]
+jumpLengths = [[0.0, 0, 0]]
 # jumpLengths = [[0.1, 0, 0], [0.2, 0, 0], [0.3, 0, 0], [0.4, 0, 0], [0.5, 0, 0]] #TaskSpecific:ForwardJump
 groundKnots = 30
 recoveryKnots = 30
@@ -102,7 +102,7 @@ for jumpLength in jumpLengths:
     # while True: # Get desired view params
     #     print(rh5_robot.viewer.gui.getCameraTransform(rh5_robot.viz.windowID))
 
-    simName = 'results/Jump_Vertical_10cm_ScaledLimits_Test/'
+    simName = 'results/Jump_Vertical_10cm_ScaledKneeVelLims_test2/'
     # simName = 'results/JumpAnalysis/Jump_Vertical_' + str(round(jumpHeight*100)) +'cm_NoJLims/'
     # simName = 'results/JumpAnalysis/Jump_Forward_' + str(round(jumpLength[0]*100)) +'cm_NoJLims/'
     print(simName)
