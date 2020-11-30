@@ -2,6 +2,7 @@
 // BSD 3-Clause License
 //
 // Copyright (C) 2018-2020, LAAS-CNRS, University of Edinburgh
+// Copyright (C) 2020 CTU, INRIA
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -22,7 +23,7 @@ namespace crocoddyl {
 
 template <typename Scalar>
 DifferentialActionModelContactFwdDynamicsTpl<Scalar>::DifferentialActionModelContactFwdDynamicsTpl(
-    boost::shared_ptr<StateMultibody> state, boost::shared_ptr<ActuationModelFloatingBase> actuation,
+    boost::shared_ptr<StateMultibody> state, boost::shared_ptr<ActuationModelAbstract> actuation,
     boost::shared_ptr<ContactModelMultiple> contacts, boost::shared_ptr<CostModelSum> costs,
     const Scalar& JMinvJt_damping, const bool& enable_force)
     : Base(state, actuation->get_nu(), costs->get_nr()),
@@ -181,12 +182,9 @@ void DifferentialActionModelContactFwdDynamicsTpl<Scalar>::quasiStatic(
   DifferentialActionDataContactFwdDynamicsTpl<Scalar>* d =
       static_cast<DifferentialActionDataContactFwdDynamicsTpl<Scalar>*>(data.get());
   const Eigen::VectorBlock<const Eigen::Ref<const VectorXs>, Eigen::Dynamic> q = x.head(state_->get_nq());
-#ifndef NDEBUG
-  const Eigen::VectorBlock<const Eigen::Ref<const VectorXs>, Eigen::Dynamic> v = x.tail(state_->get_nv());
-#endif
 
   // Check the velocity input is zero
-  assert_pretty(v.isZero(), "The velocity input should be zero for quasi-static to work.");
+  assert_pretty(x.tail(state_->get_nv()).isZero(), "The velocity input should be zero for quasi-static to work.");
 
   const std::size_t& nv = state_->get_nv();
   const std::size_t& nc = contacts_->get_nc();
@@ -194,16 +192,14 @@ void DifferentialActionModelContactFwdDynamicsTpl<Scalar>::quasiStatic(
   pinocchio::computeJointJacobians(pinocchio_, d->pinocchio, q);
   d->pinocchio.tau = pinocchio::rnea(pinocchio_, d->pinocchio, q, VectorXs::Zero(nv), VectorXs::Zero(nv));
 
-  VectorXs x_tmp(state_->get_nq() + nv);
-  x_tmp << q, VectorXs::Zero(nv);
-
-  actuation_->calc(d->multibody.actuation, x_tmp, VectorXs::Zero(nu_));
-  actuation_->calcDiff(d->multibody.actuation, x_tmp, VectorXs::Zero(nu_));
-  contacts_->calc(d->multibody.contacts, x_tmp);
+  d->tmp_xstatic.head(state_->get_nq()) = q;
+  actuation_->calc(d->multibody.actuation, d->tmp_xstatic, VectorXs::Zero(nu_));
+  actuation_->calcDiff(d->multibody.actuation, d->tmp_xstatic, VectorXs::Zero(nu_));
+  contacts_->calc(d->multibody.contacts, d->tmp_xstatic);
   // Allocates memory
-  MatrixXs jc_view(nv, nu_ + nc);
-  jc_view << d->multibody.actuation->dtau_du, d->multibody.contacts->Jc.topRows(nc).transpose();
-  u.noalias() = (pseudoInverse(jc_view) * d->pinocchio.tau).head(nu_);
+  d->tmp_Jstatic.resize(nv, nu_ + nc);
+  d->tmp_Jstatic << d->multibody.actuation->dtau_du, d->multibody.contacts->Jc.topRows(nc).transpose();
+  u.noalias() = (pseudoInverse(d->tmp_Jstatic) * d->pinocchio.tau).head(nu_);
   d->pinocchio.tau.setZero();
 }
 
@@ -224,7 +220,7 @@ pinocchio::ModelTpl<Scalar>& DifferentialActionModelContactFwdDynamicsTpl<Scalar
 }
 
 template <typename Scalar>
-const boost::shared_ptr<ActuationModelFloatingBaseTpl<Scalar> >&
+const boost::shared_ptr<ActuationModelAbstractTpl<Scalar> >&
 DifferentialActionModelContactFwdDynamicsTpl<Scalar>::get_actuation() const {
   return actuation_;
 }

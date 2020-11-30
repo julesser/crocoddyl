@@ -35,6 +35,8 @@ DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::DifferentialActionModelFreeFw
     throw_pretty("Invalid argument: "
                  << "Costs doesn't have the same control dimension (it should be " + std::to_string(nu_) + ")");
   }
+  Base::set_u_lb(Scalar(-1.) * pinocchio_.effortLimit.tail(nu_));
+  Base::set_u_ub(Scalar(+1.) * pinocchio_.effortLimit.tail(nu_));
 }
 
 template <typename Scalar>
@@ -148,21 +150,16 @@ void DifferentialActionModelFreeFwdDynamicsTpl<Scalar>::quasiStatic(
   // Static casting the data
   Data* d = static_cast<Data*>(data.get());
   const Eigen::VectorBlock<const Eigen::Ref<const VectorXs>, Eigen::Dynamic> q = x.head(state_->get_nq());
-#ifndef NDEBUG
-  const Eigen::VectorBlock<const Eigen::Ref<const VectorXs>, Eigen::Dynamic> v = x.tail(state_->get_nv());
-#endif
 
   // Check the velocity input is zero
-  assert_pretty(v.isZero(), "The velocity input should be zero for quasi-static to work.");
+  assert_pretty(x.tail(state_->get_nv()).isZero(), "The velocity input should be zero for quasi-static to work.");
 
   d->pinocchio.tau =
       pinocchio::rnea(pinocchio_, d->pinocchio, q, VectorXs::Zero(state_->get_nv()), VectorXs::Zero(state_->get_nv()));
 
-  VectorXs x_tmp(state_->get_nq() + state_->get_nv());
-  x_tmp << q, VectorXs::Zero(state_->get_nv());
-
-  actuation_->calc(d->multibody.actuation, x_tmp, VectorXs::Zero(nu_));
-  actuation_->calcDiff(d->multibody.actuation, x_tmp, VectorXs::Zero(nu_));
+  d->tmp_xstatic.head(state_->get_nq()) = q;
+  actuation_->calc(d->multibody.actuation, d->tmp_xstatic, VectorXs::Zero(nu_));
+  actuation_->calcDiff(d->multibody.actuation, d->tmp_xstatic, VectorXs::Zero(nu_));
 
   u.noalias() = pseudoInverse(d->multibody.actuation->dtau_du) * d->pinocchio.tau;
   d->pinocchio.tau.setZero();

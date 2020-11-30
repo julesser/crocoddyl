@@ -6,10 +6,10 @@
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifdef WITH_MULTITHREADING
+#ifdef CROCODDYL_WITH_MULTITHREADING
 #include <omp.h>
-#define NUM_THREADS WITH_NTHREADS
-#endif  // WITH_MULTITHREADING
+#define NUM_THREADS CROCODDYL_WITH_NTHREADS
+#endif  // CROCODDYL_WITH_MULTITHREADING
 
 namespace crocoddyl {
 
@@ -140,12 +140,13 @@ Scalar ShootingProblemTpl<Scalar>::calc(const std::vector<VectorXs>& xs, const s
                  << "us has wrong dimension (it should be " + std::to_string(T_) + ")");
   }
 
-#ifdef WITH_MULTITHREADING
+#ifdef CROCODDYL_WITH_MULTITHREADING
 #pragma omp parallel for
 #endif
   for (std::size_t i = 0; i < T_; ++i) {
-    if (running_models_[i]->get_nu() != 0) {
-      running_models_[i]->calc(running_datas_[i], xs[i], us[i]);
+    const std::size_t& nu = running_models_[i]->get_nu();
+    if (nu != 0) {
+      running_models_[i]->calc(running_datas_[i], xs[i], us[i].head(nu));
     } else {
       running_models_[i]->calc(running_datas_[i], xs[i]);
     }
@@ -171,14 +172,13 @@ Scalar ShootingProblemTpl<Scalar>::calcDiff(const std::vector<VectorXs>& xs, con
                  << "us has wrong dimension (it should be " + std::to_string(T_) + ")");
   }
 
-  std::size_t i;
-
-#ifdef WITH_MULTITHREADING
+#ifdef CROCODDYL_WITH_MULTITHREADING
 #pragma omp parallel for
 #endif
-  for (i = 0; i < T_; ++i) {
+  for (std::size_t i = 0; i < T_; ++i) {
     if (running_models_[i]->get_nu() != 0) {
-      running_models_[i]->calcDiff(running_datas_[i], xs[i], us[i]);
+      const std::size_t& nu = running_models_[i]->get_nu();
+      running_models_[i]->calcDiff(running_datas_[i], xs[i], us[i].head(nu));
     } else {
       running_models_[i]->calcDiff(running_datas_[i], xs[i]);
     }
@@ -210,10 +210,10 @@ void ShootingProblemTpl<Scalar>::rollout(const std::vector<VectorXs>& us, std::v
     const boost::shared_ptr<ActionModelAbstract>& model = running_models_[i];
     const boost::shared_ptr<ActionDataAbstract>& data = running_datas_[i];
     const VectorXs& x = xs[i];
-
+    const std::size_t& nu = running_models_[i]->get_nu();
     if (model->get_nu() != 0) {
       const VectorXs& u = us[i];
-      model->calc(data, x, u);
+      model->calc(data, x, u.head(nu));
     } else {
       model->calc(data, x);
     }
@@ -229,6 +229,38 @@ std::vector<typename MathBaseTpl<Scalar>::VectorXs> ShootingProblemTpl<Scalar>::
   xs.resize(T_ + 1);
   rollout(us, xs);
   return xs;
+}
+
+template <typename Scalar>
+void ShootingProblemTpl<Scalar>::quasiStatic(std::vector<VectorXs>& us, const std::vector<VectorXs>& xs) {
+  if (xs.size() != T_) {
+    throw_pretty("Invalid argument: "
+                 << "xs has wrong dimension (it should be " + std::to_string(T_) + ")");
+  }
+  if (us.size() != T_) {
+    throw_pretty("Invalid argument: "
+                 << "us has wrong dimension (it should be " + std::to_string(T_) + ")");
+  }
+
+#ifdef CROCODDYL_WITH_MULTITHREADING
+#pragma omp parallel for
+#endif
+  for (std::size_t i = 0; i < T_; ++i) {
+    const std::size_t& nu = running_models_[i]->get_nu();
+    running_models_[i]->quasiStatic(running_datas_[i], us[i].head(nu), xs[i]);
+  }
+}
+
+template <typename Scalar>
+std::vector<typename MathBaseTpl<Scalar>::VectorXs> ShootingProblemTpl<Scalar>::quasiStatic_xs(
+    const std::vector<VectorXs>& xs) {
+  std::vector<VectorXs> us;
+  us.resize(T_);
+  for (std::size_t i = 0; i < T_; ++i) {
+    us[i] = VectorXs::Zero(running_models_[i]->get_nu());
+  }
+  quasiStatic(us, xs);
+  return us;
 }
 
 template <typename Scalar>
@@ -248,7 +280,7 @@ void ShootingProblemTpl<Scalar>::circularAppend(boost::shared_ptr<ActionModelAbs
   }
   if (model->get_nu() > nu_max_) {
     throw_pretty("Invalid argument: "
-                 << "nu node is not bigger than the maximun nu")
+                 << "nu node is greater than the maximum nu")
   }
 
   for (std::size_t i = 0; i < T_ - 1; ++i) {
@@ -271,7 +303,7 @@ void ShootingProblemTpl<Scalar>::circularAppend(boost::shared_ptr<ActionModelAbs
   }
   if (model->get_nu() > nu_max_) {
     throw_pretty("Invalid argument: "
-                 << "nu node is not bigger than the maximun nu")
+                 << "nu node is greater than the maximum nu")
   }
 
   for (std::size_t i = 0; i < T_ - 1; ++i) {
@@ -285,7 +317,7 @@ void ShootingProblemTpl<Scalar>::circularAppend(boost::shared_ptr<ActionModelAbs
 template <typename Scalar>
 void ShootingProblemTpl<Scalar>::updateNode(std::size_t i, boost::shared_ptr<ActionModelAbstract> model,
                                             boost::shared_ptr<ActionDataAbstract> data) {
-  if (i > T_ + 1) {
+  if (i >= T_ + 1) {
     throw_pretty("Invalid argument: "
                  << "i is bigger than the allocated horizon (it should be less than or equal to " +
                         std::to_string(T_ + 1) + ")");
@@ -304,7 +336,7 @@ void ShootingProblemTpl<Scalar>::updateNode(std::size_t i, boost::shared_ptr<Act
   }
   if (model->get_nu() > nu_max_) {
     throw_pretty("Invalid argument: "
-                 << "nu node is not bigger than the maximun nu")
+                 << "nu node is greater than the maximum nu")
   }
 
   if (i == T_) {
@@ -318,9 +350,9 @@ void ShootingProblemTpl<Scalar>::updateNode(std::size_t i, boost::shared_ptr<Act
 
 template <typename Scalar>
 void ShootingProblemTpl<Scalar>::updateModel(std::size_t i, boost::shared_ptr<ActionModelAbstract> model) {
-  if (i > T_ + 1) {
+  if (i >= T_ + 1) {
     throw_pretty("Invalid argument: "
-                 << "i is bigger than the allocated horizon (it should be lower than " + std::to_string(T_) + ")");
+                 << "i is bigger than the allocated horizon (it should be lower than " + std::to_string(T_ + 1) + ")");
   }
   if (model->get_state()->get_nx() != nx_) {
     throw_pretty("Invalid argument: "
@@ -332,10 +364,10 @@ void ShootingProblemTpl<Scalar>::updateModel(std::size_t i, boost::shared_ptr<Ac
   }
   if (model->get_nu() > nu_max_) {
     throw_pretty("Invalid argument: "
-                 << "nu node is not bigger than the maximun nu")
+                 << "nu node is greater than the maximum nu")
   }
 
-  if (i == T_ + 1) {
+  if (i == T_) {
     terminal_model_ = model;
     terminal_data_ = terminal_model_->createData();
   } else {
@@ -411,7 +443,7 @@ void ShootingProblemTpl<Scalar>::set_runningModels(
     }
     if (model->get_nu() > nu_max_) {
       throw_pretty("Invalid argument: "
-                   << "nu node is not bigger than the maximun nu")
+                   << "nu node is greater than the maximum nu")
     }
   }
 

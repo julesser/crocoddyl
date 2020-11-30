@@ -2,6 +2,7 @@
 // BSD 3-Clause License
 //
 // Copyright (C) 2018-2020, LAAS-CNRS, University of Edinburgh
+// Copyright (C) 2020 CTU, INRIA
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
@@ -13,11 +14,11 @@
 
 #include "crocoddyl/multibody/fwd.hpp"
 #include "crocoddyl/core/diff-action-base.hpp"
+#include "crocoddyl/core/costs/cost-sum.hpp"
 #include "crocoddyl/multibody/states/multibody.hpp"
-#include "crocoddyl/multibody/actuations/floating-base.hpp"
+#include "crocoddyl/core/actuation-base.hpp"
 #include "crocoddyl/multibody/contacts/multiple-contacts.hpp"
 #include "crocoddyl/multibody/data/contacts.hpp"
-#include "crocoddyl/multibody/costs/cost-sum.hpp"
 
 namespace crocoddyl {
 
@@ -33,13 +34,13 @@ class DifferentialActionModelContactFwdDynamicsTpl : public DifferentialActionMo
   typedef CostModelSumTpl<Scalar> CostModelSum;
   typedef StateMultibodyTpl<Scalar> StateMultibody;
   typedef ContactModelMultipleTpl<Scalar> ContactModelMultiple;
-  typedef ActuationModelFloatingBaseTpl<Scalar> ActuationModelFloatingBase;
+  typedef ActuationModelAbstractTpl<Scalar> ActuationModelAbstract;
   typedef DifferentialActionDataAbstractTpl<Scalar> DifferentialActionDataAbstract;
   typedef typename MathBase::VectorXs VectorXs;
   typedef typename MathBase::MatrixXs MatrixXs;
 
   DifferentialActionModelContactFwdDynamicsTpl(boost::shared_ptr<StateMultibody> state,
-                                               boost::shared_ptr<ActuationModelFloatingBase> actuation,
+                                               boost::shared_ptr<ActuationModelAbstract> actuation,
                                                boost::shared_ptr<ContactModelMultiple> contacts,
                                                boost::shared_ptr<CostModelSum> costs,
                                                const Scalar& JMinvJt_damping = Scalar(0.),
@@ -56,7 +57,7 @@ class DifferentialActionModelContactFwdDynamicsTpl : public DifferentialActionMo
                            const Eigen::Ref<const VectorXs>& x, const std::size_t& maxiter = 100,
                            const Scalar& tol = Scalar(1e-9));
 
-  const boost::shared_ptr<ActuationModelFloatingBase>& get_actuation() const;
+  const boost::shared_ptr<ActuationModelAbstract>& get_actuation() const;
   const boost::shared_ptr<ContactModelMultiple>& get_contacts() const;
   const boost::shared_ptr<CostModelSum>& get_costs() const;
   pinocchio::ModelTpl<Scalar>& get_pinocchio() const;
@@ -76,7 +77,7 @@ class DifferentialActionModelContactFwdDynamicsTpl : public DifferentialActionMo
   using Base::unone_;               //!< Neutral state
 
  private:
-  boost::shared_ptr<ActuationModelFloatingBase> actuation_;
+  boost::shared_ptr<ActuationModelAbstract> actuation_;
   boost::shared_ptr<ContactModelMultiple> contacts_;
   boost::shared_ptr<CostModelSum> costs_;
   pinocchio::ModelTpl<Scalar>& pinocchio_;
@@ -104,11 +105,15 @@ struct DifferentialActionDataContactFwdDynamicsTpl : public DifferentialActionDa
         Kinv(model->get_state()->get_nv() + model->get_contacts()->get_nc_total(),
              model->get_state()->get_nv() + model->get_contacts()->get_nc_total()),
         df_dx(model->get_contacts()->get_nc_total(), model->get_state()->get_ndx()),
-        df_du(model->get_contacts()->get_nc_total(), model->get_nu()) {
+        df_du(model->get_contacts()->get_nc_total(), model->get_nu()),
+        tmp_xstatic(model->get_state()->get_nx()),
+        tmp_Jstatic(model->get_state()->get_nv(), model->get_nu() + model->get_contacts()->get_nc_total()) {
     costs->shareMemory(this);
     Kinv.setZero();
     df_dx.setZero();
     df_du.setZero();
+    tmp_xstatic.setZero();
+    tmp_Jstatic.setZero();
     pinocchio.lambda_c.resize(model->get_contacts()->get_nc_total());
     pinocchio.lambda_c.setZero();
   }
@@ -119,6 +124,8 @@ struct DifferentialActionDataContactFwdDynamicsTpl : public DifferentialActionDa
   MatrixXs Kinv;
   MatrixXs df_dx;
   MatrixXs df_du;
+  VectorXs tmp_xstatic;
+  MatrixXs tmp_Jstatic;
 
   using Base::cost;
   using Base::Fu;

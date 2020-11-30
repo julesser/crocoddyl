@@ -41,7 +41,7 @@ void exposeSolverAbstract() {
            "during the numerical optimization.\n"
            ":param init_xs: initial guess for state trajectory with T+1 elements (default [])\n"
            ":param init_us: initial guess for control trajectory with T elements (default []).\n"
-           ":param maxiter: maximun allowed number of iterations (default 100).\n"
+           ":param maxiter: maximum allowed number of iterations (default 100).\n"
            ":param isFeasible: true if the init_xs are obtained from integrating the init_us (rollout) (default "
            "False).\n"
            ":param regInit: initial guess for the regularization value. Very low\n"
@@ -54,7 +54,7 @@ void exposeSolverAbstract() {
            "(xs, us) of T+1 and T elements, respectively.\n"
            ":params recalc: true for recalculating the derivatives at current state and control.\n"
            ":returns the search direction dx, du and the dual lambdas as lists of T+1, T and T+1 lengths.")
-      .def("tryStep", pure_virtual(&SolverAbstract_wrap::tryStep), bp::args("self", " stepLength"),
+      .def("tryStep", pure_virtual(&SolverAbstract_wrap::tryStep), bp::args("self", "stepLength"),
            "Try a predefined step length and compute its cost improvement.\n\n"
            "It uses the search direction found by computeDirection to try a\n"
            "determined step length; so you need to run first computeDirection.\n"

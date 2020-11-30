@@ -2,12 +2,13 @@
 // BSD 3-Clause License
 //
 // Copyright (C) 2018-2020, University of Edinburgh
+// Copyright (C) 2020 CTU, INRIA
 // Copyright note valid unless otherwise stated in individual files.
 // All rights reserved.
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef CROCODDYL_ACTION_FACTORY_HPP_
-#define CROCODDYL_ACTION_FACTORY_HPP_
+#ifndef CROCODDYL_DIFF_ACTION_FACTORY_HPP_
+#define CROCODDYL_DIFF_ACTION_FACTORY_HPP_
 
 #include "state.hpp"
 #include "actuation.hpp"
@@ -27,8 +28,10 @@ struct DifferentialActionModelTypes {
     DifferentialActionModelLQRDriftFree,
     DifferentialActionModelFreeFwdDynamics_TalosArm,
     DifferentialActionModelFreeFwdDynamics_TalosArm_Squashed,
+    DifferentialActionModelContactFwdDynamics_TalosArm,
     DifferentialActionModelContactFwdDynamics_HyQ,
     DifferentialActionModelContactFwdDynamics_Talos,
+    DifferentialActionModelContactFwdDynamicsWithFriction_TalosArm,
     DifferentialActionModelContactFwdDynamicsWithFriction_HyQ,
     DifferentialActionModelContactFwdDynamicsWithFriction_Talos,
     NbDifferentialActionModelTypes
@@ -60,10 +63,10 @@ class DifferentialActionModelFactory {
       StateModelTypes::Type state_type, ActuationModelTypes::Type actuation_type) const;
 
   boost::shared_ptr<crocoddyl::DifferentialActionModelContactFwdDynamics> create_contactFwdDynamics(
-      StateModelTypes::Type state_type, bool with_friction = true) const;
+      StateModelTypes::Type state_type, ActuationModelTypes::Type actuation_type, bool with_friction = true) const;
 };
 
 }  // namespace unittest
 }  // namespace crocoddyl
 
-#endif  // CROCODDYL_ACTION_FACTORY_HPP_
+#endif  // CROCODDYL_DIFF_ACTION_FACTORY_HPP_

@@ -17,10 +17,10 @@
 
 #include "crocoddyl/multibody/fwd.hpp"
 #include "crocoddyl/core/diff-action-base.hpp"
+#include "crocoddyl/core/costs/cost-sum.hpp"
 #include "crocoddyl/core/actuation-base.hpp"
 #include "crocoddyl/multibody/data/multibody.hpp"
 #include "crocoddyl/multibody/states/multibody.hpp"
-#include "crocoddyl/multibody/costs/cost-sum.hpp"
 #include "crocoddyl/core/utils/exception.hpp"
 
 namespace crocoddyl {
@@ -97,11 +97,13 @@ struct DifferentialActionDataFreeFwdDynamicsTpl : public DifferentialActionDataA
         costs(model->get_costs()->createData(&multibody)),
         Minv(model->get_state()->get_nv(), model->get_state()->get_nv()),
         u_drift(model->get_nu()),
-        dtau_dx(model->get_nu(), model->get_state()->get_ndx()) {
+        dtau_dx(model->get_nu(), model->get_state()->get_ndx()),
+        tmp_xstatic(model->get_state()->get_nx()) {
     costs->shareMemory(this);
     Minv.setZero();
     u_drift.setZero();
     dtau_dx.setZero();
+    tmp_xstatic.setZero();
   }
 
   pinocchio::DataTpl<Scalar> pinocchio;
@@ -110,6 +112,7 @@ struct DifferentialActionDataFreeFwdDynamicsTpl : public DifferentialActionDataA
   MatrixXs Minv;
   VectorXs u_drift;
   MatrixXs dtau_dx;
+  VectorXs tmp_xstatic;
 
   using Base::cost;
   using Base::Fu;
